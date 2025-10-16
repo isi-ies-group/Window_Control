@@ -1,0 +1,124 @@
+<!--const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>-->
+<html>
+<head>
+  <title>ESP32 Control Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    h2 { color: #333; }
+    form, .pad {
+      background: white;
+      display: inline-block;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 150px;
+      padding: 6px;
+      margin: 6px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button, input[type="submit"] {
+      background-color: #0078D7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.1s ease;
+    }
+    button:hover, input[type="submit"]:hover {
+      background-color: #005fa3;
+    }
+    .pad button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+    }
+    .pad-grid {
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+    .pressed {
+      background-color: #004b80 !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SECTION 1: Initial Configuration -->
+  <h2>Initial Configuration</h2>
+  <form action="/begin_config" method="get">
+    <label>Latitude:</label> <input type="text" name="latitude"><br>
+    <label>Longitude:</label> <input type="text" name="longitude"><br>
+    <label>Pan:</label> <input type="text" name="pan"><br>
+    <label>Tilt:</label> <input type="text" name="tilt"><br>
+    <input type="submit" value="Begin">
+    <button type="button" onclick="window.location.href='/reset'">Reset</button>
+  </form>
+
+  <!-- SECTION 2: Ephemeris Input -->
+  <h2>Ephemeris Input</h2>
+  <form action="/begin_ephemeris" method="get">
+    <label>Azimuth:</label> <input type="text" name="azimuth"><br>
+    <label>Elevation:</label> <input type="text" name="elevation"><br>
+    <input type="submit" value="Begin">
+  </form>
+
+  <!-- SECTION 3: Manual Movement -->
+  <h2>Manual Movement</h2>
+  <div class="pad">
+    <div class="pad-grid">
+      <div></div>
+      <button id="up" onmousedown="startMove('up')" onmouseup="stopMove()" ontouchstart="startMove('up')" ontouchend="stopMove()">▲</button>
+      <div></div>
+
+      <button id="left" onmousedown="startMove('left')" onmouseup="stopMove()" ontouchstart="startMove('left')" ontouchend="stopMove()">◀</button>
+      <div></div>
+      <button id="right" onmousedown="startMove('right')" onmouseup="stopMove()" ontouchstart="startMove('right')" ontouchend="stopMove()">▶</button>
+
+      <div></div>
+      <button id="down" onmousedown="startMove('down')" onmouseup="stopMove()" ontouchstart="startMove('down')" ontouchend="stopMove()">▼</button>
+      <div></div>
+    </div>
+  </div>
+
+  <script>
+    let interval = null;
+
+    function startMove(direction) {
+      const btn = document.getElementById(direction);
+      btn.classList.add("pressed");
+      sendMove(direction);
+    interval = setInterval(() => sendMove(direction), 200);   <!-- Movement speed -->
+    }
+
+    function stopMove() {
+      clearInterval(interval);
+      interval = null;
+      document.querySelectorAll(".pad button").forEach(btn => btn.classList.remove("pressed"));
+    }
+
+    function sendMove(direction) {
+      fetch(`/manual?dir=${direction}`)
+        .then(res => console.log("Move:", direction))
+        .catch(err => console.error(err));
+    }
+  </script>
+
+</body>
+</html>
+<!--)rawliteral";-->

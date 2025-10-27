@@ -1,8 +1,13 @@
 #include <Arduino.h>
-#include "interpolacion.h"
-#include "spa.h"
+#include <time.h>
+
+#include "interpolationTask.h"
+#include "spaTask.h"
+#include "aoicalcTask.h"
 #include "aoicalc.h"
-#define DEBUG 1  // 0 to unable prints
+#include "interpolation.h"
+
+#define DEBUG 1  // 0 to unable _print(pt)
 
 #if DEBUG
   #define _print(pt)  Serial.print(#pt " = "); Serial.println(pt, 6);
@@ -10,28 +15,9 @@
   #define _print(pt)
 #endif
 
-#define EPSILON 1e-3
-#define N 86
-
-void printTimeDecimal(double time) {
-  int h = (int)time;
-  double min = 60.0 * (time - h);
-  double sec = 60.0 * (min - (int)min);
-
-  if (h < 10) Serial.print('0');
-  Serial.print(h);
-  Serial.print(':');
-
-  if ((int)min < 10) Serial.print('0');
-  Serial.print((int)min);
-  Serial.print(':');
-
-  if ((int)sec < 10) Serial.print('0');
-  Serial.println((int)sec);
-}
 
 
-const float matriz_X[N][N] = {
+const float matrix_X[N][N] = {
   {1.1700, 1.1520, 1.1361, 1.1242, 1.1185, 1.1210, 1.1358, 1.1638, 1.2023, 1.2486, 1.3000, 1.3528, 1.4002, 1.4354, 1.4510, 1.4400, 1.4097, 1.3768, 1.3480, 1.3301, 1.3300, 1.3478, 1.3837, 1.4447, 1.5378, 1.6700, 1.8562, 2.0810, 2.3056, 2.4915, 2.6000, 2.6064, 2.5368, 2.4290, 2.3208, 2.2500, 2.2522, 2.3300, 2.4717, 2.6656, 2.9000, 3.1581, 3.3810, 3.4940, 3.4223, 3.0911, 2.4410, 1.5616, 0.6022, -0.2880, -0.9600, -1.3165, -1.4217, -1.3688, -1.2505, -1.1600, -1.1629, -1.2438, -1.3743, -1.5259, -1.6700, -1.7791, -1.8403, -1.8469, -1.7923, -1.6700, -1.4744, -1.2267, -0.9597, -0.7065, -0.5000, -0.3629, -0.2853, -0.2512, -0.2447, -0.2500, -0.2539, -0.2548, -0.2537, -0.2518, -0.2500, -0.2484, -0.2467, -0.2458, -0.2467, -0.2500},
   {2.1583, 2.1365, 2.1199, 2.1084, 2.1077, 2.1057, 2.1191, 2.1506, 2.1913, 2.2439, 2.2967, 2.3204, 2.3362, 2.3361, 2.3133, 2.2457, 2.2003, 2.1694, 2.1459, 2.1506, 2.1834, 2.1844, 2.2057, 2.2555, 2.3432, 2.4394, 2.5868, 2.7725, 2.9406, 3.0566, 3.1095, 3.0746, 2.9808, 2.8653, 2.7741, 2.7121, 2.7003, 2.7713, 2.9014, 3.0843, 3.3075, 3.5427, 3.7376, 3.7940, 3.6386, 3.2731, 2.6661, 1.8674, 1.0414, 0.3412, -0.1293, -0.4242, -0.4981, -0.4438, -0.3572, -0.3469, -0.3845, -0.4973, -0.6514, -0.8184, -0.9736, -1.0982, -1.1765, -1.1986, -1.1579, -1.0602, -0.8959, -0.6854, -0.4627, -0.2608, -0.1067, 0.0063, 0.0623, 0.0776, 0.0680, 0.0505, 0.0357, 0.0234, 0.0126, 0.0020, -0.0138, -0.0360, -0.0584, -0.0820, -0.1076, -0.1297},
   {3.1560, 3.1327, 3.1171, 3.1148, 3.1094, 3.0992, 3.1117, 3.1468, 3.2000, 3.2658, 3.3003, 3.2973, 3.2838, 3.2514, 3.1642, 3.0563, 2.9944, 2.9631, 2.9702, 3.0269, 3.0577, 3.0461, 3.0562, 3.1035, 3.1582, 3.1943, 3.2931, 3.4336, 3.5467, 3.6155, 3.6326, 3.5616, 3.4458, 3.3436, 3.2772, 3.1781, 3.1454, 3.2061, 3.3338, 3.5270, 3.7105, 3.8954, 4.0493, 4.0406, 3.8251, 3.5126, 2.9683, 2.2537, 1.5726, 1.1032, 0.7209, 0.4835, 0.4403, 0.4884, 0.4749, 0.4427, 0.3788, 0.2363, 0.0605, -0.1227, -0.2884, -0.4228, -0.5169, -0.5532, -0.5332, -0.4716, -0.3401, -0.1666, 0.0120, 0.1602, 0.2762, 0.3657, 0.4001, 0.3966, 0.3714, 0.3434, 0.3176, 0.2937, 0.2707, 0.2455, 0.2055, 0.1601, 0.1141, 0.0665, 0.0198, -0.0113},
@@ -119,7 +105,7 @@ const float matriz_X[N][N] = {
   {46.1247, 45.9158, 46.0184, 46.2171, 46.2686, 46.2468, 46.2963, 46.1180, 45.7457, 45.1392, 44.6931, 44.2551, 43.8595, 43.9057, 44.6943, 45.4557, 45.8976, 46.3109, 46.5636, 45.8301, 45.1601, 45.2571, 45.3491, 45.4046, 45.9778, 46.5557, 46.7681, 46.9542, 46.9609, 46.9073, 46.7253, 46.1005, 45.3624, 44.9219, 44.5900, 44.4255, 44.6095, 44.8665, 45.0821, 45.4370, 45.9215, 46.5738, 47.1992, 47.6785, 47.9572, 48.3228, 48.2263, 47.9058, 47.6161, 47.4596, 47.4547, 47.5672, 47.7677, 47.9564, 48.0514, 47.9358, 47.6846, 47.2364, 46.6859, 46.2104, 45.8257, 46.2893, 47.3366, 48.0539, 48.0904, 46.9129, 44.6357, 42.0841, 38.6211, 34.6729, 33.3968, 36.9455, 41.4316, 43.8881, 46.4338, 47.7322, 47.7500, 47.3612, 46.8306, 46.1861, 44.7460, 43.2297, 41.5941, 39.8358, 38.0021, 36.1708},
   {46.7422, 46.7144, 46.7787, 46.8545, 46.8613, 46.7186, 46.3359, 45.7360, 45.0691, 44.4859, 44.1389, 44.1518, 44.6051, 45.3029, 46.0366, 46.5783, 46.7708, 46.5222, 45.9044, 45.0887, 44.3440, 44.1637, 44.1627, 44.4880, 45.0846, 45.7532, 46.0008, 46.0808, 46.1175, 46.1069, 45.9588, 45.4497, 45.1830, 44.9042, 44.4927, 44.2411, 44.3487, 44.4985, 44.8252, 45.1428, 45.6214, 46.3127, 46.8567, 47.0667, 47.7395, 48.4766, 48.4446, 48.2201, 48.0348, 47.7987, 47.6095, 47.3668, 47.1918, 46.9058, 46.4532, 45.5989, 44.8735, 44.0928, 43.5375, 43.3892, 43.8295, 44.7572, 45.9197, 47.1275, 48.1705, 48.3325, 47.4310, 46.4494, 45.8571, 45.7742, 45.8428, 45.6128, 45.8734, 46.5601, 46.7983, 46.4392, 45.0565, 43.0106, 40.8886, 39.2765, 38.3473, 38.2378, 38.5457, 39.0615, 39.5955, 39.9517}
 };
-const float matriz_Z[N][N] = {
+const float matrix_Z[N][N] = {
   {-58.5000, -58.2119, -57.9209, -57.6239, -57.3179, -57.0000, -56.6433, -56.2396, -55.8144, -55.3928, -55.0000, -54.6362, -54.2686, -53.8728, -53.4247, -52.9000, -52.3160, -51.6992, -51.0394, -50.3264, -49.5500, -48.6787, -47.7161, -46.7041, -45.6847, -44.7000, -43.7800, -42.8961, -42.0021, -41.0521, -40.0000, -38.8024, -37.4934, -36.1433, -34.8221, -33.6000, -32.5319, -31.5346, -30.4713, -29.2054, -27.6000, -25.5948, -23.5453, -21.9384, -21.2610, -22.0000, -24.5612, -28.4417, -32.7657, -36.6571, -39.2400, -39.9509, -39.1261, -37.2400, -34.7666, -32.1800, -29.7863, -27.6379, -25.8283, -24.4512, -23.6000, -23.3230, -23.4374, -23.6903, -23.8288, -23.6000, -22.8200, -21.5799, -20.0399, -18.3599, -16.7000, -15.1707, -13.7799, -12.5337, -11.4384, -10.5000, -9.7217, -9.0946, -8.6066, -8.2457, -8.0000, -7.8628, -7.8190, -7.8438, -7.9124, -8.0000},
   {-59.8638, -59.6344, -59.4005, -59.1591, -58.9028, -58.6783, -58.4075, -58.0768, -57.7370, -57.3966, -57.0885, -56.7161, -56.2873, -55.8185, -55.2461, -54.5473, -53.9538, -53.3387, -52.6757, -51.9636, -51.2551, -50.4011, -49.4495, -48.4684, -47.4876, -46.5256, -45.6462, -44.7813, -43.8855, -42.8997, -41.8446, -40.6479, -39.3323, -38.0059, -36.7280, -35.5012, -34.4361, -33.4054, -32.2527, -30.8299, -29.1350, -27.0785, -25.0395, -23.6299, -23.3375, -24.1830, -26.3573, -29.6549, -33.0854, -35.7599, -37.0654, -37.4226, -36.4648, -34.5986, -32.3239, -30.4167, -28.3099, -26.4614, -24.9788, -23.9550, -23.3036, -22.9950, -23.0475, -23.1749, -23.1241, -22.7139, -21.9449, -20.7717, -19.3327, -17.7880, -16.3927, -14.9973, -13.7365, -12.6214, -11.6582, -10.8199, -10.0799, -9.4848, -9.0225, -8.6810, -8.3920, -8.1979, -8.0872, -8.0352, -8.0170, -8.0518},
   {-61.2117, -61.0337, -60.8505, -60.6490, -60.4838, -60.3643, -60.1817, -59.9270, -59.6451, -59.3968, -59.1415, -58.7714, -58.2957, -57.6924, -56.8984, -56.1346, -55.5240, -54.9033, -54.2467, -53.6254, -52.9795, -52.1495, -51.2138, -50.2454, -49.2590, -48.3196, -47.4712, -46.6199, -45.6880, -44.6840, -43.6890, -42.5195, -41.2134, -39.9040, -38.6053, -37.3389, -36.2462, -35.1672, -33.8836, -32.3027, -30.7125, -28.7552, -26.7964, -25.6516, -25.6587, -26.0243, -27.6817, -30.3709, -32.8580, -34.1469, -34.7709, -34.7182, -33.6019, -31.7945, -30.3067, -28.9585, -27.1499, -25.5979, -24.4371, -23.7199, -22.9814, -22.5906, -22.5747, -22.5699, -22.3544, -21.8457, -21.0522, -19.9369, -18.5901, -17.2508, -16.1869, -14.9268, -13.7899, -12.7999, -11.9548, -11.1609, -10.4629, -9.9035, -9.4704, -9.0729, -8.7139, -8.4616, -8.2828, -8.1527, -8.0555, -8.1127},
@@ -208,196 +194,86 @@ const float matriz_Z[N][N] = {
   {-24.0000, -23.9802, -24.0322, -24.0939, -24.1027, -23.9964, -23.7063, -23.2503, -22.7429, -22.2990, -22.0349, -22.0441, -22.3860, -22.9131, -23.4683, -23.8803, -24.0304, -23.8502, -23.3939, -22.7902, -22.2419, -22.1153, -22.1226, -22.3761, -22.8336, -23.3429, -23.5258, -23.5875, -23.6047, -23.5750, -23.4435, -23.0502, -22.8315, -22.6203, -22.3335, -22.1730, -22.2625, -22.3847, -22.6526, -22.8849, -23.2493, -23.7953, -24.2163, -24.3622, -24.9098, -25.5219, -25.4856, -25.2863, -25.1315, -24.9558, -24.8128, -24.7070, -24.6552, -24.4684, -24.0734, -23.3489, -22.5478, -21.6288, -20.9233, -20.6236, -20.9215, -21.7700, -22.9318, -24.2092, -25.3866, -25.7890, -25.2175, -24.5459, -24.1814, -24.2327, -24.4160, -24.4059, -24.8572, -25.6761, -26.0669, -25.8698, -24.7456, -23.1486, -21.6216, -20.5765, -20.3392, -21.2301, -22.7894, -24.7271, -26.8630, -29.0158}
 };
 
-float query_points[2]; //AOIt and AOIl calculated in aoicalc
 
+
+SPAInputs g_SPAInputs;
+
+AOIInputs g_AOIInputs;
+
+InterpolInputs g_InterpolInputs;
+
+double g_azimuth, g_elevation;
+double g_AOIt, g_AOIl;
+float g_x_val, g_z_val;
 
 void setup() {
   Serial.begin(115200);
 
-  //Solar position calculation
-  spa_data spa;  //declare the SPA structure
-  int result;
-  float min, sec;
-
-  //enter required input values into SPA structure
-
-  spa.year          = 2020;
-  spa.month         = 3;
-  spa.day           = 20;
-  spa.hour          = 8;
-  spa.minute        = 0;
-  spa.second        = 0;
-  spa.timezone      = 2;
-  spa.delta_ut1     = 0;
-  spa.delta_t       = 67;
-  spa.longitude     = -3.7271;
-  spa.latitude      = 40.4535;
-  spa.elevation     = 670;
-  spa.pressure      = 820;
-  spa.temperature   = 20;
-  spa.slope         = 30;
-  spa.azm_rotation  = -10;
-  spa.atmos_refract = 0.5667;
-  spa.function      = SPA_ZA_RTS;
-
-  //call the SPA calculate function and pass the SPA structure
-
-  result = spa_calculate(&spa);
-
-  if (result == 0)  // check for SPA errors
-  {
-  // Display results
-/*  Serial.print("Julian Day:    ");
-    Serial.println(spa.jd, 6);
-
-    Serial.print("L:             ");
-    Serial.println(spa.l, 6);
-
-    Serial.print("B:             ");
-    Serial.println(spa.b, 6);
-
-    Serial.print("R:             ");
-    Serial.println(spa.r, 6);
-
-    Serial.print("H:             ");
-    Serial.println(spa.h, 6);
-
-    Serial.print("Delta Psi:     ");
-    Serial.println(spa.del_psi, 6);
-
-    Serial.print("Delta Epsilon: ");
-    Serial.println(spa.del_epsilon, 6);
-
-    Serial.print("Epsilon:       ");
-    Serial.println(spa.epsilon, 6);
+  g_SPAInputs.year          = 2020;
+  g_SPAInputs.month         = 3;
+  g_SPAInputs.day           = 20;
+  g_SPAInputs.hour          = 10;
+  g_SPAInputs.minute        = 0;
+  g_SPAInputs.second        = 0;
+  g_SPAInputs.longitude     = -3.7271;
+  g_SPAInputs.latitude      = 40.4535;
 
 
-    Serial.print("Incidence:     ");
-    Serial.println(spa.incidence, 6);
+  xTaskCreate(
+    SPATask,        // Function
+    "SPATask",      // Name
+    16000,           // Stack size
+    &g_SPAInputs,   // Parameters
+    1,              // Priority
+    NULL            // Handle
+  );
 
-*/
-    Serial.print("Zenith:        ");
-    Serial.println(spa.zenith, 6);
-
-    Serial.print("Azimuth:       ");
-    Serial.println(spa.azimuth, 6);
-
-    Serial.print("Elevation:     ");
-    Serial.println(spa.e, 6);
-
-    Serial.print("Incidence:     ");
-    Serial.println(spa.incidence, 6);
-
-
-    Serial.print("Sunrise: ");
-    printTimeDecimal(spa.sunrise);
-
-    Serial.print("Sunset: ");
-    printTimeDecimal(spa.sunset);
-  } 
-  
-  else 
-  {
-    Serial.print("SPA Error Code: ");
-    Serial.println(result);
-  }
-
+  Serial.print("spaTask created: \n");  
+  delay(1000);
+  _print(g_elevation);
+  _print(g_azimuth);
   //Ephemerids to AOI
+  
+  g_AOIInputs.azimuth = g_azimuth;
+  g_AOIInputs.elevation = g_elevation;
+  g_AOIInputs.pan = 0;
+  g_AOIInputs.tilt = 0;
+  g_AOIInputs.tilt_correction = 0;
 
-  //Test
-  AOI _aoi;
-
-  _aoi.azimuth = 232.075749;
-  _aoi.elevation = 28.126948;
-  _aoi.phi = 0;
-  _aoi.eps = 0;
-  _aoi.pan = 0;
-  _aoi.tilt = 0;
-  _aoi.pan_rad = 0;
-  _aoi.tilt_rad = 0;
-  _aoi.x = 0;
-  _aoi.y = 0;
-  _aoi.z = 0;
-  _aoi._AOI= 0;
-  _aoi.AOIl = 0;
-  _aoi.AOIt = 0;
-
-  _aoi = degToCartesian(_aoi.azimuth, _aoi.elevation); 
-  _print(_aoi.x);
-  _print(_aoi.y);
-  _print(_aoi.z);
-  _print(_aoi.phi);
-  _print(_aoi.eps);
+  xTaskCreate(
+    aoicalcTask,     // Function
+    "aoicalcTask",   // Name
+    16000,            // Stack size
+    &g_AOIInputs,    // Parameters
+    1,               // Priority
+    NULL             // Handle
+  );
+  Serial.print("aoicalcTask created: \n");  
+  delay(1000);
+  _print(g_AOIl);
+  _print(g_AOIt);
   
 
-  _aoi = applyPan(_aoi.pan, _aoi.x, _aoi.y);
-  _print(_aoi.x);
-  _print(_aoi.y);
-  _print(_aoi.z);
-  _print(_aoi.pan_rad);
-
-
-  _aoi = applyTilt(_aoi.pan, _aoi.x, _aoi.z);  
-  _print(_aoi.x);
-  _print(_aoi.y);
-  _print(_aoi.z);
-  _print(_aoi.tilt_rad);
-
-  
-  _aoi = cartesianToNewEph(_aoi.x, _aoi.y, _aoi.z);
-  _print(_aoi.x);
-  _print(_aoi.y);
-  _print(_aoi.z);
-  _print(_aoi.elevation);
-  _print(_aoi.azimuth);  
-
-
-  _aoi = degToCartesian(_aoi.azimuth, _aoi.elevation); 
-  _print(_aoi.x);
-  _print(_aoi.y);
-  _print(_aoi.z);
-  _print(_aoi.phi);
-  _print(_aoi.eps);
-
-
-  _aoi = cartesianToAngles(_aoi.x, _aoi.y, _aoi.z);
-  _print(_aoi._AOI);
-  _print(_aoi.AOIl);
-  _print(_aoi.AOIt);
-
- /* AOI angles;
-
-
-  angles = ephToAOI(spa.azimuth, spa.elevation, pan, tilt);
-  Serial.print("AOIl: ");
-  Serial.println(angles.AOIl);
-  
-  Serial.print("AOIt: ");
-  Serial.println(angles.AOIt);
-*/  
   // Interpolation
-  query_points[0] = (float)fabs(_aoi.AOIt); // AOIt (filas)
-  query_points[1] = (float)fabs(_aoi.AOIl); // AOIl (columnas)
+  g_InterpolInputs.matrix_X = matrix_X;
+  g_InterpolInputs.matrix_Z = matrix_Z;
+  g_InterpolInputs.AOIt = (float)fabs(g_AOIt); // AOIt (rows)
+  g_InterpolInputs.AOIl = (float)fabs(g_AOIl); // AOIl (columns)
 
-  //query_points[0] = ; // AOIt (filas)
-  //query_points[1] = ; // AOIl (columnas)
+    xTaskCreate(
+    InterpolationTask,     // Function
+    "interpolationTask",   // Name
+    16000,            // Stack size
+    &g_InterpolInputs,    // Parameters
+    1,               // Priority
+    NULL             // Handle
+  );
+  Serial.print("interpolTask created: \n");  
+  delay(1000);
+  _print(g_x_val);
+  _print(g_z_val);
   
-  static float x_coords[N], y_coords[N];
-  for (int k = 0; k < N; k++) {
-    x_coords[k] = k;
-    y_coords[k] = k;
-  }
 
-  
-  const float* coords[2] = {x_coords, y_coords}; 
-  int n[2] = {N, N};
-  float x_val = interpolate(coords, n, matriz_X, query_points);
-  float z_val = interpolate(coords, n, matriz_Z, query_points);
-
-  Serial.print("Interpolated x value: ");
-  Serial.println(x_val, 6);
-  Serial.print("Interpolated z value: ");
-  Serial.println(z_val, 6);
 
 }
 

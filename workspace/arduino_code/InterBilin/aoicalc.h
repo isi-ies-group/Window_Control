@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define TILT_MAX 45 // Angle in degrees 
+#include <stdbool.h> 
 
 typedef struct{
 	double _AOI;
@@ -16,6 +16,7 @@ typedef struct{
 	double pan, pan_rad;
 	double tilt, tilt_rad;
 	double x, y, z;
+	int tilt_correction;  
 } AOI;
 
 
@@ -29,20 +30,15 @@ double zClip(double _z);
 AOI applyTilt(double tilt, double _x, double _z);
 
  // Tilt correction when tilt > max_tilt
-AOI applyTiltCorrection(double _x, double _y) ;
+AOI applyTiltCorrection(double _x, double _y, int tilt_correction) ;
 
 // AOIl AOIt 
 AOI cartesianToAngles(double _x, double _y, double _z);
 
-
 AOI cartesianToNewEph(double _x, double _y, double _z);
-/*
-AOI newEphToAOI (struct Eph);
-AOI ephToNewEPh(double azimuth, double elevation, double pan, double tilt);
 
-AOI ephToToAOI(double azimuth, double elevation, double pan, double tilt);
-AOI ephToAOI2(double azimuth, double elevation, double pan, double tilt);
-*/
+AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, int tilt_correction);
+
 #ifdef __cplusplus
 }
 #endif

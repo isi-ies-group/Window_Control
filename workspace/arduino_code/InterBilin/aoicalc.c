@@ -1,10 +1,9 @@
 #include "aoicalc.h"
 #include "commonlib.h"
 #include <math.h> 
-#include <Arduino.h>
 
 
-// sferical coordinates to cartesian coordinates
+// spherical coordinates to cartesian coordinates
 AOI degToCartesian(double azimuth, double elevation) {
     AOI result;
     result.phi = deg2rad(azimuth);
@@ -35,7 +34,7 @@ AOI applyTilt(double tilt, double _x, double _z) {
     return result;
 }
 
-AOI applyTiltCorrection(double _x, double _y) {
+AOI applyTiltCorrection(double _x, double _y, int tilt_correction) {
     AOI result;
     double rot = PI; // 180°
     result.x = _y * sin(rot) + _x * cos(rot);
@@ -87,39 +86,18 @@ AOI cartesianToAngles(double _x, double _y, double _z) {
     }
     return res;
 }
-/*
-AOI ephToNewEph(double azimuth, double elevation, double pan, double tilt){
-    double coords[3] = {0,0,0};
-    Eph new_eph;
-    degToCartesian(azimuth, elevation, coords);
-    applyPan(pan, coords);
-    applyTilt(tilt, coords);
-    applyTiltCorrection(tilt, coords);   
-    return new_eph = cartesianToNewEph(coords); // H, 𝛿
-}
-AOI newEphToAOI (struct Eph) {
-    degToCartesian(Eph.azimuth, Eph.elevation, coords);
-    return cartesianToAngles(coords);
-}
-AOI ephToToAOI(double azimuth, double elevation, double pan, double tilt){
-    double coords[3] = {0,0,0};
-    Eph new_eph;
-    degToCartesian(azimuth, elevation, coords);
-    applyPan(pan, coords);
-    applyTilt(tilt, coords);
-    applyTiltCorrection(tilt, coords);   
-    new_eph = cartesianToNewEph(coords); // H, 𝛿
-    degToCartesian(Eph.azimuth, Eph.elevation, coords);
-    return cartesianToAngles(coords);
-}
 
-AOI ephToAOI2(double azimuth, double elevation, double pan, double tilt){
-    double coords[3] = {0,0,0};
-    degToCartesian(azimuth, elevation, coords);
-    applyPan(pan, coords);
-    applyTilt(tilt, coords);
-    applyTiltCorrection(tilt, coords);   
-    return cartesianToAngles(coords);
-}*/
+AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, int tilt_correction){
+    AOI result;
+    result = degToCartesian(azimuth, elevation);
+    result = applyPan(pan, result.x, result.y);
+    result = applyTilt(tilt, result.x, result.z);
+    if (tilt_correction == 1){
+        result = applyTiltCorrection(result.x, result.y, result.tilt_correction);   
+    }
+    result = cartesianToNewEph(result.x, result.y, result.z); // H, 𝛿
+    result = degToCartesian(result.azimuth, result.elevation);
+    return cartesianToAngles(result.x, result.y, result.z);
+}
 
 

@@ -93,8 +93,8 @@
     <label>Longitude:</label> <input type="text" name="longitude"><br>
     <label>Pan:</label> <input type="text" name="pan"><br>
     <label>Tilt:</label> <input type="text" name="tilt"><br>
-    <input type="submit" value="Apply">
     <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<input type="submit" value="Submit">
     <button type="button" onclick="window.location.href='/reset'">Reset</button>
   </form>
 
@@ -103,7 +103,8 @@
   <form action="/begin_ephemeris" method="get">
     <label>Azimuth:</label> <input type="text" name="azimuth"><br>
     <label>Elevation:</label> <input type="text" name="elevation"><br>
-    <input type="submit" value="Begin">
+    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<input type="submit" value="Submit">
   </form>
 
   <!-- SECTION 3: Manual Movement -->

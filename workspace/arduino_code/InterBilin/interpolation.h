@@ -1,5 +1,5 @@
-#ifndef INTERPOLACION_H
-#define INTERPOLACION_H
+#ifndef INTERPOLATION_H
+#define INTERPOLATION_H
 
 #ifdef __cplusplus
 extern "C" {

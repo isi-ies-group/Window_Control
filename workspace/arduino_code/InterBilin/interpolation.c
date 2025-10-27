@@ -1,4 +1,4 @@
-#include <interpolacion.h>
+#include <interpolation.h>
 
 
 int find_interval(const float arr[], int n, float q) {
@@ -22,13 +22,10 @@ float interpolate(const float *coords[2], const int n[2],
 
   // Find intervals and compute weights
   for (int d = 0; d < 2; d++) {
-    if (query_points[d] <= 0) t[d] = 0;
-    if (query_points[d] >= N) t[d] = 85;
-    else
-      indices[d] = find_interval(coords[d], n[d], query_points[d]);
-      float x0 = coords[d][indices[d]];
-      float x1 = coords[d][indices[d] + 1];
-      t[d] = (query_points[d] - x0) / (x1 - x0);     
+    indices[d] = find_interval(coords[d], n[d], query_points[d]);
+    float x0 = coords[d][indices[d]];
+    float x1 = coords[d][indices[d] + 1];
+    t[d] = (query_points[d] - x0) / (x1 - x0);     
   }
   // Bilinear interpolation
   int i = indices[0];

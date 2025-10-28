@@ -4,15 +4,21 @@
 
 extern float g_x_val;
 extern float g_z_val;
+extern InterpolInputs g_InterpolInputs;
+extern SemaphoreHandle_t sem_AOI_Inter;
+
 
 void InterpolationTask(void *pvParameters) {
 	InterpolInputs *inputs = (InterpolInputs *)pvParameters;
 	
 	float query_points[2];
+
+
+	xSemaphoreTake(sem_AOI_Inter, portMAX_DELAY);
+	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
+	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
 	
-	query_points[0] = inputs->AOIt;
-	query_points[1] = inputs->AOIl;
-	
+
 	for (int i = 0; i < 2; i++){
 	if (query_points[i] < 0) query_points[i] = 0;
 	if (query_points[i] > N - 1) query_points[i] = N - 1;
@@ -34,4 +40,6 @@ void InterpolationTask(void *pvParameters) {
 	Serial.println(g_x_val, 6);
 	Serial.print("Interpolated z value: ");
 	Serial.println(g_z_val, 6);
+
+	vTaskDelete(NULL); 
 }

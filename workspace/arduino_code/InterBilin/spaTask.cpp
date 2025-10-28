@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include "spaTask.h"
-
+#include "sync.h"
 #include "spa.h"
 #include <time.h>
+#include "aoicalcTask.h"
 
-extern double g_azimuth;
-extern double g_elevation;
-
+extern AOIInputs g_AOIInputs;
+extern SemaphoreHandle_t sem_SPA_AOI;
 
 int getTimezone(int year, int month, int day) {
 	int lastSundayMarch = 31;
@@ -81,27 +81,30 @@ void SPATask(void *pvParameters) {
 	spa.atmos_refract = 0.5667;
 	spa.function      = SPA_ZA_RTS;
 
+	
 	int result = spa_calculate(&spa);
 
 	if (result == 0) {
 
+		g_AOIInputs.azimuth = spa.azimuth;
+		g_AOIInputs.elevation = spa.e;
+		Serial.print("g_elvation: "); 
+		Serial.println(g_AOIInputs.elevation, 6);
 		Serial.print("Zenith: "); 
 		Serial.println(spa.zenith, 6);
 
 		Serial.print("Azimuth: "); 
 		Serial.println(spa.azimuth, 6);
-		g_azimuth = spa.azimuth;
 
 		Serial.print("Elevation: "); 
 		Serial.println(spa.e, 6);		
-		g_elevation = spa.e;
 
 		Serial.print("Sunrise: ");	
 		printTimeDecimal(spa.sunrise);
 
 		Serial.print("Sunset: ");
 		printTimeDecimal(spa.sunset);
-
+		xSemaphoreGive(sem_SPA_AOI);
 	} 
 	else
 		Serial.print("SPA Error Code: "); Serial.println(result);

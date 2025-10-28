@@ -1,11 +1,13 @@
 #include <Arduino.h>
 #include <time.h>
-
-#include "interpolationTask.h"
 #include "spaTask.h"
+#include "interpolationTask.h"
 #include "aoicalcTask.h"
-#include "aoicalc.h"
-#include "interpolation.h"
+#include "sync.h"
+
+//#include "aoicalc.h"
+//#include "interpolation.h"
+#define N 86
 
 #define DEBUG 1  // 0 to unable _print(pt)
 
@@ -14,6 +16,14 @@
 #else
   #define _print(pt)
 #endif
+
+SPAInputs g_SPAInputs;
+
+AOIInputs g_AOIInputs;
+
+InterpolInputs g_InterpolInputs;
+
+float g_x_val, g_z_val;
 
 
 
@@ -196,18 +206,12 @@ const float matrix_Z[N][N] = {
 
 
 
-SPAInputs g_SPAInputs;
-
-AOIInputs g_AOIInputs;
-
-InterpolInputs g_InterpolInputs;
-
-double g_azimuth, g_elevation;
-double g_AOIt, g_AOIl;
-float g_x_val, g_z_val;
-
 void setup() {
   Serial.begin(115200);
+
+  sem_SPA_AOI = xSemaphoreCreateBinary();
+  sem_AOI_Inter = xSemaphoreCreateBinary();
+
 
   g_SPAInputs.year          = 2020;
   g_SPAInputs.month         = 3;
@@ -222,20 +226,15 @@ void setup() {
   xTaskCreate(
     SPATask,        // Function
     "SPATask",      // Name
-    16000,           // Stack size
+    4096,           // Stack size
     &g_SPAInputs,   // Parameters
     1,              // Priority
     NULL            // Handle
   );
 
   Serial.print("spaTask created: \n");  
-  delay(1000);
-  _print(g_elevation);
-  _print(g_azimuth);
   //Ephemerids to AOI
   
-  g_AOIInputs.azimuth = g_azimuth;
-  g_AOIInputs.elevation = g_elevation;
   g_AOIInputs.pan = 0;
   g_AOIInputs.tilt = 0;
   g_AOIInputs.tilt_correction = 0;
@@ -243,36 +242,28 @@ void setup() {
   xTaskCreate(
     aoicalcTask,     // Function
     "aoicalcTask",   // Name
-    16000,            // Stack size
+    4096,            // Stack size
     &g_AOIInputs,    // Parameters
     1,               // Priority
     NULL             // Handle
   );
   Serial.print("aoicalcTask created: \n");  
-  delay(1000);
-  _print(g_AOIl);
-  _print(g_AOIt);
-  
 
   // Interpolation
   g_InterpolInputs.matrix_X = matrix_X;
   g_InterpolInputs.matrix_Z = matrix_Z;
-  g_InterpolInputs.AOIt = (float)fabs(g_AOIt); // AOIt (rows)
-  g_InterpolInputs.AOIl = (float)fabs(g_AOIl); // AOIl (columns)
+ // AOIt (rows)
+ // AOIl (columns)
 
     xTaskCreate(
     InterpolationTask,     // Function
     "interpolationTask",   // Name
-    16000,            // Stack size
+    4096,            // Stack size
     &g_InterpolInputs,    // Parameters
     1,               // Priority
     NULL             // Handle
   );
-  Serial.print("interpolTask created: \n");  
-  delay(1000);
-  _print(g_x_val);
-  _print(g_z_val);
-  
+  Serial.print("interpolTask created: \n");    
 
 
 }

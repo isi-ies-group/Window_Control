@@ -34,7 +34,7 @@ AOI applyTilt(double tilt, double _x, double _z) {
     return result;
 }
 
-AOI applyTiltCorrection(double _x, double _y, int tilt_correction) {
+AOI applyTiltCorrection(double _x, double _y, bool tilt_correction) {
     AOI result;
     double rot = PI; // 180°
     result.x = _y * sin(rot) + _x * cos(rot);
@@ -87,12 +87,12 @@ AOI cartesianToAngles(double _x, double _y, double _z) {
     return res;
 }
 
-AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, int tilt_correction){
+AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, bool tilt_correction){
     AOI result;
     result = degToCartesian(azimuth, elevation);
     result = applyPan(pan, result.x, result.y);
     result = applyTilt(tilt, result.x, result.z);
-    if (tilt_correction == 1){
+    if (tilt_correction == true){
         result = applyTiltCorrection(result.x, result.y, result.tilt_correction);   
     }
     result = cartesianToNewEph(result.x, result.y, result.z); // H, 𝛿

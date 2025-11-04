@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include "aoicalcTask.h"
 #include "aoicalc.h"
 #include "sync.h"
-#include "interpolationTask.h"
+#include "global_structs.h"
 
 extern InterpolInputs g_InterpolInputs;
 extern AOIInputs g_AOIInputs;
@@ -34,7 +33,6 @@ void aoicalcTask(void *pvParameters) {
 	}
 	aoi_data = ephToAOI(aoi_data.azimuth, aoi_data.elevation, aoi_data.pan, aoi_data.tilt, aoi_data.tilt_correction);
 	
-	//aoi_data = ephToAOI(inputs->azimuth, inputs->elevation, inputs->pan, inputs->tilt, inputs->tilt_correction);
 	g_InterpolInputs.AOIl = aoi_data.AOIl;
 	g_InterpolInputs.AOIt = aoi_data.AOIt;		
 	xSemaphoreGive(sem_AOI_Inter);

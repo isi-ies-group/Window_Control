@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "interpolation.h"
-#include "interpolationTask.h"
+#include "global_structs.h"
 
 extern float g_x_val;
 extern float g_z_val;

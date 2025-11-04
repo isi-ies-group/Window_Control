@@ -16,7 +16,7 @@ typedef struct{
 	double pan, pan_rad;
 	double tilt, tilt_rad;
 	double x, y, z;
-	int tilt_correction;  
+	bool tilt_correction;  
 } AOI;
 
 
@@ -30,14 +30,14 @@ double zClip(double _z);
 AOI applyTilt(double tilt, double _x, double _z);
 
  // Tilt correction when tilt > max_tilt
-AOI applyTiltCorrection(double _x, double _y, int tilt_correction) ;
+AOI applyTiltCorrection(double _x, double _y, bool tilt_correction) ;
 
 // AOIl AOIt 
 AOI cartesianToAngles(double _x, double _y, double _z);
 
 AOI cartesianToNewEph(double _x, double _y, double _z);
 
-AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, int tilt_correction);
+AOI ephToAOI(double azimuth, double elevation, double pan, double tilt, bool tilt_correction);
 
 #ifdef __cplusplus
 }

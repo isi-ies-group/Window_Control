@@ -3,7 +3,7 @@
 #include "sync.h"
 #include "spa.h"
 #include <time.h>
-#include "aoicalcTask.h"
+#include "global_structs.h"
 
 extern AOIInputs g_AOIInputs;
 extern SemaphoreHandle_t sem_SPA_AOI;

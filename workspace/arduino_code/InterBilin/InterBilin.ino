@@ -1,14 +1,17 @@
 #include <Arduino.h>
 #include <time.h>
+#include <TinyGPSPlus.h>
 #include "spaTask.h"
 #include "interpolationTask.h"
 #include "aoicalcTask.h"
+#include "autoMode.h"
 #include "sync.h"
 
 //#include "aoicalc.h"
 //#include "interpolation.h"
 #define N 86
-
+#define RXD2 16
+#define TXD2 17
 #define DEBUG 1  // 0 to unable _print(pt)
 
 #if DEBUG
@@ -17,13 +20,9 @@
   #define _print(pt)
 #endif
 
-SPAInputs g_SPAInputs;
 
-AOIInputs g_AOIInputs;
-
-InterpolInputs g_InterpolInputs;
-
-float g_x_val, g_z_val;
+TinyGPSPlus gps;
+HardwareSerial hs(2);
 
 
 
@@ -205,68 +204,73 @@ const float matrix_Z[N][N] = {
 };
 
 
+double lat = 40.4168;
+double lon = -3.7038;
+double pan = 0;
+double tilt = 0;
+bool tilt_correction = false;
+void setSystemTimeFromGPS() {
+    struct tm t;
+    t.tm_year = gps.date.year() - 1900;
+    t.tm_mon  = gps.date.month() - 1;
+    t.tm_mday = gps.date.day();
+    t.tm_hour = gps.time.hour(); // UTC
+    t.tm_min  = gps.time.minute();
+    t.tm_sec  = gps.time.second();
+    t.tm_isdst = 0;
+
+    //tm to epoch
+    setenv("TZ", "UTC0", 1); // UTC conversion
+    tzset();
+    time_t epoch = mktime(&t);
+
+    //time to system RTC
+    struct timeval now = { .tv_sec = epoch, .tv_usec = 0 };
+    settimeofday(&now, NULL);
+}
+
+void printLocalTime() {
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    Serial.printf("Local time: %04d-%02d-%02d %02d:%02d:%02d\n",
+                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+}
 
 void setup() {
   Serial.begin(115200);
-
-  sem_SPA_AOI = xSemaphoreCreateBinary();
-  sem_AOI_Inter = xSemaphoreCreateBinary();
-
-
-  g_SPAInputs.year          = 2020;
-  g_SPAInputs.month         = 3;
-  g_SPAInputs.day           = 20;
-  g_SPAInputs.hour          = 10;
-  g_SPAInputs.minute        = 0;
-  g_SPAInputs.second        = 0;
-  g_SPAInputs.longitude     = -3.7271;
-  g_SPAInputs.latitude      = 40.4535;
+  hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  Serial.println("Waiting for GPS time (UTC)...");
 
 
-  xTaskCreate(
-    SPATask,        // Function
-    "SPATask",      // Name
-    4096,           // Stack size
-    &g_SPAInputs,   // Parameters
-    1,              // Priority
-    NULL            // Handle
-  );
 
-  Serial.print("spaTask created: \n");  
-  //Ephemerids to AOI
-  
-  g_AOIInputs.pan = 0;
-  g_AOIInputs.tilt = 0;
-  g_AOIInputs.tilt_correction = 0;
+  unsigned long start = millis();
+  bool sync = false;
 
-  xTaskCreate(
-    aoicalcTask,     // Function
-    "aoicalcTask",   // Name
-    4096,            // Stack size
-    &g_AOIInputs,    // Parameters
-    1,               // Priority
-    NULL             // Handle
-  );
-  Serial.print("aoicalcTask created: \n");  
+  while (millis() - start < 300000 && !sync) { //wait ti
+    while (hs.available()) 
+        gps.encode(hs.read());
+    if (gps.time.isValid() && gps.date.isValid()) {
+        setSystemTimeFromGPS();
+        sync = true;
+      }
+    }
 
-  // Interpolation
-  g_InterpolInputs.matrix_X = matrix_X;
-  g_InterpolInputs.matrix_Z = matrix_Z;
- // AOIt (rows)
- // AOIl (columns)
+    if (sync) 
+        Serial.println("System time set from GPS.");
+    else 
+        Serial.println("Failed to get GPS time.");
 
-    xTaskCreate(
-    InterpolationTask,     // Function
-    "interpolationTask",   // Name
-    4096,            // Stack size
-    &g_InterpolInputs,    // Parameters
-    1,               // Priority
-    NULL             // Handle
-  );
-  Serial.print("interpolTask created: \n");    
-
-
+    // Spain timezone (CET/CEST)
+    setenv("TZ", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00", 1);
+    tzset();
 }
 
 void loop() {
+  delay(10000);
+  autoMode(lon, lat, pan, tilt, tilt_correction, matrix_X, matrix_Z);
+  printLocalTime(); 
 }

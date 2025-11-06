@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <time.h>
 #include <TinyGPSPlus.h>
-#include "spaTask.h"
-#include "interpolationTask.h"
-#include "aoicalcTask.h"
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 #include "autoMode.h"
 #include "sync.h"
 
@@ -24,7 +24,10 @@
 TinyGPSPlus gps;
 HardwareSerial hs(2);
 
-
+AsyncWebServer server(80);
+// Set these to your desired credentials.
+const char* ssid = "SW-Prototype";
+const char* password = "solar";
 
 const float matrix_X[N][N] = {
   {1.1700, 1.1520, 1.1361, 1.1242, 1.1185, 1.1210, 1.1358, 1.1638, 1.2023, 1.2486, 1.3000, 1.3528, 1.4002, 1.4354, 1.4510, 1.4400, 1.4097, 1.3768, 1.3480, 1.3301, 1.3300, 1.3478, 1.3837, 1.4447, 1.5378, 1.6700, 1.8562, 2.0810, 2.3056, 2.4915, 2.6000, 2.6064, 2.5368, 2.4290, 2.3208, 2.2500, 2.2522, 2.3300, 2.4717, 2.6656, 2.9000, 3.1581, 3.3810, 3.4940, 3.4223, 3.0911, 2.4410, 1.5616, 0.6022, -0.2880, -0.9600, -1.3165, -1.4217, -1.3688, -1.2505, -1.1600, -1.1629, -1.2438, -1.3743, -1.5259, -1.6700, -1.7791, -1.8403, -1.8469, -1.7923, -1.6700, -1.4744, -1.2267, -0.9597, -0.7065, -0.5000, -0.3629, -0.2853, -0.2512, -0.2447, -0.2500, -0.2539, -0.2548, -0.2537, -0.2518, -0.2500, -0.2484, -0.2467, -0.2458, -0.2467, -0.2500},
@@ -209,6 +212,7 @@ double lon = -3.7038;
 double pan = 0;
 double tilt = 0;
 bool tilt_correction = false;
+
 void setSystemTimeFromGPS() {
     struct tm t;
     t.tm_year = gps.date.year() - 1900;
@@ -240,13 +244,224 @@ void printLocalTime() {
                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ESP32 Control Interface</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    h2 { color: #333; }
+    form, .pad, .section {
+      background: white;
+      display: inline-block;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 150px;
+      padding: 6px;
+      margin: 6px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button, input[type="submit"] {
+      background-color: #0078D7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.1s ease;
+    }
+    button:hover, input[type="submit"]:hover {
+      background-color: #005fa3;
+    }
+    .pad-grid {
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .pad-grid button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+    }
+    .pressed {
+      background-color: #004b80 !important;
+    }
+    .manual-begin {
+      background-color: #0078D7;
+      font-size: 14px;
+      padding: 10px 25px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+    .manual-begin:hover {
+      background-color: #005fa3;
+    }
+    .auto-btn {
+      background-color: #28a745;
+      font-size: 20px;
+      padding: 15px 40px;
+      margin-top: 25px;
+      transition: background-color 0.2s ease;
+    }
+    .auto-btn:hover {
+      background-color: #218838;
+    }
+    .auto-btn.active {
+      background-color: #dc3545 !important;
+    }
+    .auto-btn.active:hover {
+      background-color: #b52a38 !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SECTION 1: Initial Configuration -->
+  <h2>Initial Configuration</h2>
+  <form action="/begin_config" method="get">
+    <label>Latitude:</label> <input type="text" name="latitude"><br>
+    <label>Longitude:</label> <input type="text" name="longitude"><br>
+    <label>Pan:</label> <input type="text" name="pan"><br>
+    <label>Tilt:</label> <input type="text" name="tilt"><br>
+    <label>Tilt_correction:</label>
+    <input type="checkbox" id="tilt_correction" name="tilt_correction" value="1"> Enable<br>
+    <label for="country">Country:</label>
+    <select id="country" name="country">
+      <option value="">-- Select your country --</option>
+      <option value="Spain">Spain</option>
+      <option value="Portugal">Portugal</option>
+      <option value="France">France</option>
+      <option value="Germany">Germany</option>
+      <option value="Italy">Italy</option>
+      <option value="United_Kingdom">United Kingdom</option>
+      <option value="Mexico">Mexico</option>
+      <option value="Argentina">Argentina</option>
+      <option value="Chile">Chile</option>
+      <option value="Colombia">Colombia</option>
+      <option value="Japan">Japan</option>
+      <option value="Australia">Australia</option>
+  </select><br>
+    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<input type="submit" value="Submit">
+    <button type="button" onclick="window.location.href='/reset'">Reset</button>
+  </form>
+
+  <!-- SECTION 2: Ephemeris Input -->
+  <h2>Ephemeris Input</h2>
+  <form action="/begin_ephemeris" method="get">
+    <label>Azimuth:</label> <input type="text" name="azimuth"><br>
+    <label>Elevation:</label> <input type="text" name="elevation"><br>
+    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<input type="submit" value="Submit">
+  </form>
+
+  <!-- SECTION 3: Manual Movement -->
+  <h2>Manual Movement</h2>
+  <div class="section">
+  <div class="pad-grid">
+    <div></div>
+    <button id="up" onmousedown="startMove('x_plus')" onmouseup="stopMove()" 
+            ontouchstart="startMove('x_plus')" ontouchend="stopMove()">X+</button>
+    <div></div>
+
+    <button id="left" onmousedown="startMove('z_minus')" onmouseup="stopMove()" 
+            ontouchstart="startMove('z_minus')" ontouchend="stopMove()">Z-</button>
+    <div></div>
+    <button id="right" onmousedown="startMove('z_plus')" onmouseup="stopMove()" 
+            ontouchstart="startMove('z_plus')" ontouchend="stopMove()">Z+</button>
+
+    <div></div>
+    <button id="down" onmousedown="startMove('x_minus')" onmouseup="stopMove()" 
+            ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
+    <div></div>
+  </div>
+    <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
+  </div>
+
+  <!-- AUTO MODE BUTTON -->
+  <br><br>
+  <button id="autoBtn" class="auto-btn" type="button" onclick="toggleAutoMode()">AUTO MODE</button>
+
+  <script>
+    let interval = null;
+    let autoMode = false;
+
+    function startMove(direction) {
+      const btn = document.getElementById(direction);
+      btn.classList.add("pressed");
+      sendMove(direction);
+      interval = setInterval(() => sendMove(direction), 200);
+    }
+
+    function stopMove() {
+      clearInterval(interval);
+      interval = null;
+      document.querySelectorAll(".pad-grid button").forEach(btn => btn.classList.remove("pressed"));
+    }
+
+    function sendMove(direction) {
+      fetch(`/manual?dir=${direction}`)
+        .then(res => console.log("Move:", direction))
+        .catch(err => console.error(err));
+    }
+
+    function toggleAutoMode() {
+      autoMode = !autoMode;
+      const btn = document.getElementById('autoBtn');
+      btn.classList.toggle('active');
+      btn.innerText = autoMode ? 'STOP AUTO' : 'AUTO MODE';
+      const endpoint = autoMode ? '/auto_mode_on' : '/auto_mode_off';
+      fetch(endpoint)
+        .then(res => console.log("Auto mode:", autoMode))
+        .catch(err => console.error(err));
+    }
+  </script>
+
+</body>
+</html>
+)rawliteral";
+
 void setup() {
   Serial.begin(115200);
   hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
   Serial.println("Waiting for GPS time (UTC)...");
+  Serial.println();
+  Serial.println("Setting up ESP32 Access Point...");
 
+  WiFi.softAP(ssid, password);
 
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("Access Point IP: ");
+  Serial.println(IP);
 
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/html", index_html);
+  });
+
+  server.onNotFound([](AsyncWebServerRequest *request){
+  request->send(404, "text/plain", "Not found");
+  });
+
+  server.begin();   // <--- ¡IMPORTANTE!
+  Serial.println("Servidor web iniciado.");
+  
   unsigned long start = millis();
   bool sync = false;
 
@@ -265,7 +480,7 @@ void setup() {
         Serial.println("Failed to get GPS time.");
 
     // Spain timezone (CET/CEST)
-    setenv("TZ", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00", 1);
+    setenv("TZ", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00", 1); //list of timezones can be added 
     tzset();
 }
 

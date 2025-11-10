@@ -2,10 +2,19 @@
 #include <time.h>
 #include "autoMode.h"
 #include "sync.h"
-#include "global_structs.h"
 #include "spaTask.h"
 #include "aoicalcTask.h"
 #include "interpolationTask.h"
+
+void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
+    spa->year   = time_info->tm_year + 1900;
+    spa->month  = time_info->tm_mon + 1;
+    spa->day    = time_info->tm_mday;
+    spa->hour   = time_info->tm_hour;
+    spa->minute = time_info->tm_min;
+    spa->second = time_info->tm_sec;
+}
+
 
 void autoMode (double lon, double lat, double pan, double tilt, bool tilt_correction,
 				const float (*matrix_X)[N], const float (*matrix_Z)[N]){
@@ -19,12 +28,8 @@ void autoMode (double lon, double lat, double pan, double tilt, bool tilt_correc
 	localtime_r(&now, &time_info);
 
 
-	g_SPAInputs.year          = time_info.tm_year;
-	g_SPAInputs.month         = time_info.tm_mon;
-	g_SPAInputs.day           = time_info.tm_mday;
-	g_SPAInputs.hour          = time_info.tm_hour;
-	g_SPAInputs.minute        = time_info.tm_min;
-	g_SPAInputs.second        = time_info.tm_sec;
+	updateSPAInputsFromTime(&time_info, &g_SPAInputs);
+
 	g_SPAInputs.longitude     = lon;
 	g_SPAInputs.latitude      = lat;
 

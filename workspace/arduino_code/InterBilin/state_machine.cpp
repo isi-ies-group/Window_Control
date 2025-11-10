@@ -1,9 +1,14 @@
-#include "stateMachine.h"
+#include "state_machine.h"
+#include "autoMode.h"
+#include "global_structs.h"
+#include "matrix.h"
 #include <Arduino.h>
 
-State thisSt;
-State nextSt;
-Event event;
+States thisSt;
+States nextSt;
+Events event;
+
+
 
 void initFSM() {
 	thisSt = STDBY;
@@ -23,18 +28,18 @@ void runMachine(){
 			break;
 		case AWAKENING:
 			break;
-		case INPUT:
+		case EPH_INPUT:
 			break;
 		case AUTO_MODE:
-			autoMode(lon, lat, pan, tilt, tilt_correction, matrix_X, matrix_Z);
+			autoMode(g_SPAInputs.longitude, g_SPAInputs.latitude, g_AOIInputs.pan, g_AOIInputs.tilt, g_AOIInputs.tilt_correction, matrix_X, matrix_Z);
 			break;
 	}
 
 }
 
-State fsmProcess(Events event, bool auto_running){
+States fsmProcess(Events event, bool auto_running){
 	if (event == begin_config) return CONFIG;
-	if (event == begin_eph_input) return INPUT;
+	if (event == begin_eph_input) return EPH_INPUT;
 	if (event == begin_manual) return MANUAL;
 	if (event == toggle_auto_mode) return AUTO_MODE;
 	if (event == go_sleep) return SLEEP;
@@ -45,9 +50,9 @@ State fsmProcess(Events event, bool auto_running){
 }
 
 
-void changeState(State newSt) {
+void changeState(States newSt) {
     bool valid = true;
-    State aux = thisSt;
+    States aux = thisSt;
 
     switch (thisSt) {
         case STDBY:

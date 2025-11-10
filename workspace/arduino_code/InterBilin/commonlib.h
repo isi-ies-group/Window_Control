@@ -1,5 +1,5 @@
-#ifndef commonlib.h
-#define commonlib.h
+#ifndef commonlib_h
+#define commonlib_h
 
 #ifdef __cplusplus
 extern "C" {

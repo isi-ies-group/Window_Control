@@ -3,25 +3,36 @@
 
 #include <Arduino.h>
 
-enum State {
-	WAIT_CONFIG,
-	STDBY;
+typedef enum {
 	CONFIG,
+	STDBY,
 	AUTO_MODE,
 	SLEEP,
 	MANUAL,
-	INPUT,
-	WAKE_UP,
-}
+	EPH_INPUT,
+	AWAKENING,
+}States;
 
-extern State thisSt;
-extern State nextSt;
+typedef enum{
+	begin_config,
+	begin_eph_input,
+	begin_manual,
+	toggle_auto_mode,
+	go_sleep,
+	wake_up,
+	woke_up,
+}Events;
+
+extern States thisSt;
+extern States nextSt;
+extern Events event;
 
 void saveState();
 void loadState();
 void runMachine();
+States fsmProcess();
 void initMachine();
-void changeState(State newState);
+void changeState(States newState);
 
 
 #endif

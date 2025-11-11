@@ -16,11 +16,13 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 }
 
 
-void autoMode (){
+void autoMode (const float (*matrix_X)[N], const float (*matrix_X)[N]){
 	AutoHandle ah;				
+
 	ah.sem_SPA_AOI = xSemaphoreCreateBinary();
 	ah.sem_AOI_Inter = xSemaphoreCreateBinary();
 	ah.sem_End = xSemaphoreCreateBinary();
+
 	if (!ah.sem_SPA_AOI || !ah.sem_AOI_Inter) {
     Serial.println("Error: semaphores not created.");
     return;
@@ -56,6 +58,7 @@ void autoMode (){
 	);
 	Serial.print("aoicalcTask created: \n");  
 
+	
 	// Interpolation
 	// AOIt (rows)
 	// AOIl (columns)

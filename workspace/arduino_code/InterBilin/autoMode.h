@@ -9,6 +9,6 @@
 
 
 void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa);
-void autoMode ();
+void autoMode(const float (*matrix_X)[N], const float (*matrix_X)[N]);
 				
 #endif	

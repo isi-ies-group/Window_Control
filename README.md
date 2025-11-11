@@ -6,7 +6,7 @@
   cartesian coordinates and move an inner glass with solar arrays following longitudinal direct sunlight, concentrated
   by this fresnel layer, using step motors.
   
-* Version [0.0.3]
+* Version [0.0.5]
 
 ### How do I get set up? ###
 

@@ -16,12 +16,15 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 }
 
 
-void autoMode (double lon, double lat, double pan, double tilt, bool tilt_correction,
-				const float (*matrix_X)[N], const float (*matrix_Z)[N]){
-					
-	sem_SPA_AOI = xSemaphoreCreateBinary();
-	sem_AOI_Inter = xSemaphoreCreateBinary();
-	
+void autoMode (){
+	AutoHandle ah;				
+	ah.sem_SPA_AOI = xSemaphoreCreateBinary();
+	ah.sem_AOI_Inter = xSemaphoreCreateBinary();
+	ah.sem_End = xSemaphoreCreateBinary();
+	if (!ah.sem_SPA_AOI || !ah.sem_AOI_Inter) {
+    Serial.println("Error: semaphores not created.");
+    return;
+  }
 	time_t now;
 	struct tm time_info;
 	time(&now);
@@ -30,39 +33,30 @@ void autoMode (double lon, double lat, double pan, double tilt, bool tilt_correc
 
 	updateSPAInputsFromTime(&time_info, &g_SPAInputs);
 
-	g_SPAInputs.longitude     = lon;
-	g_SPAInputs.latitude      = lat;
-
 
 	xTaskCreate(
 	SPATask,        // Function
 	"SPATask",      // Name
 	4096,           // Stack size
-	&g_SPAInputs,   // Parameters
+	&ah,   // Parameters
 	1,              // Priority
 	NULL            // Handle
 	);
 
 	Serial.print("spaTask created: \n");  
 	
-	//Ephemerids to AOI
-	g_AOIInputs.pan = pan;
-	g_AOIInputs.tilt = tilt;
-	g_AOIInputs.tilt_correction = tilt_correction;
 
 	xTaskCreate(
 	aoicalcTask,     // Function
 	"aoicalcTask",   // Name
 	4096,            // Stack size
-	&g_AOIInputs,    // Parameters
+	&ah,    // Parameters
 	1,               // Priority
 	NULL             // Handle
 	);
 	Serial.print("aoicalcTask created: \n");  
 
 	// Interpolation
-	g_InterpolInputs.matrix_X = matrix_X;
-	g_InterpolInputs.matrix_Z = matrix_Z;
 	// AOIt (rows)
 	// AOIl (columns)
 
@@ -70,10 +64,20 @@ void autoMode (double lon, double lat, double pan, double tilt, bool tilt_correc
 	InterpolationTask,     // Function
 	"interpolationTask",   // Name
 	4096,            // Stack size
-	&g_InterpolInputs,    // Parameters
+	&ah,    // Parameters
 	1,               // Priority
 	NULL             // Handle
 	);
 	Serial.print("interpolTask created: \n");
 
+	xSemaphoreTake(ah.sem_End, portMAX_DELAY);
+
+	vSemaphoreDelete(ah.sem_End);
+	vSemaphoreDelete(ah.sem_SPA_AOI);
+  vSemaphoreDelete(ah.sem_AOI_Inter);
+	
+	Serial.print("sems deleted: \n");
+
+	Serial.println("autoMode successfully finished.");
 }
+

@@ -1,12 +1,11 @@
 #include <Arduino.h>
 #include "spaTask.h"
-#include "sync.h"
 #include "spa.h"
+#include "sync.h"
 #include <time.h>
 #include "global_structs.h"
 
 extern AOIInputs g_AOIInputs;
-extern SemaphoreHandle_t sem_SPA_AOI;
 
 int getTimezone(int year, int month, int day) {
 	int lastSundayMarch = 31;
@@ -59,17 +58,17 @@ void printTimeDecimal(double time) {
 }
 
 void SPATask(void *pvParameters) {
-	SPAInputs *inputs = (SPAInputs *) pvParameters;
+	AutoHandle *ah = (AutoHandle*)pvParameters;
 
 	spa_data spa;
-	spa.year = inputs->year;
-	spa.month = inputs->month;
-	spa.day = inputs->day;
-	spa.hour = inputs->hour;
-	spa.minute = inputs->minute;
-	spa.second = inputs->second;
-	spa.latitude = inputs->latitude;
-	spa.longitude = inputs->longitude;
+	spa.year = g_SPAInputs.year;
+	spa.month = g_SPAInputs.month;
+	spa.day = g_SPAInputs.day;
+	spa.hour = g_SPAInputs.hour;
+	spa.minute = g_SPAInputs.minute;
+	spa.second = g_SPAInputs.second;
+	spa.latitude = g_SPAInputs.latitude;
+	spa.longitude = g_SPAInputs.longitude;
 	spa.timezone      = 2;
 	spa.delta_ut1     = 0;
 	spa.delta_t       = 67;
@@ -104,7 +103,7 @@ void SPATask(void *pvParameters) {
 
 		Serial.print("Sunset: ");
 		printTimeDecimal(spa.sunset);
-		xSemaphoreGive(sem_SPA_AOI);
+		xSemaphoreGive(ah->sem_SPA_AOI);
 	} 
 	else
 		Serial.print("SPA Error Code: "); Serial.println(result);

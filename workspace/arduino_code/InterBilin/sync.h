@@ -5,7 +5,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-extern SemaphoreHandle_t sem_SPA_AOI;
-extern SemaphoreHandle_t sem_AOI_Inter;
+typedef struct {
+  SemaphoreHandle_t sem_SPA_AOI;
+  SemaphoreHandle_t sem_AOI_Inter;
+	SemaphoreHandle_t sem_End;
+	SemaphoreHandle_t sem_AOI_Motors;
+}AutoHandle;
 
 #endif

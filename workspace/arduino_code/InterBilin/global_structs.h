@@ -30,8 +30,6 @@ typedef struct {
 } AOIInputs;
 
 typedef struct {
-    const float (*matrix_X)[N];
-    const float (*matrix_Z)[N];
     float AOIt;
     float AOIl;
 } InterpolInputs;

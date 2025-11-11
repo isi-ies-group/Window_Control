@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "autoMode.h"
-#include "sync.h"
 #include "gps.h"
 #include "web_server.h"
 #include "storage.h"

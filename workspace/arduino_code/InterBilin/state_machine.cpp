@@ -1,7 +1,6 @@
 #include "state_machine.h"
 #include "autoMode.h"
 #include "global_structs.h"
-#include "matrix.h"
 #include <Arduino.h>
 
 States thisSt;
@@ -31,7 +30,7 @@ void runMachine(){
 		case EPH_INPUT:
 			break;
 		case AUTO_MODE:
-			autoMode(g_SPAInputs.longitude, g_SPAInputs.latitude, g_AOIInputs.pan, g_AOIInputs.tilt, g_AOIInputs.tilt_correction, matrix_X, matrix_Z);
+			autoMode();
 			break;
 	}
 

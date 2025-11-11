@@ -1,6 +1,7 @@
 #include "state_machine.h"
 #include "autoMode.h"
 #include "global_structs.h"
+#include "matrices.h"
 #include <Arduino.h>
 
 States thisSt;
@@ -30,7 +31,7 @@ void runMachine(){
 		case EPH_INPUT:
 			break;
 		case AUTO_MODE:
-			autoMode();
+			autoMode(matrix_X, matrix_Z);
 			break;
 	}
 

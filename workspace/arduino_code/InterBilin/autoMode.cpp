@@ -17,14 +17,16 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 
 
 void autoMode (){
-	AutoHandle ah;				
-	ah.sem_SPA_AOI = xSemaphoreCreateBinary();
-	ah.sem_AOI_Inter = xSemaphoreCreateBinary();
-	ah.sem_End = xSemaphoreCreateBinary();
-	if (!ah.sem_SPA_AOI || !ah.sem_AOI_Inter) {
+	AutoHandle *ah;				
+	ah->sem_SPA_AOI = xSemaphoreCreateBinary();
+	ah->sem_AOI_Inter = xSemaphoreCreateBinary();
+	ah->sem_End = xSemaphoreCreateBinary();
+	if (!ah->sem_SPA_AOI || !ah->sem_AOI_Inter) {
     Serial.println("Error: semaphores not created.");
     return;
   }
+	Serial.println("semaphores created.");
+
 	time_t now;
 	struct tm time_info;
 	time(&now);
@@ -38,7 +40,7 @@ void autoMode (){
 	SPATask,        // Function
 	"SPATask",      // Name
 	4096,           // Stack size
-	&ah,   // Parameters
+	ah,   // Parameters
 	1,              // Priority
 	NULL            // Handle
 	);
@@ -50,7 +52,7 @@ void autoMode (){
 	aoicalcTask,     // Function
 	"aoicalcTask",   // Name
 	4096,            // Stack size
-	&ah,    // Parameters
+	ah,    // Parameters
 	1,               // Priority
 	NULL             // Handle
 	);
@@ -64,17 +66,17 @@ void autoMode (){
 	InterpolationTask,     // Function
 	"interpolationTask",   // Name
 	4096,            // Stack size
-	&ah,    // Parameters
+	ah,    // Parameters
 	1,               // Priority
 	NULL             // Handle
 	);
 	Serial.print("interpolTask created: \n");
 
-	xSemaphoreTake(ah.sem_End, portMAX_DELAY);
+	xSemaphoreTake(ah->sem_End, portMAX_DELAY);
 
-	vSemaphoreDelete(ah.sem_End);
-	vSemaphoreDelete(ah.sem_SPA_AOI);
-  vSemaphoreDelete(ah.sem_AOI_Inter);
+	vSemaphoreDelete(ah->sem_End);
+	vSemaphoreDelete(ah->sem_SPA_AOI);
+  vSemaphoreDelete(ah->sem_AOI_Inter);
 	
 	Serial.print("sems deleted: \n");
 

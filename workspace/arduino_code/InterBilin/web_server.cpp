@@ -1,7 +1,9 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include "web_server.h"
+#include "state_machine.h"
+#include "global_structs.h"
+#include "storage.h"
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
@@ -94,33 +96,27 @@ const char index_html[] PROGMEM = R"rawliteral(
 
   <!-- SECTION 1: Initial Configuration -->
   <h2>Initial Configuration</h2>
-  <form action="/begin_config" method="get">
+  <form action="/config_submit" method="get">
     <label>Latitude:</label> <input type="text" name="latitude"><br>
     <label>Longitude:</label> <input type="text" name="longitude"><br>
     <label>Pan:</label> <input type="text" name="pan"><br>
     <label>Tilt:</label> <input type="text" name="tilt"><br>
-    <label>Tilt_correction:</label>
-    <input type="checkbox" id="tilt_correction" name="tilt_correction" value="1"> Enable<br>
+    <label>Tilt correction:</label>
+    <input type="checkbox" name="tilt_correction" value="1"> Enable<br>
     <label for="country">Country:</label>
     <select id="country" name="country">
       <option value="">-- Select your country --</option>
       <option value="Spain">Spain</option>
-      <option value="Portugal">Portugal</option>
-      <option value="France">France</option>
-      <option value="Germany">Germany</option>
-      <option value="Italy">Italy</option>
-      <option value="United_Kingdom">United Kingdom</option>
-      <option value="Mexico">Mexico</option>
+      <option value="Spain_Canary">Spain (Canary Islands)</option>
+      <option value="UK">United Kingdom</option>
+      <option value="Poland">Poland</option>
       <option value="Argentina">Argentina</option>
-      <option value="Chile">Chile</option>
-      <option value="Colombia">Colombia</option>
-      <option value="Japan">Japan</option>
-      <option value="Australia">Australia</option>
-  </select><br>
-    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
-	<input type="submit" value="Submit">
+    </select><br>
+
+    <button type="button" onclick="window.location.href='/config_begin'">Begin</button>
+    <input type="submit" value="Submit">
     <button type="button" onclick="window.location.href='/reset'">Reset</button>
-  </form>
+	</form>
 
   <!-- SECTION 2: Ephemeris Input -->
   <h2>Ephemeris Input</h2>
@@ -199,26 +195,105 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 
 //---------------------- END HTML -----------------------
+
 AsyncWebServer server(80);
 const char* ssid = "SW-Prototype";
 const char* password = "solar";
+bool auto_mode_on = false;
+bool config_active = false;
+void serverInit() {
 
-void serverInit(){
-	Serial.println("Setting up ESP32 Access Point...");
-	WiFi.softAP(ssid, password);
+  Serial.println("Setting up ESP32 Access Point...");
+  WiFi.softAP(ssid, password);
 
-	IPAddress IP = WiFi.softAPIP();
-	Serial.print("Access Point IP: ");
-	Serial.println(IP);
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("Access Point IP: ");
+  Serial.println(IP);
 
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-	request->send(200, "text/html", index_html);
-	});
+  // Página principal
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send(200, "text/html", index_html);
+  });
 
-	server.onNotFound([](AsyncWebServerRequest *request){
-	request->send(404, "text/plain", "Not found");
-	});
+  // ----- CONFIG BEGIN -----
+  server.on("/config_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (thisSt != STDBY) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>AutoMode must be off.</p>");
+      return;
+    }
 
-	server.begin();
-	Serial.println("Web server started.");
+    config_active = true;
+    changeState(fsmProcess(begin_config, false));
+    request->send(200, "text/html",
+      "<p style='color:green;'>Config mode started. Fill the gaps and press 'Submit'.</p>");
+    Serial.println("[FSM] Config state");
+  });
+
+  // ----- CONFIG SUBMIT -----
+  server.on("/config_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!config_active || thisSt != CONFIG) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>Error: Press Begin before sending parameters.</p>");
+      return;
+    }
+
+    if (request->hasParam("latitude") && request->hasParam("longitude") &&
+      request->hasParam("pan") && request->hasParam("tilt") && request->hasParam("country")) {
+
+      g_SPAInputs.latitude  = request->getParam("latitude")->value().toDouble();
+      g_SPAInputs.longitude = request->getParam("longitude")->value().toDouble();
+      g_AOIInputs.pan       = request->getParam("pan")->value().toDouble();
+      g_AOIInputs.tilt      = request->getParam("tilt")->value().toDouble();
+      g_AOIInputs.tilt_correction = request->hasParam("tilt_correction");
+
+      String country = request->getParam("country")->value();
+
+      bool ok = true;
+      String errorMsg = "<p style='color:red;'>Wrong parameters:</p><ul>";
+
+      if (g_SPAInputs.latitude < -90 || g_SPAInputs.latitude > 90) {
+        ok = false; errorMsg += "<li>Latitude range: -90 y 90</li>";
+      }
+      if (g_SPAInputs.longitude < -180 || g_SPAInputs.longitude > 180) {
+        ok = false; errorMsg += "<li>Longitude range: -180 y 180</li>";
+      }
+
+        errorMsg += "</ul>";
+
+      if (!ok) {
+        request->send(200, "text/html", errorMsg);
+        Serial.println("[CONFIG] Invalid parameter. Try again.");
+        return;
+      }
+
+      saveData();
+      Serial.println("[CONFIG] Datos guardados correctamente en flash.");
+
+        config_active = false;
+        changeState(fsmProcess(end_config, auto_mode_on));
+
+        request->send(200, "text/html",
+          "<p style='color:green;'>Config saved. Back to standby.</p>");
+    } else {
+      request->send(200, "text/html",
+        "<p style='color:red;'>Missing parameters.</p>");
+    }
+  });
+
+  // ----- RESET -----
+  server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", "<p>Restarting...</p>");
+    Serial.println("[WEB] Reset");
+    delay(500);
+    ESP.restart();
+  });
+
+  // Not found
+  server.onNotFound([](AsyncWebServerRequest *request) {
+    request->send(404, "text/plain", "Not found");
+  });
+
+  server.begin();
+  Serial.println("Web server started.");
 }

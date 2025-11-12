@@ -42,6 +42,9 @@ extern InterpolInputs g_InterpolInputs;
 extern SemaphoreHandle_t sem_SPA_AOI;
 extern SemaphoreHandle_t sem_AOI_Inter;
 
+
+extern String g_country;
+
 extern float g_x_val;
 extern float g_z_val;
 

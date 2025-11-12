@@ -15,8 +15,11 @@ typedef enum {
 
 typedef enum{
 	begin_config,
+	end_config,
+	end_eph_input,
 	begin_eph_input,
 	begin_manual,
+	end_manual,
 	toggle_auto_mode,
 	go_sleep,
 	wake_up,
@@ -30,7 +33,7 @@ extern Events event;
 void saveState();
 void loadState();
 void runMachine();
-States fsmProcess();
+States fsmProcess(Events event, bool auto_running);
 void initMachine();
 void changeState(States newState);
 

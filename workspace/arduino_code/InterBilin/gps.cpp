@@ -1,6 +1,7 @@
 #include <TinyGPSPlus.h>
 #include <time.h>
 #include "gps.h"
+#include "global_structs.h"
 #define RXD2 16
 #define TXD2 17
 
@@ -54,9 +55,25 @@ void setLocalTime(){
 	else 
 	Serial.println("Failed to get GPS time.");
 
-	// Spain timezone (CET/CEST)
-	setenv("TZ", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00", 1); //list of timezones can be added 
-	tzset();
+    struct TZEntry { const char* country; const char* tz; };
+    static const TZEntry tzTable[] = {
+        {"Spain", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00"},
+        {"Spain_Canary", "WET0WEST,M3.5.0/01:00,M10.5.0/02:00"},
+        {"UK", "GMT0BST,M3.5.0/01:00,M10.5.0/02:00"},
+        {"Poland", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00"},
+        {"Argentina", "ART-3"}
+    };
+
+    const char* tz;
+    for (auto& entry : tzTable) {
+        if (g_country.equalsIgnoreCase(entry.country)) {
+            tz = entry.tz;
+            break;
+        }
+    }
+
+    setenv("TZ", tz, 1);
+    tzset();
 }
 	
 

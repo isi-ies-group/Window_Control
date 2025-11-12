@@ -15,10 +15,6 @@
 #endif
 
 
-double lon = -3.7038;
-double pan = 0;
-double tilt = 0;
-bool tilt_correction = false;
 
 
 

@@ -58,6 +58,7 @@ void autoMode (){
 	);
 	Serial.print("aoicalcTask created: \n");  
 
+	
 	// Interpolation
 	// AOIt (rows)
 	// AOIl (columns)

@@ -1,6 +1,7 @@
 #include "state_machine.h"
 #include "autoMode.h"
 #include "global_structs.h"
+#include "matrices.h"
 #include <Arduino.h>
 
 States thisSt;

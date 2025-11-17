@@ -2,19 +2,34 @@
 #include <time.h>
 #include "gps.h"
 #include "global_structs.h"
+
 #define RXD2 16
 #define TXD2 17
 
 TinyGPSPlus gps;
 HardwareSerial hs(2);
 
-void gpsInit(){
-	hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
-	Serial.println("Waiting for GPS time (UTC)...");
-	Serial.println();	
-
+void gpsInit() {
+    hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
+    Serial.println("Waiting for GPS time (UTC)...");
+    Serial.println();
 }
 
+
+void debugGPS() {
+    if (gps.charsProcessed() < 10) {
+        Serial.println("No NMEA data, check wiring");
+        return;
+    }
+
+    if (gps.date.isValid() && gps.time.isValid()) {
+        Serial.printf("Date: %04d-%02d-%02d  Time: %02d:%02d:%02d UTC\n",
+            gps.date.year(), gps.date.month(), gps.date.day(),
+            gps.time.hour(), gps.time.minute(), gps.time.second());
+    } else {
+        Serial.println("Time not valid yet");
+    }
+}
 
 
 void setSystemTimeFromGPS() {
@@ -27,33 +42,39 @@ void setSystemTimeFromGPS() {
     t.tm_sec  = gps.time.second();
     t.tm_isdst = 0;
 
-    //tm to epoch
-    setenv("TZ", "UTC0", 1); // UTC conversion
+
+    setenv("TZ", "UTC0", 1);
     tzset();
+
     time_t epoch = mktime(&t);
 
-    //time to system RTC
+ 
     struct timeval now = { .tv_sec = epoch, .tv_usec = 0 };
     settimeofday(&now, NULL);
+
+    Serial.println("System time set from GPS.");
 }
 
-void setLocalTime(){
-	unsigned long start = millis();
-	bool sync = false;
 
-	while (millis() - start < 300000 && !sync) {
-	while (hs.available()) 
-	gps.encode(hs.read());
-	if (gps.time.isValid() && gps.date.isValid()) {
-	setSystemTimeFromGPS();
-	sync = true;
-	}
-	}
+void setLocalTime() {
+    unsigned long start = millis();
+    bool sync = false;
 
-	if (sync) 
-	Serial.println("System time set from GPS.");
-	else 
-	Serial.println("Failed to get GPS time.");
+    while (millis() - start < 300000 && !sync) {
+        while (hs.available()) gps.encode(hs.read());
+        debugGPS();
+
+        if (gps.time.isValid() && gps.date.isValid() && gps.date.year() > 2020) {
+            setSystemTimeFromGPS();
+            sync = true;
+        }
+        delay(1000);
+    }
+
+    if (!sync) {
+        Serial.println("Failed to get GPS time. Using default system time.");
+        return;
+    }
 
     struct TZEntry { const char* country; const char* tz; };
     static const TZEntry tzTable[] = {
@@ -64,7 +85,7 @@ void setLocalTime(){
         {"Argentina", "ART-3"}
     };
 
-    const char* tz;
+    const char* tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00";
     for (auto& entry : tzTable) {
         if (g_country.equalsIgnoreCase(entry.country)) {
             tz = entry.tz;
@@ -72,10 +93,20 @@ void setLocalTime(){
         }
     }
 
+    if (!tz) {
+        tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00";  // España peninsular por defecto
+        Serial.println("Country not found in tzTable, using default (Spain).");
+    }
+
+    Serial.print("Country: ");
+    Serial.println(g_country);
+    Serial.print("Time zone string: ");
+    Serial.println(tz);
     setenv("TZ", tz, 1);
     tzset();
+
+    Serial.printf("Timezone set for %s: %s\n", g_country.c_str(), tz);
 }
-	
 
 void printLocalTime() {
     time_t now;
@@ -84,6 +115,6 @@ void printLocalTime() {
     localtime_r(&now, &timeinfo);
 
     Serial.printf("Local time: %04d-%02d-%02d %02d:%02d:%02d\n",
-                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+        timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }

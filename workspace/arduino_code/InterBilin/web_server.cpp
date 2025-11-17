@@ -4,6 +4,9 @@
 #include "state_machine.h"
 #include "global_structs.h"
 #include "storage.h"
+#include "gps.h"
+#include "eph_input_mode.h"
+#include "manual_mode.h"
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
@@ -120,11 +123,12 @@ const char index_html[] PROGMEM = R"rawliteral(
 
   <!-- SECTION 2: Ephemeris Input -->
   <h2>Ephemeris Input</h2>
-  <form action="/begin_ephemeris" method="get">
+  <form action="/eph_submit" method="get">
     <label>Azimuth:</label> <input type="text" name="azimuth"><br>
     <label>Elevation:</label> <input type="text" name="elevation"><br>
-    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
-	<input type="submit" value="Submit">
+    <button type="button" onclick="window.location.href='/eph_begin'">Begin</button>
+    <input type="submit" value="Submit">
+    <button type="button" onclick="window.location.href='/end_eph'">End</button>
   </form>
 
   <!-- SECTION 3: Manual Movement -->
@@ -147,7 +151,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
     <div></div>
   </div>
-    <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
+    <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button> 
+    <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
   </div>
 
   <!-- AUTO MODE BUTTON -->
@@ -217,7 +222,7 @@ void serverInit() {
 
   // ----- CONFIG BEGIN -----
   server.on("/config_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (thisSt != STDBY) {
+    if (thisSt == AUTO_MODE) {
       request->send(200, "text/html",
         "<p style='color:red;'>AutoMode must be off.</p>");
       return;
@@ -247,7 +252,7 @@ void serverInit() {
       g_AOIInputs.tilt      = request->getParam("tilt")->value().toDouble();
       g_AOIInputs.tilt_correction = request->hasParam("tilt_correction");
 
-      String country = request->getParam("country")->value();
+      g_country = request->getParam("country")->value();
 
       bool ok = true;
       String errorMsg = "<p style='color:red;'>Wrong parameters:</p><ul>";
@@ -268,7 +273,8 @@ void serverInit() {
       }
 
       saveData();
-      Serial.println("[CONFIG] Datos guardados correctamente en flash.");
+      setLocalTime();
+      Serial.println("[CONFIG] Data correctly saved in flash.");
 
         config_active = false;
         changeState(fsmProcess(end_config, auto_mode_on));
@@ -288,6 +294,142 @@ void serverInit() {
     delay(500);
     ESP.restart();
   });
+
+
+  // ----- EPH INPUT BEGIN -----
+  
+ server.on("/eph_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+  if (thisSt == AUTO_MODE) {
+    request->send(200, "text/html",
+      "<p style='color:red;'>AutoMode must be off.</p>");
+    return;
+  }
+
+  changeState(fsmProcess(begin_eph_input, false));
+  Serial.println("[FSM] Begin EPH_INPUT");
+
+  request->send(200, "text/html",
+    "<p style='color:green;'>EPH input started.</p>");
+});
+
+  // ----- EPH INPUT SUBMIT -----
+
+server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+  if (thisSt != EPH_INPUT) {
+      request->send(200, "text/html",
+          "<p style='color:red;'>Error: Press Begin first.</p>");
+      return;
+  }
+
+  if (!request->hasParam("azimuth") || !request->hasParam("elevation")) {
+    request->send(200, "text/html",
+      "<p style='color:red;'>Missing parameters.</p>");
+    return;
+  }
+
+  g_AOIInputs.azimuth   = request->getParam("azimuth")->value().toDouble();
+  g_AOIInputs.elevation = request->getParam("elevation")->value().toDouble();
+
+  Serial.printf("[EPH] Received az=%.2f el=%.2f\n", g_AOIInputs.azimuth, g_AOIInputs.elevation);
+  ephInputMode();
+  request->send(200, "text/html",
+    "<p style='color:green;'>EPH submitted.</p>");
+});
+
+
+  // ----- END EPH INPUT -----
+
+  server.on("/end_eph", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+  if (thisSt != EPH_INPUT) {
+    request->send(200, "text/html",
+      "<p style='color:red;'>Not in ephemeris mode.</p>");
+    return;
+  }
+
+  changeState(fsmProcess(end_eph_input, false));
+  Serial.println("[FSM] End EPH_INPUT");
+
+  request->send(200, "text/html",
+    "<p style='color:green;'>EPH input ended.</p>");
+});
+
+
+  // ----- MANUAL BEGIN -----
+
+  server.on("/manual_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+    if (thisSt == AUTO_MODE) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>AutoMode must be off.</p>");
+      return;
+    }
+
+    changeState(fsmProcess(begin_manual, false));
+
+    request->send(200, "text/html",
+      "<p style='color:green;'>Manual mode started.</p>");
+    Serial.println("[FSM] Manual begin");
+  });
+
+
+  // ----- MANUAL MOVEMENT -----
+
+  server.on("/manual", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+    if (request->hasParam("dir")) {
+      String dir = request->getParam("dir")->value();
+      manualUpdate(dir);
+    }
+  });
+
+
+  // ----- END MANUAL -----
+  server.on("/end_manual", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if(thisSt != MANUAL){
+      request->send(200, "text/html",
+        "<p style='color:red;'>Not in manual mode.</p>");
+      return;
+    }
+
+    changeState(fsmProcess(end_manual, false));
+
+    request->send(200, "text/html",
+      "<p style='color:green;'>Manual mode finished.</p>");
+    Serial.println("[FSM] Manual end");
+  });
+
+    // ----- AUTO MODE ON -----
+  server.on("/auto_mode_on", HTTP_GET, [](AsyncWebServerRequest *request) {
+  
+    if (thisSt != STDBY) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>AutoMode can only start from STDBY.</p>");
+      return;
+    }
+    auto_mode_on = true;
+    changeState(fsmProcess(toggle_auto_mode, false));
+    request->send(200, "text/html",
+      "<p style='color:green;'>Auto mode enabled.</p>");
+    Serial.println("[FSM] Auto mode ON");
+  });
+
+
+  // ----- AUTO MODE OFF -----
+  server.on("/auto_mode_off", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!auto_mode_on) { 
+      request->send(200, "text/html",
+        "<p style='color:red;'>Not in Auto mode.</p>");
+      return;   
+    }
+    changeState(fsmProcess(toggle_auto_mode, true));
+    request->send(200, "text/html",
+    "<p style='color:green;'>Auto mode disabled.</p>");
+    Serial.println("[FSM] Auto mode OFF");
+  });
+
 
   // Not found
   server.onNotFound([](AsyncWebServerRequest *request) {

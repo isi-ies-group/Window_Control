@@ -3,6 +3,7 @@
 #include "gps.h"
 #include "web_server.h"
 #include "storage.h"
+#include "state_machine.h"
 
 
 #define N 86
@@ -20,13 +21,18 @@
 
 void setup() {
   Serial.begin(115200);
+  initFSM();
+  loadData();
   gpsInit();
   serverInit();
-  loadData();
   setLocalTime();
 }
 
 void loop() {
   delay(10000);
+  runMachine();
   printLocalTime(); 
+  while (Serial2.available()) {
+    Serial.write(Serial2.read());
+  }
 }

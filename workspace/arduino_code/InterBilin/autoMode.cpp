@@ -17,7 +17,7 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 
 
 void autoMode (){
-	AutoHandle *ah;				
+	AutoHandle *ah = new AutoHandle;				
 	ah->sem_SPA_AOI = xSemaphoreCreateBinary();
 	ah->sem_AOI_Inter = xSemaphoreCreateBinary();
 	ah->sem_End = xSemaphoreCreateBinary();
@@ -72,12 +72,13 @@ void autoMode (){
 	);
 	Serial.print("interpolTask created: \n");
 
-	xSemaphoreTake(ah->sem_End, portMAX_DELAY);
-
-	vSemaphoreDelete(ah->sem_End);
-	vSemaphoreDelete(ah->sem_SPA_AOI);
-  vSemaphoreDelete(ah->sem_AOI_Inter);
-	
+	if(xSemaphoreTake(ah->sem_End, 0)){
+		vSemaphoreDelete(ah->sem_End);
+		vSemaphoreDelete(ah->sem_SPA_AOI);
+		vSemaphoreDelete(ah->sem_AOI_Inter);
+		delete ah;
+		Serial.println("AutoMode tasks finished and cleaned up");
+	}
 	Serial.print("sems deleted: \n");
 
 	Serial.println("autoMode successfully finished.");

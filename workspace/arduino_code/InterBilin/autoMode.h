@@ -8,7 +8,7 @@
 #define N 86
 
 
-mañana,void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa);
+void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa);
 void autoMode ();
 				
 #endif	

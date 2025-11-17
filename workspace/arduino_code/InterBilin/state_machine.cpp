@@ -10,30 +10,35 @@ Events event;
 
 
 void initFSM() {
-	thisSt = STDBY;
-	nextSt = STDBY;
+	nextSt = thisSt;
 	Serial.println("Machine initialized. Current State: STDBY");	
 }
 
 void runMachine(){
 	switch (thisSt){	
 		case CONFIG:
+			Serial.println("[FSM]: CONFIG");
 			break;
 		case STDBY:
+			Serial.println("[FSM]: STDBY");
 			break;
 		case MANUAL:
+			Serial.println("[FSM]: MANUAL");
 			break;
 		case SLEEP:
+			Serial.println("[FSM]: SLEEP");
 			break;
 		case AWAKENING:
+			Serial.println("[FSM]: AWAKENING");
 			break;
 		case EPH_INPUT:
+			Serial.println("[FSM]: EPH_INPUT");
 			break;
 		case AUTO_MODE:
+			Serial.println("[FSM]: AUTO_MODE");
 			autoMode();
 			break;
 	}
-
 }
 
 States fsmProcess(Events event, bool auto_running){
@@ -55,32 +60,39 @@ States fsmProcess(Events event, bool auto_running){
 
 void changeState(States newSt) {
     bool valid = true;
-    States aux = thisSt;
 
     switch (thisSt) {
 			case STDBY:
-				if (newSt == AUTO_MODE || newSt == CONFIG || newSt == MANUAL || newSt == SLEEP)
-					aux = newSt;
+				if (newSt == AUTO_MODE || newSt == CONFIG || newSt == MANUAL || newSt == SLEEP
+						|| newSt == EPH_INPUT)
+					nextSt = newSt;
 				else valid = false;
 				break;
 			case CONFIG:
-						
+					nextSt = newSt;
+				break;						
 			case AUTO_MODE:
 				if (newSt == STDBY || newSt == SLEEP)
-					aux = newSt;
+					nextSt = newSt;
 				else valid = false;
 				break;
 			case SLEEP:
 				if (newSt == AWAKENING)
-					aux = newSt;
+					nextSt = newSt;
 				else valid = false;
 				break;
 			case AWAKENING:
 				if (newSt == STDBY || newSt == AUTO_MODE)
-					aux = newSt;
+					nextSt = newSt;
 				else valid = false;
+			break;
+			case EPH_INPUT:
+					nextSt = newSt;
+			break;		
+			case MANUAL:
+					nextSt = newSt;
 			break;
 	}
 
-    if (valid) thisSt = aux;
+    if (valid) thisSt = nextSt;
 }

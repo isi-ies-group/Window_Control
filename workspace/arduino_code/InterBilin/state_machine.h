@@ -34,7 +34,7 @@ void saveState();
 void loadState();
 void runMachine();
 States fsmProcess(Events event, bool auto_running);
-void initMachine();
+void initFSM();
 void changeState(States newState);
 
 

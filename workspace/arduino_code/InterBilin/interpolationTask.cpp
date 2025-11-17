@@ -46,5 +46,6 @@ void InterpolationTask(void *pvParameters) {
 	Serial.print("Interpolated z value: ");
 	Serial.println(g_z_val, 6);
 	xSemaphoreGive(ah->sem_End);
+	
 	vTaskDelete(NULL); 
 }

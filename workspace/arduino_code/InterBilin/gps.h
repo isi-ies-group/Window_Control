@@ -6,5 +6,6 @@ void printLocalTime();
 void gpsInit();
 void setSystemTimeFromGPS();
 void setLocalTime();
+void debugGPS();
 
 #endif

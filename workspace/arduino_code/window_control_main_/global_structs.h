@@ -3,7 +3,7 @@
 
 
 #include <Arduino.h>
-
+#include "global_def.h"
 
 typedef struct {
     int year;
@@ -29,6 +29,8 @@ typedef struct {
 typedef struct {
     float AOIt;
     float AOIl;
+    const float (*matrix_X)[N];
+    const float (*matrix_Z)[N];
 } InterpolInputs;
 
 

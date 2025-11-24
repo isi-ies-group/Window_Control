@@ -1,1 +1,0 @@
-void aoicalcTask(void *pvParameters);

@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include "interpolation.h"
 #include "global_structs.h"
-#include "sync.h"
+#include "matrices.h"
+#include "interpolation_func.h"
 
 
 
@@ -10,12 +11,11 @@ extern float g_z_val;
 extern InterpolInputs g_InterpolInputs;
 
 
-void InterpolationTask(void *pvParameters) {
-	AutoHandle *ah = (AutoHandle*)pvParameters;
-
+void interpolation_f(){
 	float query_points[2];
 
-	xSemaphoreTake(ah->sem_AOI_Inter, portMAX_DELAY);
+	g_InterpolInputs.matrix_X = matrix_X;
+	g_InterpolInputs.matrix_Z = matrix_Z;
 
 	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
 	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
@@ -36,15 +36,13 @@ void InterpolationTask(void *pvParameters) {
 	int n[2] = {N, N};
 
 
-	g_x_val = interpolate(coords, n, ah->matrix_X, query_points);
-	g_z_val = interpolate(coords, n, ah->matrix_Z, query_points);
+	g_x_val = interpolate(coords, n, 	g_InterpolInputs.matrix_X, query_points);
+	g_z_val = interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points);
 
 	
 	Serial.print("Interpolated x value: ");
 	Serial.println(g_x_val, 6);
 	Serial.print("Interpolated z value: ");
 	Serial.println(g_z_val, 6);
-	xSemaphoreGive(ah->sem_End);
-	
-	vTaskDelete(NULL); 
+ 
 }

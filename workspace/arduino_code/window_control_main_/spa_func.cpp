@@ -1,7 +1,6 @@
 #include <Arduino.h>
-#include "spaTask.h"
+#include "spa_func.h"
 #include "spa.h"
-#include "sync.h"
 #include <time.h>
 #include "global_structs.h"
 
@@ -57,9 +56,7 @@ void printTimeDecimal(double time) {
   Serial.println((int)sec);
 }
 
-void SPATask(void *pvParameters) {
-	AutoHandle *ah = (AutoHandle*)pvParameters;
-
+void SPA_f() {
 	spa_data spa;
 	spa.year = g_SPAInputs.year;
 	spa.month = g_SPAInputs.month;
@@ -103,10 +100,8 @@ void SPATask(void *pvParameters) {
 
 		Serial.print("Sunset: ");
 		printTimeDecimal(spa.sunset);
-		xSemaphoreGive(ah->sem_SPA_AOI);
 	} 
 	else
 		Serial.print("SPA Error Code: "); Serial.println(result);
 
-	vTaskDelete(NULL); 
 }

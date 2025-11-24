@@ -88,24 +88,37 @@
 
   <!-- SECTION 1: Initial Configuration -->
   <h2>Initial Configuration</h2>
-  <form action="/begin_config" method="get">
-    <label>Latitude:</label> <input type="text" name="latitude"><br>
-    <label>Longitude:</label> <input type="text" name="longitude"><br>
-    <label>Pan:</label> <input type="text" name="pan"><br>
-    <label>Tilt:</label> <input type="text" name="tilt"><br>
-    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
-	<input type="submit" value="Submit">
-    <button type="button" onclick="window.location.href='/reset'">Reset</button>
-  </form>
+<form action="/config_submit" method="get">
+	<label>Latitude:</label> <input type="text" name="latitude"><br>
+	<label>Longitude:</label> <input type="text" name="longitude"><br>
+	<label>Pan:</label> <input type="text" name="pan"><br>
+	<label>Tilt:</label> <input type="text" name="tilt"><br>
+	<label>Tilt correction:</label>
+	<input type="checkbox" name="tilt_correction" value="1"> Enable<br>
+	<label for="country">Country:</label>
+	<select id="country" name="country">
+		<option value="">-- Select your country --</option>
+		<option value="Spain">Spain</option>
+		<option value="Spain_Canary">Spain (Canary Islands)</option>
+		<option value="UK">United Kingdom</option>
+		<option value="Poland">Poland</option>
+		<option value="Argentina">Argentina</option>
+	</select><br>
 
-  <!-- SECTION 2: Ephemeris Input -->
-  <h2>Ephemeris Input</h2>
-  <form action="/begin_ephemeris" method="get">
-    <label>Azimuth:</label> <input type="text" name="azimuth"><br>
-    <label>Elevation:</label> <input type="text" name="elevation"><br>
-    <button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<button type="button" onclick="window.location.href='/config_begin'">Begin</button>
 	<input type="submit" value="Submit">
-  </form>
+	<button type="button" onclick="window.location.href='/reset'">Reset</button>
+	</form>
+
+
+	<!-- SECTION 2: Ephemeris Input -->
+	<h2>Ephemeris Input</h2>
+	<form action="/begin_ephemeris" method="get">
+	<label>Azimuth:</label> <input type="text" name="azimuth"><br>
+	<label>Elevation:</label> <input type="text" name="elevation"><br>
+	<button type="button" onclick="window.location.href='/begin_config'">Begin</button>
+	<input type="submit" value="Submit">
+</form>
 
   <!-- SECTION 3: Manual Movement -->
   <h2>Manual Movement</h2>

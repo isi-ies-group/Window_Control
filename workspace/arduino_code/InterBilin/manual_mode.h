@@ -4,6 +4,6 @@
 #include <Arduino.h>
 
 
-void manualUpdate(const String& dir);
+void manualMode(const String& dir);
 
 #endif

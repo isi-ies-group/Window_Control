@@ -6,7 +6,6 @@
 #include "state_machine.h"
 
 
-#define N 86
 #define DEBUG 1  // 0 to unable _print(pt)
 
 #if DEBUG
@@ -29,9 +28,9 @@ void setup() {
 }
 
 void loop() {
-  delay(10000);
+  //delay(10000);
   runMachine();
-  printLocalTime(); 
+  //printLocalTime(); 
   while (Serial2.available()) {
     Serial.write(Serial2.read());
   }

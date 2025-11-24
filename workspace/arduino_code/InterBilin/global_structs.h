@@ -3,9 +3,6 @@
 
 
 #include <Arduino.h>
-//#include <semphr.h>
-
-#define N 86
 
 
 typedef struct {
@@ -32,8 +29,6 @@ typedef struct {
 typedef struct {
     float AOIt;
     float AOIl;
-    const float (*matrix_X)[N];
-    const float (*matrix_Z)[N];
 } InterpolInputs;
 
 

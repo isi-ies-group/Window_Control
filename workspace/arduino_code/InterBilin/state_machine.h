@@ -30,8 +30,7 @@ extern States thisSt;
 extern States nextSt;
 extern Events event;
 
-void saveState();
-void loadState();
+String stateToText(States s);
 void runMachine();
 States fsmProcess(Events event, bool auto_running);
 void initFSM();

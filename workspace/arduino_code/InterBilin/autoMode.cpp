@@ -5,7 +5,7 @@
 #include "spaTask.h"
 #include "aoicalcTask.h"
 #include "interpolationTask.h"
-
+#include "matrices.h"
 void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
     spa->year   = time_info->tm_year + 1900;
     spa->month  = time_info->tm_mon + 1;
@@ -21,6 +21,8 @@ void autoMode (){
 	ah->sem_SPA_AOI = xSemaphoreCreateBinary();
 	ah->sem_AOI_Inter = xSemaphoreCreateBinary();
 	ah->sem_End = xSemaphoreCreateBinary();
+	ah->matrix_X = matrix_X;
+	ah->matrix_Z = matrix_Z;
 	if (!ah->sem_SPA_AOI || !ah->sem_AOI_Inter) {
     Serial.println("Error: semaphores not created.");
     return;
@@ -73,7 +75,7 @@ void autoMode (){
 	);
 	Serial.print("interpolTask created: \n");
 
-	if(xSemaphoreTake(ah->sem_End, 0)){
+	if(xSemaphoreTake(ah->sem_End, portMAX_DELAY)){
 		vSemaphoreDelete(ah->sem_End);
 		vSemaphoreDelete(ah->sem_SPA_AOI);
 		vSemaphoreDelete(ah->sem_AOI_Inter);

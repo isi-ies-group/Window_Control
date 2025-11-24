@@ -7,7 +7,8 @@
 Preferences prefs;
 
 void saveData() {
-    prefs.begin("config", false);  // "config" = namespace NVS
+    prefs.begin("config", false);
+
 
     prefs.putDouble("latitude",  g_SPAInputs.latitude);
     prefs.putDouble("longitude", g_SPAInputs.longitude);
@@ -51,7 +52,15 @@ void loadData() {
     Serial.print("Tilt: "); Serial.println(g_AOIInputs.tilt);
     Serial.print("Tilt correction: "); Serial.println(g_AOIInputs.tilt_correction ? "true" : "false");
     Serial.print("Country: "); Serial.println(g_country);
-    Serial.print("FSM state: "); Serial.println((int)thisSt);
+    Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
 
     prefs.end();
+}
+void savePos(){
+    prefs.putFloat("x_pos", g_x_val);
+    prefs.putFloat("z_pos", g_z_val);
+}
+void loadPos(){
+    g_x_val = prefs.getFloat("x_pos", 1.0);
+    g_z_val = prefs.getFloat("z_pos", -1.0);
 }

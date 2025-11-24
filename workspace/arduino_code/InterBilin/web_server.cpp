@@ -47,6 +47,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       cursor: pointer;
       font-size: 14px;
       transition: background-color 0.1s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
     button:hover, input[type="submit"]:hover {
       background-color: #005fa3;
@@ -97,106 +101,159 @@ const char index_html[] PROGMEM = R"rawliteral(
 </head>
 <body>
 
-  <!-- SECTION 1: Initial Configuration -->
-  <h2>Initial Configuration</h2>
-  <form action="/config_submit" method="get">
-    <label>Latitude:</label> <input type="text" name="latitude"><br>
-    <label>Longitude:</label> <input type="text" name="longitude"><br>
-    <label>Pan:</label> <input type="text" name="pan"><br>
-    <label>Tilt:</label> <input type="text" name="tilt"><br>
-    <label>Tilt correction:</label>
-    <input type="checkbox" name="tilt_correction" value="1"> Enable<br>
-    <label for="country">Country:</label>
-    <select id="country" name="country">
-      <option value="">-- Select your country --</option>
-      <option value="Spain">Spain</option>
-      <option value="Spain_Canary">Spain (Canary Islands)</option>
-      <option value="UK">United Kingdom</option>
-      <option value="Poland">Poland</option>
-      <option value="Argentina">Argentina</option>
-    </select><br>
+<!-- SECTION 1: Initial Configuration -->
+<h2>Initial Configuration</h2>
+<form action="/config_submit" method="get">
+  <label>Latitude:</label> <input type="text" name="latitude"><br>
+  <label>Longitude:</label> <input type="text" name="longitude"><br>
+  <label>Pan:</label> <input type="text" name="pan"><br>
+  <label>Tilt:</label> <input type="text" name="tilt"><br>
+  <label>Tilt correction:</label>
+  <input type="checkbox" name="tilt_correction" value="1"> Enable<br>
 
-    <button type="button" onclick="window.location.href='/config_begin'">Begin</button>
-    <input type="submit" value="Submit">
-    <button type="button" onclick="window.location.href='/reset'">Reset</button>
-	</form>
+  <label for="country">Country:</label>
+  <select id="country" name="country">
+    <option value="">-- Select your country --</option>
+    <option value="Spain">Spain</option>
+    <option value="Spain_Canary">Spain (Canary Islands)</option>
+    <option value="UK">United Kingdom</option>
+    <option value="Poland">Poland</option>
+    <option value="Argentina">Argentina</option>
+  </select><br>
 
-  <!-- SECTION 2: Ephemeris Input -->
-  <h2>Ephemeris Input</h2>
-  <form action="/eph_submit" method="get">
-    <label>Azimuth:</label> <input type="text" name="azimuth"><br>
-    <label>Elevation:</label> <input type="text" name="elevation"><br>
-    <button type="button" onclick="window.location.href='/eph_begin'">Begin</button>
-    <input type="submit" value="Submit">
-    <button type="button" onclick="window.location.href='/end_eph'">End</button>
-  </form>
+  <button type="button" onclick="window.location.href='/config_begin'">Begin</button>
+  <input type="submit" value="Submit">
+  <button type="button" onclick="window.location.href='/reset'">Reset</button>
+</form>
 
-  <!-- SECTION 3: Manual Movement -->
-  <h2>Manual Movement</h2>
-  <div class="section">
+<!-- SECTION 2: Ephemeris Input -->
+<h2>Ephemeris Input</h2>
+<form action="/eph_submit" method="get">
+  <label>Azimuth:</label> <input type="text" name="azimuth"><br>
+  <label>Elevation:</label> <input type="text" name="elevation"><br>
+  <button type="button" onclick="window.location.href='/eph_begin'">Begin</button>
+  <input type="submit" value="Submit">
+  <button type="button" onclick="window.location.href='/end_eph'">End</button>
+</form>
+
+<!-- SECTION 3: Manual Movement -->
+<h2>Manual Movement</h2>
+<div class="section">
   <div class="pad-grid">
     <div></div>
-    <button id="up" onmousedown="startMove('x_plus')" onmouseup="stopMove()" 
-            ontouchstart="startMove('x_plus')" ontouchend="stopMove()">X+</button>
+    <button id="x_plus"
+      onmousedown="startMove('x_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('x_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X+</button>
     <div></div>
 
-    <button id="left" onmousedown="startMove('z_minus')" onmouseup="stopMove()" 
-            ontouchstart="startMove('z_minus')" ontouchend="stopMove()">Z-</button>
+    <button id="z_minus"
+      onmousedown="startMove('z_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('z_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">Z-</button>
     <div></div>
-    <button id="right" onmousedown="startMove('z_plus')" onmouseup="stopMove()" 
-            ontouchstart="startMove('z_plus')" ontouchend="stopMove()">Z+</button>
 
+    <button id="z_plus"
+      onmousedown="startMove('z_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('z_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">Z+</button>
     <div></div>
-    <button id="down" onmousedown="startMove('x_minus')" onmouseup="stopMove()" 
-            ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
+
+    <button id="x_minus"
+      onmousedown="startMove('x_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('x_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X-</button>
     <div></div>
   </div>
-    <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button> 
-    <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
-  </div>
 
-  <!-- AUTO MODE BUTTON -->
-  <br><br>
-  <button id="autoBtn" class="auto-btn" type="button" onclick="toggleAutoMode()">AUTO MODE</button>
+  <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
+  <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
+</div>
 
-  <script>
-    let interval = null;
-    let autoMode = false;
+<!-- SECTION 4: Status -->
+<h2>System Status</h2>
+<div id="sys" style="
+  background:white;
+  display:inline-block;
+  padding:20px;
+  border-radius:12px;
+  margin:10px;
+  box-shadow:0 0 10px rgba(0,0,0,0.1);">
 
-    function startMove(direction) {
-      const btn = document.getElementById(direction);
-      btn.classList.add("pressed");
-      sendMove(direction);
-      interval = setInterval(() => sendMove(direction), 200);
-    }
+  State: <b><span id="st">---</span></b><br>
+  Latitude: <span id="lat">---</span><br>
+  Longitude: <span id="lon">---</span><br>
+  Pan: <span id="pan">---</span><br>
+  Tilt: <span id="tilt">---</span><br>
+  Tilt correction: <span id="tc">---</span><br>
+  Date: <span id="date">---</span><br>
+  Time: <span id="time">---</span><br>
+  X position: <span id="x">---</span><br>
+  Z position: <span id="z">---</span><br>
+</div>
 
-    function stopMove() {
-      clearInterval(interval);
-      interval = null;
-      document.querySelectorAll(".pad-grid button").forEach(btn => btn.classList.remove("pressed"));
-    }
 
-    function sendMove(direction) {
-      fetch(`/manual?dir=${direction}`)
-        .then(res => console.log("Move:", direction))
-        .catch(err => console.error(err));
-    }
 
-    function toggleAutoMode() {
-      autoMode = !autoMode;
-      const btn = document.getElementById('autoBtn');
-      btn.classList.toggle('active');
-      btn.innerText = autoMode ? 'STOP AUTO' : 'AUTO MODE';
-      const endpoint = autoMode ? '/auto_mode_on' : '/auto_mode_off';
-      fetch(endpoint)
-        .then(res => console.log("Auto mode:", autoMode))
-        .catch(err => console.error(err));
-    }
-  </script>
+<!-- SECTION 5: AUTO MODE BUTTON -->
+<br><br>
+<button id="autoBtn" class="auto-btn" type="button" onclick="toggleAutoMode()">AUTO MODE</button>
+
+<script>
+let interval = null;
+let autoMode = false;
+
+setInterval(() => {
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById("st").innerText = d.state;
+      document.getElementById("lat").innerText = d.latitude;
+      document.getElementById("lon").innerText = d.longitude;
+      document.getElementById("pan").innerText = d.pan;
+      document.getElementById("tilt").innerText = d.tilt;
+      document.getElementById("tc").innerText = d.tilt_correction ? "Enabled" : "Disabled";
+      document.getElementById("date").innerText = d.date;
+      document.getElementById("time").innerText = d.time;
+      document.getElementById("x").innerText = d.x;
+      document.getElementById("z").innerText = d.z;
+    })
+    .catch(e => console.error(e));
+}, 300);
+
+function startMove(direction) {
+  const btn = document.getElementById(direction);
+  btn.classList.add("pressed");
+  sendMove(direction);
+  interval = setInterval(() => sendMove(direction), 200);
+}
+
+function stopMove() {
+  clearInterval(interval);
+  interval = null;
+  document.querySelectorAll(".pad-grid button").forEach(btn => btn.classList.remove("pressed"));
+}
+
+function sendMove(direction) {
+  fetch(`/manual?dir=${direction}`)
+    .then(res => console.log("Move:", direction))
+    .catch(err => console.error(err));
+}
+
+function toggleAutoMode() {
+  autoMode = !autoMode;
+  const btn = document.getElementById('autoBtn');
+
+  btn.classList.toggle('active');
+  btn.innerText = autoMode ? 'STOP AUTO' : 'AUTO MODE';
+
+  const endpoint = autoMode ? '/auto_mode_on' : '/auto_mode_off';
+
+  fetch(endpoint)
+    .then(res => console.log("Auto mode:", autoMode))
+    .catch(err => console.error(err));
+}
+</script>
 
 </body>
 </html>
 )rawliteral";
+
 
 
 //---------------------- END HTML -----------------------
@@ -221,6 +278,7 @@ void serverInit() {
   });
 
   // ----- CONFIG BEGIN -----
+
   server.on("/config_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (thisSt == AUTO_MODE) {
       request->send(200, "text/html",
@@ -236,6 +294,7 @@ void serverInit() {
   });
 
   // ----- CONFIG SUBMIT -----
+
   server.on("/config_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (!config_active || thisSt != CONFIG) {
       request->send(200, "text/html",
@@ -378,11 +437,14 @@ server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
   // ----- MANUAL MOVEMENT -----
 
   server.on("/manual", HTTP_GET, [](AsyncWebServerRequest *request) {
-
-    if (request->hasParam("dir")) {
-      String dir = request->getParam("dir")->value();
-      manualUpdate(dir);
+    if (!request->hasParam("dir")) {
+      request->send(400, "text/plain", "Missing dir");
+      return;
     }
+    String dir = request->getParam("dir")->value();
+    Serial.printf("[WEB] Recieved dir = %s\n", dir.c_str());
+    manualMode(dir);
+    request->send(200, "text/plain", "OK");
   });
 
 
@@ -429,6 +491,40 @@ server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
     "<p style='color:green;'>Auto mode disabled.</p>");
     Serial.println("[FSM] Auto mode OFF");
   });
+
+
+
+  // ----- STATUS -----
+server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
+
+    struct tm timeinfo;
+    char date_str[11];
+    char time_str[9];
+
+    if (getLocalTime(&timeinfo)) {
+      strftime(date_str, sizeof(date_str), "%Y-%m-%d", &timeinfo);
+      strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+    } else {
+      strcpy(date_str, "----/--/--");
+      strcpy(time_str, "--:--:--");
+    }
+
+    String json = "{";
+    json += "\"state\":\"" + stateToText(thisSt) + "\",";
+    json += "\"latitude\":" + String(g_SPAInputs.latitude, 6) + ",";
+    json += "\"longitude\":" + String(g_SPAInputs.longitude, 6) + ",";
+    json += "\"pan\":" + String(g_AOIInputs.pan, 3) + ",";
+    json += "\"tilt\":" + String(g_AOIInputs.tilt, 3) + ",";
+    json += "\"tilt_correction\":" + String(g_AOIInputs.tilt_correction ? "true" : "false") + ",";
+    json += "\"date\":\"" + String(date_str) + "\",";
+    json += "\"time\":\"" + String(time_str) + "\",";
+    json += "\"x\":" + String(g_x_val, 3) + ",";
+    json += "\"z\":" + String(g_z_val, 3);
+    json += "}";
+
+    request->send(200, "application/json", json);
+});
+
 
 
   // Not found

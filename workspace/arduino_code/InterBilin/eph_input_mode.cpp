@@ -2,12 +2,17 @@
 #include "aoicalcTask.h"
 #include "interpolationTask.h"
 #include "sync.h"
+#include "global_structs.h"
+#include "matrices.h"
+
 void ephInputMode(){
 
 	AutoHandle *ah = new AutoHandle;
 	ah->sem_SPA_AOI = xSemaphoreCreateBinary();
 	ah->sem_AOI_Inter = xSemaphoreCreateBinary();
 	ah->sem_End = xSemaphoreCreateBinary();
+	ah->matrix_X = matrix_X;
+	ah->matrix_Z = matrix_Z;
 
 	xSemaphoreGive(ah->sem_SPA_AOI);
 	

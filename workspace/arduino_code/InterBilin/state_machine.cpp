@@ -2,45 +2,107 @@
 #include "autoMode.h"
 #include "global_structs.h"
 #include "matrices.h"
+#include <time.h>
 #include <Arduino.h>
+
 
 States thisSt;
 States nextSt;
-Events event;
-
+States prevSt;
+unsigned long start = millis();
 
 
 void initFSM() {
 	nextSt = thisSt;
-	Serial.println("Machine initialized. Current State: STDBY");	
-}
+	prevSt = thisSt;
 
-void runMachine(){
-	switch (thisSt){	
-		case CONFIG:
-			Serial.println("[FSM]: CONFIG");
+	Serial.print("Machine initialized. Current State: ");
+
+	switch (thisSt) {
+		case CONFIG:      
+			Serial.println("CONFIG"); 
 			break;
-		case STDBY:
-			Serial.println("[FSM]: STDBY");
+		case STDBY:       
+			Serial.println("STDBY"); 
 			break;
-		case MANUAL:
-			Serial.println("[FSM]: MANUAL");
+		case MANUAL:      
+			Serial.println("MANUAL"); 
 			break;
-		case SLEEP:
-			Serial.println("[FSM]: SLEEP");
+		case SLEEP:       
+			Serial.println("SLEEP"); 
 			break;
-		case AWAKENING:
-			Serial.println("[FSM]: AWAKENING");
+		case AWAKENING:   
+			Serial.println("AWAKENING"); 
 			break;
-		case EPH_INPUT:
-			Serial.println("[FSM]: EPH_INPUT");
+		case EPH_INPUT:   
+			Serial.println("EPH_INPUT");
 			break;
-		case AUTO_MODE:
-			Serial.println("[FSM]: AUTO_MODE");
-			autoMode();
+		case AUTO_MODE:   
+			Serial.println("AUTO_MODE");
+			break;
+		default:          
+			Serial.println("UNKNOWN");
 			break;
 	}
+}	
+
+String stateToText(States s) {
+    switch (s) {
+      case STDBY: return "STDBY";
+      case CONFIG: return "CONFIG";
+      case MANUAL: return "MANUAL";
+      case EPH_INPUT: return "EPH_INPUT";
+      case AUTO_MODE: return "AUTO_MODE";
+      case SLEEP: return "SLEEP";
+      case AWAKENING: return "AWAKENING";
+      default: return "UNKNOWN";
+    }
 }
+
+
+void runMachine() {
+	if (thisSt != prevSt) {
+		switch (thisSt) {
+			case CONFIG:
+				Serial.println("[FSM]: CONFIG");
+				break;
+			case STDBY:
+				Serial.println("[FSM]: STDBY");
+				break;
+
+			case MANUAL:
+				Serial.println("[FSM]: MANUAL");
+				break;
+
+			case SLEEP:
+				Serial.println("[FSM]: SLEEP");
+				break;
+
+			case AWAKENING:
+				Serial.println("[FSM]: AWAKENING");
+				break;
+
+			case EPH_INPUT:
+				Serial.println("[FSM]: EPH_INPUT");
+				break;
+
+			case AUTO_MODE:
+				Serial.println("[FSM]: AUTO_MODE");
+				start = millis();
+			break;
+		}
+
+		prevSt = thisSt;
+	}
+
+	if (thisSt == AUTO_MODE) {
+		if (millis() - start >= 5000) {
+			autoMode();
+			start = millis();       
+		}
+	}
+}
+
 
 States fsmProcess(Events event, bool auto_running){
 	if (event == begin_config) return CONFIG;

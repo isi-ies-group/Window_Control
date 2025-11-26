@@ -60,7 +60,7 @@ void setLocalTime() {
     unsigned long start = millis();
     bool sync = false;
 
-    while (millis() - start < 300000 && !sync) {
+    while (millis() - start < 5000 && !sync) {
         while (hs.available()) gps.encode(hs.read());
         debugGPS();
 

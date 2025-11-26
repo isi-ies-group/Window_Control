@@ -2,6 +2,7 @@
 #include "autoMode.h"
 #include "global_structs.h"
 #include "matrices.h"
+#include "storage.h"
 #include <time.h>
 #include <Arduino.h>
 
@@ -131,7 +132,7 @@ void changeState(States newSt) {
 					nextSt = newSt;
 				else valid = false;
 				break;
-			case CONFIG:
+			case CONFIG:33
 					nextSt = newSt;
 				break;						
 			case AUTO_MODE:

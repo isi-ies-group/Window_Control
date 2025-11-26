@@ -38,9 +38,6 @@ extern SPAInputs g_SPAInputs;
 extern AOIInputs g_AOIInputs;
 extern InterpolInputs g_InterpolInputs;
 
-extern SemaphoreHandle_t sem_SPA_AOI;
-extern SemaphoreHandle_t sem_AOI_Inter;
-
 
 extern String g_country;
 

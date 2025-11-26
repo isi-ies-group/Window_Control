@@ -26,7 +26,7 @@ void saveData() {
     Serial.print("Tilt: "); Serial.println(g_AOIInputs.tilt);
     Serial.print("Tilt correction: "); Serial.println(g_AOIInputs.tilt_correction ? "true" : "false");
     Serial.print("Country: "); Serial.println(g_country);
-    Serial.print("FSM state: "); Serial.println((int)thisSt);
+    Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
 
     prefs.end();
 }
@@ -41,8 +41,7 @@ void loadData() {
     g_AOIInputs.tilt_correction = prefs.getBool("tilt_corr", false);
 
     g_country = prefs.getString("country",  "Spain");
-    if ((States)prefs.getInt("fsm_state", STDBY) == AUTO_MODE) thisSt = AUTO_MODE;
-    else thisSt = STDBY;
+    thisSt = (States)prefs.getInt("fsm_state", STDBY);
 
     
     Serial.println("Data loaded from flash:");

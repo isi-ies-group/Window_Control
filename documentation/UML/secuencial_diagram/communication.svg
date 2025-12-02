@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Bouml (http://bouml.free.fr/) -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="767" height="504" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g>
+	<rect fill="#ffffff" stroke="none" stroke-opacity="1" x="167" y="295" width="29" height="36" />
+	<ellipse fill="none" stroke="black" stroke-width="1" stroke-opacity="1" cx="181" cy="298" rx="3" ry="3" />
+	<line stroke="black" stroke-opacity="1" x1="175" y1="303" x2="186" y2="303" />
+	<line stroke="black" stroke-opacity="1" x1="181" y1="301" x2="181" y2="308" />
+	<line stroke="black" stroke-opacity="1" x1="181" y1="308" x2="176" y2="314" />
+	<line stroke="black" stroke-opacity="1" x1="181" y1="308" x2="186" y2="314" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-anchor="middle" x="182" y="327">:User</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="457" y="298" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="396" y="314" width="64" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="392" y="294" width="65" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="425" y="308">:WebServer</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="606" y="214" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="565" y="230" width="44" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="561" y="210" width="45" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="584" y="224">:FSM</text>
+</g>
+<g>
+	<rect fill="#ffffff" stroke="none" stroke-opacity="1" x="309" y="291" width="27" height="36" />
+	<ellipse fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" cx="322" cy="301" rx="10" ry="10" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-anchor="middle" x="323" y="323">:web</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="605" y="452" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="560" y="468" width="48" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="556" y="448" width="49" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="581" y="462">:Storage</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="624" y="305" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="556" y="321" width="71" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="552" y="301" width="72" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="588" y="315">:GPSManager</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="751" y="193" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="695" y="209" width="59" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="691" y="189" width="60" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="721" y="203">:AutoMode</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="474" y="472" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="407" y="488" width="70" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="403" y="468" width="71" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="439" y="482">:ManualMode</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="339" y="467" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="262" y="483" width="80" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="258" y="463" width="81" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="299" y="477">:EphInputMode</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="196" y1="312" x2="308" y2="309" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="336" y1="308" x2="391" y2="306" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="585" y1="234" x2="588" y2="300" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="446" y1="293" x2="560" y2="232" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="415" y1="318" x2="307" y2="462" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="438" y1="318" x2="569" y2="447" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="610" y1="216" x2="690" y2="204" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="426" y1="318" x2="438" y2="467" />
+</g>
+</svg>

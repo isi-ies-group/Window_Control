@@ -5,7 +5,7 @@
 #include "interpolation_func.h"
 #include "spa_func.h"
 #include "matrices.h"
-
+#include "movement.h"
 void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
     spa->year   = time_info->tm_year + 1900;
     spa->month  = time_info->tm_mon + 1;
@@ -27,6 +27,7 @@ void autoMode (){
     SPA_f();
     aoicalc_f();
     interpolation_f();
+    move(g_x_val, g_z_val);
 	Serial.println("autoMode successfully finished.");
 }
 

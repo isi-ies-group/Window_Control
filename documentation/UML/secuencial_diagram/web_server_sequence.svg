@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Bouml (http://bouml.free.fr/) -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="730" height="400" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="198" y="73" width="10" height="573" />
+</g>
+<g>
+	<rect fill="#dfffdf" stroke="black" stroke-width="1" stroke-opacity="1" x="403" y="53" width="10" height="577" />
+</g>
+<g>
+	<ellipse fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" cx="203" cy="16" rx="10" ry="10" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-anchor="middle" x="204" y="38">:web</text>
+</g>
+<g>
+	<ellipse fill="none" stroke="black" stroke-width="1" stroke-opacity="1" cx="64" cy="7" rx="3" ry="3" />
+	<line stroke="black" stroke-opacity="1" x1="58" y1="12" x2="69" y2="12" />
+	<line stroke="black" stroke-opacity="1" x1="64" y1="10" x2="64" y2="17" />
+	<line stroke="black" stroke-opacity="1" x1="64" y1="17" x2="59" y2="23" />
+	<line stroke="black" stroke-opacity="1" x1="64" y1="17" x2="69" y2="23" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-anchor="middle" x="65" y="36">:User</text>
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="203" y1="47" x2="203" y2="400" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="408" y1="44" x2="408" y2="400" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="629" y1="45" x2="629" y2="400" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="64" y1="45" x2="64" y2="400" />
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="439" y="7" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="378" y="23" width="64" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="374" y="3" width="65" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="407" y="17">:WebServer</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="661" y="8" width="3" height="19" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="597" y="24" width="67" height="3" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="593" y="4" width="68" height="20" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="627" y="18">:MainSystem</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="414" y1="63" x2="624" y2="63" />
+	<polygon fill="#000000" stroke="none" points="414,63 418,59 418,67" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="403" y="237" width="10" height="24" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="59" y="219" width="10" height="39" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="403" y="136" width="10" height="39" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="198" y="219" width="10" height="28" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="403" y="74" width="10" height="40" />
+</g>
+<g>
+	<rect fill="#ededed" stroke="black" stroke-width="1" stroke-opacity="1" x="255" y="98" width="64" height="61" />
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" text-anchor="middle" x="268" y="111">loop</text>
+	<line stroke="black" stroke-opacity="1" x1="255" y1="116" x2="280" y2="116" />
+	<line stroke="black" stroke-opacity="1" x1="280" y1="116" x2="289" y2="107" />
+	<line stroke="black" stroke-opacity="1" x1="289" y1="107" x2="289" y2="98" />
+</g>
+<g>
+	<rect fill="#dfffdf" stroke="black" stroke-width="1" stroke-opacity="1" x="624" y="54" width="10" height="50" />
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" x="525" y="53">serverInit()</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="209" y1="242" x2="403" y2="242" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 399 238 L 403 242 L 399 246" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="70" y1="224" x2="198" y2="224" />
+	<polygon fill="#000000" stroke="none" points="198,224 194,220 194,228" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="209" y1="79" x2="403" y2="79" />
+	<polygon fill="#000000" stroke="none" points="209,79 213,75 213,83" />
+</g>
+<g>
+	<rect fill="#ffdca8" stroke="black" stroke-width="1" stroke-opacity="1" x="204" y="136" width="10" height="24" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="215" y1="141" x2="403" y2="141" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 219 137 L 215 141 L 219 145" />
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" x="269" y="131">status()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" x="74" y="216">send_request(in : string)</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="8" fill="#000000" xml:space="preserve" x="230" y="233">handleRequest(in cmd : string)</text>
+</g>
+</svg>

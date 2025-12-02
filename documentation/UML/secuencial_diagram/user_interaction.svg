@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Bouml (http://bouml.free.fr/) -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="755" height="835" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="604" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="552" y="23" width="54" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="549" y="4" width="55" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="577" y="17">:AutoMode</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="685" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="615" y="23" width="72" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="612" y="4" width="73" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="649" y="17">:EphInputMode</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="448" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="407" y="23" width="43" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="404" y="4" width="44" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="426" y="17">fsm:FSM</text>
+</g>
+<g>
+	<ellipse fill="none" stroke="black" stroke-width="1" stroke-opacity="1" cx="28" cy="6" rx="2" ry="2" />
+	<line stroke="black" stroke-opacity="1" x1="23" y1="11" x2="33" y2="11" />
+	<line stroke="black" stroke-opacity="1" x1="28" y1="9" x2="28" y2="16" />
+	<line stroke="black" stroke-opacity="1" x1="28" y1="16" x2="23" y2="21" />
+	<line stroke="black" stroke-opacity="1" x1="28" y1="16" x2="32" y2="21" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-anchor="middle" x="29" y="33">:User</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="751" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="690" y="23" width="63" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="687" y="4" width="64" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="719" y="17">:ManualMode</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="372" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="294" y="23" width="80" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="291" y="4" width="81" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="332" y="17">gps:GPSManager</text>
+</g>
+<g>
+	<ellipse fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" cx="125" cy="13" rx="9" ry="9" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-anchor="middle" x="125" y="33">:web</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="538" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="463" y="23" width="77" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="460" y="4" width="78" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="499" y="17">storage:Storage</text>
+</g>
+<g>
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="278" y="7" width="2" height="18" />
+	<rect fill="#cbcbcb" stroke="none" stroke-opacity="1" x="204" y="23" width="76" height="2" />
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="201" y="4" width="77" height="19" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-decoration="underline" text-anchor="middle" x="240" y="17">web:WebServer</text>
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="720" y1="41" x2="720" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="578" y1="41" x2="578" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="500" y1="41" x2="500" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="125" y1="41" x2="125" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="650" y1="41" x2="650" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="427" y1="41" x2="427" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="29" y1="41" x2="29" y2="835" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="333" y1="41" x2="333" y2="835" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="277" width="9" height="24" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="329" y="199" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="646" y="634" width="9" height="34" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="291" width="9" height="24" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="497" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="497" width="9" height="35" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="520" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="176" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="772" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="696" width="9" height="29" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="712" width="9" height="23" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="106" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="106" width="9" height="23" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="440" width="9" height="27" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="278" width="9" height="35" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="109" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="771" width="9" height="28" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="573" width="9" height="25" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="163" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="574" y="329" width="9" height="23" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="442" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="25" y="697" width="9" height="24" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="446" width="9" height="46" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="423" y="313" width="9" height="134" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="588" width="9" height="52" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="121" y="163" width="9" height="32" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="496" y="230" width="9" height="22" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="716" y="804" width="9" height="26" />
+</g>
+<g>
+	<rect fill="#ededed" stroke="black" stroke-width="1" stroke-opacity="1" x="550" y="311" width="57" height="54" />
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" text-anchor="middle" x="563" y="323">loop</text>
+	<line stroke="black" stroke-opacity="1" x1="550" y1="328" x2="575" y2="328" />
+	<line stroke="black" stroke-opacity="1" x1="575" y1="328" x2="584" y2="319" />
+	<line stroke="black" stroke-opacity="1" x1="584" y1="319" x2="584" y2="311" />
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="711">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="436">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="627">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="773">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="30" y="438">toggleAutoMode()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="347" y="801">manualMode()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="258" y="287">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="30" y="584">ephInputSubmit()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="367" y="226">saveData()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="38" y="160">configSubmit()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="110">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="171">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="256" y="709">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="440" y="332">autoMode()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="259" y="199">setLocalTime()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="33" y="493">ephInputBegin()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="257" y="516">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="44" y="768">manualDir()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="41" y="102">configBegin()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="258" y="105">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="258" y="443">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="146" y="287">handleRequest()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="258" y="173">changeState()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="30" y="274">toggleAutoMode()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="38" y="696">manualBegin()</text>
+</g>
+<g>
+	<text font-family="MS Shell Dlg 2" font-size="7" fill="#000000" xml:space="preserve" x="345" y="629">ephInputMode()</text>
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="168" x2="121" y2="168" />
+	<polygon fill="#000000" stroke="none" points="121,168 117,164 117,172" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="283" x2="121" y2="283" />
+	<polygon fill="#000000" stroke="none" points="121,283 117,279 117,287" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="777" x2="121" y2="777" />
+	<polygon fill="#000000" stroke="none" points="121,777 117,773 117,781" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="502" x2="121" y2="502" />
+	<polygon fill="#000000" stroke="none" points="121,502 117,498 117,506" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="593" x2="121" y2="593" />
+	<polygon fill="#000000" stroke="none" points="121,593 117,589 117,597" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="433" y1="341" x2="574" y2="341" />
+	<polygon fill="#000000" stroke="none" points="574,341 570,337 570,345" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="705" x2="121" y2="705" />
+	<polygon fill="#000000" stroke="none" points="121,705 117,701 117,709" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="446" x2="121" y2="446" />
+	<polygon fill="#000000" stroke="none" points="121,446 117,442 117,450" />
+</g>
+<g>
+	<line stroke="black" stroke-dasharray="18,6"  stroke-opacity="1" x1="241" y1="41" x2="241" y2="835" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="440" width="9" height="27" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="287" width="9" height="28" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="168" width="9" height="79" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="105" width="9" height="40" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="705" width="9" height="23" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="778" width="9" height="40" />
+</g>
+<g>
+	<rect fill="#ffffc0" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="631" width="9" height="38" />
+</g>
+<g>
+	<rect fill="#ffc0ff" stroke="black" stroke-width="1" stroke-opacity="1" x="237" y="503" width="9" height="26" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="445" x2="237" y2="445" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 441 L 237 445 L 233 449" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="180" x2="237" y2="180" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 176 L 237 180 L 233 184" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="296" x2="237" y2="296" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 292 L 237 296 L 233 300" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="525" x2="423" y2="525" />
+	<polygon fill="#000000" stroke="none" points="423,525 419,521 419,529" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="235" x2="496" y2="235" />
+	<polygon fill="#000000" stroke="none" points="496,235 492,231 492,239" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="717" x2="423" y2="717" />
+	<polygon fill="#000000" stroke="none" points="423,717 419,713 419,721" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="296" x2="423" y2="296" />
+	<polygon fill="#000000" stroke="none" points="423,296 419,292 419,300" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="182" x2="423" y2="182" />
+	<polygon fill="#000000" stroke="none" points="423,182 419,178 419,186" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="452" x2="423" y2="452" />
+	<polygon fill="#000000" stroke="none" points="423,452 419,448 419,456" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="639" x2="646" y2="639" />
+	<polygon fill="#000000" stroke="none" points="646,639 642,635 642,643" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="812" x2="716" y2="812" />
+	<polygon fill="#000000" stroke="none" points="716,812 712,808 712,816" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="635" x2="237" y2="635" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 631 L 237 635 L 233 639" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="720" x2="237" y2="720" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 716 L 237 720 L 233 724" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="782" x2="237" y2="782" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 778 L 237 782 L 233 786" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="113" x2="423" y2="113" />
+	<polygon fill="#000000" stroke="none" points="423,113 419,109 419,117" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="247" y1="206" x2="329" y2="206" />
+	<polygon fill="#000000" stroke="none" points="329,206 325,202 325,210" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="35" y1="111" x2="121" y2="111" />
+	<polygon fill="#000000" stroke="none" points="121,111 117,107 117,115" />
+</g>
+<g>
+	<line stroke="black" stroke-opacity="1" x1="131" y1="119" x2="237" y2="119" />
+	<path fill="none" stroke="black" stroke-opacity="1" d="M 233 115 L 237 119 L 233 123" />
+</g>
+</svg>

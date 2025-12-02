@@ -14,17 +14,18 @@ unsigned long start = millis();
 
 
 void initFSM() {
+	thisSt = STDBY;
 	nextSt = thisSt;
 	prevSt = thisSt;
 
 	Serial.print("Machine initialized. Current State: ");
 
 	switch (thisSt) {
-		case CONFIG:      
-			Serial.println("CONFIG"); 
-			break;
 		case STDBY:       
 			Serial.println("STDBY"); 
+			break;
+		case CONFIG:      
+			Serial.println("CONFIG"); 
 			break;
 		case MANUAL:      
 			Serial.println("MANUAL"); 
@@ -132,7 +133,7 @@ void changeState(States newSt) {
 					nextSt = newSt;
 				else valid = false;
 				break;
-			case CONFIG:33
+			case CONFIG:
 					nextSt = newSt;
 				break;						
 			case AUTO_MODE:

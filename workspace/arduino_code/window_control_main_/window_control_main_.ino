@@ -4,7 +4,7 @@
 #include "web_server.h"
 #include "storage.h"
 #include "state_machine.h"
-
+#include "movement.h"
 
 #define DEBUG 1  // 0 to unable _print(pt)
 
@@ -25,6 +25,7 @@ void setup() {
   gpsInit();
   serverInit();
   setLocalTime();
+  //init_motors();
 }
 
 void loop() {

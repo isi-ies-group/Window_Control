@@ -2,15 +2,14 @@
 
 ### What is this repository for? ###
 
-* This repository will hold an Arduino proyect to locate a window with fresnel lenses on Earth, transform ephemeris to
-  cartesian coordinates and move an inner glass with solar arrays following longitudinal direct sunlight, concentrated
-  by this fresnel layer, using step motors.
+* This repository holds an Arduino project able to control the mechatronic system for the integrated tracking of a building-integrated concentrator photovoltaics modules (BICPV) based on linear Fresnel lenses.
+* The program locates a BICPV window on Earth, transforms ephemeris to cartesian coordinates and moves the rear glass (solar cell arrar) using stepper motors to accomodate solar movements throughout the day.
   
 * Version [0.0.5]
 
 ### How do I get set up? ###
 
-* Summary of set up
+* Summary of setup
 * Configuration
 * Dependencies
 * Database configuration

@@ -34,7 +34,8 @@
 <img width="100%" alt="image" src="https://github.com/user-attachments/assets/826b3fa0-f6d5-4a54-92b8-6f444c76ebec" />
 * Esta actuación ha sido financiada mediante el programa de actividades de I+D con referencia TEC-2024/ECO-72 y acrónimo 4EVERPV-CM concedido por la Comunidad de Madrid a través de la Dirección General de Investigación e Innovación Tecnológica a través de la Orden 3177/2024.
 
-<img width="194" height="260" alt="image" src="https://github.com/user-attachments/assets/6afbcb7b-0ccd-4889-b737-5a2f03837ba9" /> <img width="574" height="391" alt="image" src="https://github.com/user-attachments/assets/882d9e1b-7ea3-456f-bff9-0c1f1cd667b9" />
+<img width="194" height="260" alt="image" src="https://github.com/user-attachments/assets/6afbcb7b-0ccd-4889-b737-5a2f03837ba9" /> <img height="260" alt="image" src="https://github.com/user-attachments/assets/51639f79-adf4-435d-bda8-9c334cea3339" />
+
 
 
 

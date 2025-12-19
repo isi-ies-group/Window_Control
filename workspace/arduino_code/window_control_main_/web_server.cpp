@@ -161,6 +161,13 @@ const char index_html[] PROGMEM = R"rawliteral(
       ontouchstart="startMove('x_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X-</button>
     <div></div>
   </div>
+<form action="/manual_goto" method="get" style="margin-top:10px;">
+  <label>X target:</label>
+  <input type="text" name="x"><br>
+  <label>Z target:</label>
+  <input type="text" name="z"><br><br>
+  <input type="submit" value="Go to X / Z">
+</form>
 
   <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
   <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
@@ -447,6 +454,47 @@ server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "OK");
   });
 
+// ----- MANUAL GOTO X / Z -----
+server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+  if (thisSt != MANUAL) {
+    request->send(200, "text/html",
+      "<p style='color:red;'>Not in manual mode.</p>");
+    return;
+  }
+
+  bool updated = false;
+
+  // X
+  if (request->hasParam("x")) {
+    String xStr = request->getParam("x")->value();
+    if (xStr.length() > 0) {    
+      g_x_val = xStr.toDouble();
+      updated = true;
+    }
+  }
+
+  // Z
+  if (request->hasParam("z")) {
+    String zStr = request->getParam("z")->value();
+    if (zStr.length() > 0) {            
+      g_z_val = zStr.toDouble();
+      updated = true;
+    }
+  }
+
+  if (!updated) {
+    request->send(200, "text/html",
+      "<p style='color:orange;'>No values updated.</p>");
+    return;
+  }
+
+  Serial.printf("[MANUAL_GOTO] Target X=%.3f Z=%.3f\n", g_x_val, g_z_val);
+  moveTo(g_x_val,g_z_val);
+
+  request->send(200, "text/html",
+    "<p style='color:green;'>Manual target updated.</p>");
+});
 
   // ----- END MANUAL -----
   server.on("/end_manual", HTTP_GET, [](AsyncWebServerRequest *request) {

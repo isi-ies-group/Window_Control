@@ -11,6 +11,7 @@ HardwareSerial hs(2);
 
 void gpsInit() {
     hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
+    //hs.begin(9600, SERIAL_8N1);
     Serial.println("Waiting for GPS time (UTC)...");
     Serial.println();
 }

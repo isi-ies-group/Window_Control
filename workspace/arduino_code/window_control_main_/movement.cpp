@@ -2,34 +2,64 @@
 #include "movement.h"
 
 // ---------------- PINOUT -----------------
+//18 puede q sea otro naranja 
+const int DIR1 = 13;   //INTERNAL VERTICAL DIR, RIGHT 
+const int STEP1 = 12;  //INTERNAL VERTICAL STEP, RIGHT associate with YRI end-STOP
+const int DIR2 = 15;    //14 EXTERNAL VERTICAL DIR, RIGHT
+const int STEP2 = 7; // 27 EXTERNAL VERTICAL STEP, RIGHT  associate with YRE end-STOP
+const int DIR3 = 5; // 33  HORIZONTAL DIR, RIGHT
+const int STEP3 = 6;// 32  HORIZONTAL DIR, RIGHT
+const int enable = 4; //23  ENABLE right
+//1 y 2 eran 36 y 39
+const int STEP4 = 8; //16 INTERNAL VERTICAL STEP,  LEFT yellow   associate with YLI end-STOP
+const int DIR4 = 3; // 17 INTERNAL VERTICAL DIR, LEFT  orange
+const int DIR5 = 8; //4  EXTERNAL VERTICAL DIR,  LEFT green
+const int STEP5 = 46; //0  EXTERNAL VERTICAL STEP,  LEFT      associate with YLE end-STOP
+const int DIR6 = 11; // 15  HORIZONTAL DIR,  LEFT
+const int STEP6 = 10; //5  Z, left;  
+//(quiza cambiar p5 por p15)
+const int YLE = 35; //36 vp END-STOP Y AXIS, LEFT EXTERNAL
+const int YLI = 36; //39 vn END-STOP Y AXIS, LEFT INTERNAL
+const int YRE = 37; // 34 END-STOP Y AXIS, RIGHT EXTERNAL
+const int YRI = 38; //35 END-STOP Y AXIS, RIGHT INTERNAL
+const int ZL = 39; // 25 END-STOP Z AXIS, LEFT
+const int ZR = 40;// 26 END-STOP Z AXIS, LEFT
 
-const int DIR1 = 13;  
-const int STEP1 = 12; 
-const int DIR2 = 14;  
-const int STEP2 = 27;  
-const int DIR3 = 33; 
-const int STEP3 = 32;        
-const int enable = 23;  
 
-const int DIR4 = 6; //eran 17 y 16 para el italiano
-const int STEP4 = 7; 
-const int DIR5 = 4;  
-const int STEP5 = 0;  
-const int DIR6 = 5;  
-const int STEP6 = 15;  
+// const int DIR1 = 13;  //INTERNAL VERTICAL DIR, RIGHT  
+// const int STEP1 = 12; //INTERNAL VERTICAL STEP, RIGHT associate with YRI end-STOP
+// const int DIR2 = 14;  //EXTERNAL VERTICAL DIR, RIGHT  
+// const int STEP2 = 27;  //EXTERNAL VERTICAL STEP, RIGHT  associate with YRE end-STOP
+// const int DIR3 = 33;  // HORIZONTAL DIR, RIGHT
+// const int STEP3 = 32;  // HORIZONTAL DIR, RIGHT         
+// const int enable = 23;  // ENABLE right
+// //const int enable2 = 5;  // ENABLE left
 
-const int YLE = 36;
-const int YLI = 39;
-const int YRE = 34;
-const int YRI = 35;
-const int ZL = 25;
-const int ZR = 26;
+// const int DIR4 = 17;  //INTERNAL VERTICAL DIR, LEFT  orange
+// const int STEP4 = 16; //INTERNAL VERTICAL STEP,  LEFT yellow   associate with YLI end-STOP
+// const int DIR5 = 4;  //EXTERNAL VERTICAL DIR,  LEFT green
+// const int STEP5 = 0;  //EXTERNAL VERTICAL STEP,  LEFT      associate with YLE end-STOP
+// const int DIR6 = 5;  // HORIZONTAL DIR,  LEFT
+// const int STEP6 = 15;  // HORIZONTAL STEP,  LEFT
+
+// const int YLE = 36; //END-STOP Y AXIS, LEFT EXTERNAL
+// const int YLI = 39; //END-STOP Y AXIS, LEFT INTERNAL
+// const int YRE = 34; //END-STOP Y AXIS, RIGHT EXTERNAL
+// const int YRI = 35; //END-STOP Y AXIS, RIGHT INTERNAL
+// const int ZL = 25;  //END-STOP Z AXIS, LEFT
+// const int ZR = 26;  //END-STOP Z AXIS, LEFT
+
+
+
+
+
+
 
 // ---------------- VARIABLES -----------------
 
 long CurrentStep1 = 0;    // vertical
 long CurrentStep2 = 0;    // horizontal
-long Speed = 600;         // microseconds
+long Speed = 500;         // microseconds
 
 long verticalSteps;
 long horizontalSteps;

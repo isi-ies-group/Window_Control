@@ -13,3 +13,7 @@ void manualMode(const String& dir){
     move(g_x_val, g_z_val);
     Serial.printf("[MANUAL] dir=%s x=%.2f z=%.2f\n", dir.c_str(), g_x_val, g_z_val);
 }
+
+void moveTo(float x, float z){
+    move(g_x_val, g_z_val);
+}

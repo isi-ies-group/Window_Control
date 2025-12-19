@@ -5,5 +5,5 @@
 
 
 void manualMode(const String& dir);
-
+void moveTo(float x, float z);
 #endif

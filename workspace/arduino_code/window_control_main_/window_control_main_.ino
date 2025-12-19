@@ -25,7 +25,7 @@ void setup() {
   gpsInit();
   serverInit();
   setLocalTime();
-  //init_motors();
+  init_motors();
 }
 
 void loop() {

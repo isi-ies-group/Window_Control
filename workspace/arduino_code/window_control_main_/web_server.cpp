@@ -64,9 +64,9 @@ const char index_html[] PROGMEM = R"rawliteral(
       margin-bottom: 10px;
     }
     .pad-grid button {
-      width: 60px;
+      width: 80px;
       height: 60px;
-      font-size: 24px;
+      font-size: 16px;
     }
     .pressed {
       background-color: #004b80 !important;
@@ -136,9 +136,13 @@ const char index_html[] PROGMEM = R"rawliteral(
   <button type="button" onclick="window.location.href='/end_eph'">End</button>
 </form>
 
+
 <!-- SECTION 3: Manual Movement -->
 <h2>Manual Movement</h2>
 <div class="section">
+
+  <!-- PAD ORIGINAL X / Z -->
+  <h3>Global X / Z</h3>
   <div class="pad-grid">
     <div></div>
     <button id="x_plus"
@@ -161,17 +165,97 @@ const char index_html[] PROGMEM = R"rawliteral(
       ontouchstart="startMove('x_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X-</button>
     <div></div>
   </div>
-<form action="/manual_goto" method="get" style="margin-top:10px;">
-  <label>X target:</label>
-  <input type="text" name="x"><br>
-  <label>Z target:</label>
-  <input type="text" name="z"><br><br>
-  <input type="submit" value="Go to X / Z">
-</form>
+
+  <!-- PAD 1: MXLE / MXLI -->
+  <h3>MXL (External / Internal)</h3>
+  <div class="pad-grid">
+    <div></div>
+    <button id="mxle_plus"
+      onmousedown="startMove('mxle_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxle_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE+</button>
+    <div></div>
+
+    <button id="mxli_minus"
+      onmousedown="startMove('mxli_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxli_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI-</button>
+    <div></div>
+
+    <button id="mxli_plus"
+      onmousedown="startMove('mxli_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxli_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI+</button>
+    <div></div>
+
+    <button id="mxle_minus"
+      onmousedown="startMove('mxle_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxle_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE-</button>
+    <div></div>
+  </div>
+
+  <!-- PAD 2: MXRE / MXRI -->
+  <h3>MXR (External / Internal)</h3>
+  <div class="pad-grid">
+    <div></div>
+    <button id="mxre_plus"
+      onmousedown="startMove('mxre_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxre_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE+</button>
+    <div></div>
+
+    <button id="mxri_minus"
+      onmousedown="startMove('mxri_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxri_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI-</button>
+    <div></div>
+
+    <button id="mxri_plus"
+      onmousedown="startMove('mxri_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxri_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI+</button>
+    <div></div>
+
+    <button id="mxre_minus"
+      onmousedown="startMove('mxre_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mxre_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE-</button>
+    <div></div>
+  </div>
+
+  <!-- PAD 3: MZL / MZR -->
+  <h3>MZ (Left / Right)</h3>
+  <div class="pad-grid">
+    <div></div>
+    <button id="mzl_plus"
+      onmousedown="startMove('mzl_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mzl_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL+</button>
+    <div></div>
+
+    <button id="mzr_minus"
+      onmousedown="startMove('mzr_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mzr_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR-</button>
+    <div></div>
+
+    <button id="mzr_plus"
+      onmousedown="startMove('mzr_plus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mzr_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR+</button>
+    <div></div>
+
+    <button id="mzl_minus"
+      onmousedown="startMove('mzl_minus')" onmouseup="stopMove()"
+      ontouchstart="startMove('mzl_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL-</button>
+    <div></div>
+  </div>
+
+  <!-- MANUAL GOTO -->
+  <form action="/manual_goto" method="get" style="margin-top:10px;">
+    <label>X target:</label>
+    <input type="text" name="x"><br>
+    <label>Z target:</label>
+    <input type="text" name="z"><br><br>
+    <input type="submit" value="Go to X / Z">
+  </form>
 
   <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
   <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
+
 </div>
+
+
 
 <!-- SECTION 4: Status -->
 <h2>System Status</h2>

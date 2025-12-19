@@ -65,6 +65,16 @@ long verticalSteps;
 long horizontalSteps;
 long Step;
 long diff;
+// ---- individual motor step counters ----
+long Step_MXLE = 0;
+long Step_MXLI = 0;
+long Step_MXRE = 0;
+long Step_MXRI = 0;
+
+long Step_MZL = 0;
+long Step_MZR = 0;
+
+
 // ---------------- SETUP -----------------
 
 void init_motors() {
@@ -212,3 +222,114 @@ void move(float xmm, float zmm) {
 
 	digitalWrite(enable, HIGH);
 }
+
+
+
+
+void move_external_vertical_right(float mm){
+    verticalSteps = (long)(mm * 25);
+
+    if (verticalSteps != Step_MXRE) {
+        diff = verticalSteps - Step_MXRE;
+        Step = abs(diff);
+        digitalWrite(enable, LOW);
+
+        digitalWrite(DIR2, diff > 0 ? LOW : HIGH);
+
+        for (int i = 0; i < Step; i++) {
+            digitalWrite(STEP2, LOW);
+            delayMicroseconds(Speed);
+            digitalWrite(STEP2, HIGH);
+            delayMicroseconds(Speed);
+        }
+
+        digitalWrite(STEP2, LOW);
+        digitalWrite(DIR2, LOW);
+
+        Step_MXRE = verticalSteps;
+    }
+    digitalWrite(enable, HIGH);
+}
+
+
+
+void move_external_vertical_left(float mm){
+    verticalSteps = (long)(mm * 25);
+
+    if (verticalSteps != Step_MXLE) {
+        diff = verticalSteps - Step_MXLE;
+        Step = abs(diff);
+        digitalWrite(enable, LOW);
+
+        digitalWrite(DIR5, diff > 0 ? LOW : HIGH);
+
+        for (int i = 0; i < Step; i++) {
+            digitalWrite(STEP5, LOW);
+            delayMicroseconds(Speed);
+            digitalWrite(STEP5, HIGH);
+            delayMicroseconds(Speed);
+        }
+
+        digitalWrite(STEP5, LOW);
+        digitalWrite(DIR5, LOW);
+
+        Step_MXLE = verticalSteps;
+    }
+    digitalWrite(enable, HIGH);
+}
+
+
+
+void move_internal_vertical_left(float mm){
+    verticalSteps = (long)(mm * 25);
+
+    if (verticalSteps != Step_MXLI) {
+        diff = verticalSteps - Step_MXLI;
+        Step = abs(diff);
+        digitalWrite(enable, LOW);
+
+        digitalWrite(DIR4, diff > 0 ? LOW : HIGH);
+
+        for (int i = 0; i < Step; i++) {
+            digitalWrite(STEP4, LOW);
+            delayMicroseconds(Speed);
+            digitalWrite(STEP4, HIGH);
+            delayMicroseconds(Speed);
+        }
+
+        digitalWrite(STEP4, LOW);
+        digitalWrite(DIR4, LOW);
+
+        Step_MXLI = verticalSteps;
+    }
+    digitalWrite(enable, HIGH);
+}
+void move_internal_vertical_right(float mm){
+    verticalSteps = (long)(mm * 25);
+
+    if (verticalSteps != Step_MXRI) {
+        diff = verticalSteps - Step_MXRI;
+        Step = abs(diff);
+        digitalWrite(enable, LOW);
+
+        digitalWrite(DIR1, diff > 0 ? LOW : HIGH);
+
+        for (int i = 0; i < Step; i++) {
+            digitalWrite(STEP1, LOW);
+            delayMicroseconds(Speed);
+            digitalWrite(STEP1, HIGH);
+            delayMicroseconds(Speed);
+        }
+
+        digitalWrite(STEP1, LOW);
+        digitalWrite(DIR1, LOW);
+
+        Step_MXRI = verticalSteps;
+    }
+    digitalWrite(enable, HIGH);
+}
+
+
+
+
+

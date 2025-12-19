@@ -34,6 +34,13 @@ typedef struct {
 } InterpolInputs;
 
 
+extern float x_mxri;
+extern float x_mxre;
+extern float x_mxli;
+extern float x_mxle;
+extern float z_mzr;
+extern float z_mzl;
+
 extern SPAInputs g_SPAInputs;
 extern AOIInputs g_AOIInputs;
 extern InterpolInputs g_InterpolInputs;

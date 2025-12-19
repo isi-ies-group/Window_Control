@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "movement.h"
+#include "manual_mode.h"
 
 // ---------------- PINOUT -----------------
 //18 puede q sea otro naranja 
@@ -13,7 +14,7 @@ const int enable = 4; //23  ENABLE right
 //1 y 2 eran 36 y 39
 const int STEP4 = 8; //16 INTERNAL VERTICAL STEP,  LEFT yellow   associate with YLI end-STOP
 const int DIR4 = 3; // 17 INTERNAL VERTICAL DIR, LEFT  orange
-const int DIR5 = 8; //4  EXTERNAL VERTICAL DIR,  LEFT green
+const int DIR5 = 9; //4  EXTERNAL VERTICAL DIR,  LEFT green
 const int STEP5 = 46; //0  EXTERNAL VERTICAL STEP,  LEFT      associate with YLE end-STOP
 const int DIR6 = 11; // 15  HORIZONTAL DIR,  LEFT
 const int STEP6 = 10; //5  Z, left;  
@@ -329,7 +330,47 @@ void move_internal_vertical_right(float mm){
     digitalWrite(enable, HIGH);
 }
 
+void move_horizontal_left(float mm){
+    long target = (long)(mm * 20);
+    long diff = target - Step_MZL;
+    long steps = abs(diff);
 
+    if (steps == 0) return;
+
+    digitalWrite(enable, LOW);
+    digitalWrite(DIR6, diff > 0 ? LOW : HIGH);
+
+    for (int i = 0; i < steps; i++) {
+        digitalWrite(STEP6, HIGH);
+        delayMicroseconds(Speed);
+        digitalWrite(STEP6, LOW);
+        delayMicroseconds(Speed);
+    }
+
+    Step_MZL = target;
+    digitalWrite(enable, HIGH);
+}
+
+void move_horizontal_right(float mm){
+    long target = (long)(mm * 20);
+    long diff = target - Step_MZR;
+    long steps = abs(diff);
+
+    if (steps == 0) return;
+
+    digitalWrite(enable, LOW);
+    digitalWrite(DIR3, diff > 0 ? LOW : HIGH);
+
+    for (int i = 0; i < steps; i++) {
+        digitalWrite(STEP3, HIGH);
+        delayMicroseconds(Speed);
+        digitalWrite(STEP3, LOW);
+        delayMicroseconds(Speed);
+    }
+
+    Step_MZR = target;
+    digitalWrite(enable, HIGH);
+}
 
 
 

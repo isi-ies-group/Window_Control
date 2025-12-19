@@ -70,7 +70,7 @@ const int enable = 4; //23  ENABLE right
 //1 y 2 eran 36 y 39
 const int STEP4 = 8; //16 INTERNAL VERTICAL STEP,  LEFT yellow   associate with YLI end-STOP
 const int DIR4 = 3; // 17 INTERNAL VERTICAL DIR, LEFT  orange
-const int DIR5 = 8; //4  EXTERNAL VERTICAL DIR,  LEFT green
+const int DIR5 = 9; //4  EXTERNAL VERTICAL DIR,  LEFT green
 const int STEP5 = 46; //0  EXTERNAL VERTICAL STEP,  LEFT      associate with YLE end-STOP
 const int DIR6 = 11; // 15  HORIZONTAL DIR,  LEFT
 const int STEP6 = 10; //5  Z, left;  

@@ -1,6 +1,6 @@
-#ifndef movement_h
-#define movement_h
-
+//#ifndef movement_h
+//#define movement_h
+#pragma once
 void init_motors();
 void move(float xmm, float zmm);
 void move_external_vertical_right (float mm);
@@ -12,4 +12,4 @@ void move_horizontal_right(float mm);
 
 
 
-#endif
+//#endif

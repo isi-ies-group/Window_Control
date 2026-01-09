@@ -4,6 +4,7 @@
 #include "matrices.h"
 #include "storage.h"
 #include <time.h>
+#include "movement.h"
 #include <Arduino.h>
 
 
@@ -74,6 +75,7 @@ void runMachine() {
 
 			case MANUAL:
 				Serial.println("[FSM]: MANUAL");
+				GoHomePair(g_x_val, g_z_val);
 				break;
 
 			case SLEEP:
@@ -86,10 +88,12 @@ void runMachine() {
 
 			case EPH_INPUT:
 				Serial.println("[FSM]: EPH_INPUT");
+				GoHomePair(g_x_val, g_z_val);
 				break;
 
 			case AUTO_MODE:
 				Serial.println("[FSM]: AUTO_MODE");
+				GoHomePair(g_x_val, g_z_val);
 				start = millis();
 			break;
 		}

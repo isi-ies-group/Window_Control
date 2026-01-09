@@ -14,3 +14,4 @@ float z_mzr = 0.0f;
 float z_mzl = 0.0f;
 float g_x_val = 0.0f;
 float g_z_val = 0.0f;
+int auto_counter = 0;

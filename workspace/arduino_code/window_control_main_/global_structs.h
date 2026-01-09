@@ -45,7 +45,7 @@ extern SPAInputs g_SPAInputs;
 extern AOIInputs g_AOIInputs;
 extern InterpolInputs g_InterpolInputs;
 
-
+extern int auto_counter;
 extern String g_country;
 
 extern float g_x_val;

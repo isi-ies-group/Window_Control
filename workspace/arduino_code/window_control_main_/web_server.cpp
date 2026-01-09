@@ -8,6 +8,88 @@
 #include "eph_input_mode.h"
 #include "manual_mode.h"
 
+
+
+//Paste this below Manual Movement Pad and uncomment functions in manual_mode and movement
+  // for indepedendent motor control
+
+
+  // <!-- PAD 1: MXLE / MXLI -->
+  // <h3>MXL (External / Internal)</h3>
+  // <div class="pad-grid">
+  //   <div></div>
+  //   <button id="mxle_plus"
+  //     onmousedown="startMove('mxle_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxle_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE+</button>
+  //   <div></div>
+
+  //   <button id="mxli_minus"
+  //     onmousedown="startMove('mxli_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxli_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI-</button>
+  //   <div></div>
+
+  //   <button id="mxli_plus"
+  //     onmousedown="startMove('mxli_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxli_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI+</button>
+  //   <div></div>
+
+  //   <button id="mxle_minus"
+  //     onmousedown="startMove('mxle_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxle_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE-</button>
+  //   <div></div>
+  // </div>
+  // <!-- PAD 2: MXRE / MXRI -->
+  // <h3>MXR (External / Internal)</h3>
+  // <div class="pad-grid">
+  //   <div></div>
+  //   <button id="mxre_plus"
+  //     onmousedown="startMove('mxre_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxre_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE+</button>
+  //   <div></div>
+
+  //   <button id="mxri_minus"
+  //     onmousedown="startMove('mxri_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxri_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI-</button>
+  //   <div></div>
+
+  //   <button id="mxri_plus"
+  //     onmousedown="startMove('mxri_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxri_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI+</button>
+  //   <div></div>
+
+  //   <button id="mxre_minus"
+  //     onmousedown="startMove('mxre_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mxre_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE-</button>
+  //   <div></div>
+  // </div>
+
+  // <!-- PAD 3: MZL / MZR -->
+  // <h3>MZ (Left / Right)</h3>
+  // <div class="pad-grid">
+  //   <div></div>
+  //   <button id="mzl_plus"
+  //     onmousedown="startMove('mzl_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mzl_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL+</button>
+  //   <div></div>
+
+  //   <button id="mzr_minus"
+  //     onmousedown="startMove('mzr_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mzr_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR-</button>
+  //   <div></div>
+
+  //   <button id="mzr_plus"
+  //     onmousedown="startMove('mzr_plus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mzr_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR+</button>
+  //   <div></div>
+
+  //   <button id="mzl_minus"
+  //     onmousedown="startMove('mzl_minus')" onmouseup="stopMove()"
+  //     ontouchstart="startMove('mzl_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL-</button>
+  //   <div></div>
+  // </div>
+
+
+
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML>
 <html>
@@ -22,7 +104,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       background-color: #f4f4f4;
     }
     h2 { color: #333; }
-    form, .pad, .section {
+    form, .pad, .section, .status-box {
       background: white;
       display: inline-block;
       padding: 20px;
@@ -46,14 +128,8 @@ const char index_html[] PROGMEM = R"rawliteral(
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
-      transition: background-color 0.1s ease;
       user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
       touch-action: manipulation;
-    }
-    button:hover, input[type="submit"]:hover {
-      background-color: #005fa3;
     }
     .pad-grid {
       display: grid;
@@ -78,141 +154,79 @@ const char index_html[] PROGMEM = R"rawliteral(
       border-radius: 6px;
       margin-top: 10px;
     }
-    .manual-begin:hover {
-      background-color: #005fa3;
-    }
     .auto-btn {
       background-color: #28a745;
       font-size: 20px;
       padding: 15px 40px;
       margin-top: 25px;
-      transition: background-color 0.2s ease;
-    }
-    .auto-btn:hover {
-      background-color: #218838;
     }
     .auto-btn.active {
       background-color: #dc3545 !important;
     }
-    .auto-btn.active:hover {
-      background-color: #b52a38 !important;
-    }
   </style>
 </head>
+
 <body>
 
 <!-- SECTION 1: Initial Configuration -->
 <h2>Initial Configuration</h2>
 <form action="/config_submit" method="get">
-  <label>Latitude:</label> <input type="text" name="latitude"><br>
-  <label>Longitude:</label> <input type="text" name="longitude"><br>
-  <label>Pan:</label> <input type="text" name="pan"><br>
-  <label>Tilt:</label> <input type="text" name="tilt"><br>
-  <label>Tilt correction:</label>
+  Latitude: <input type="text" name="latitude"><br>
+  Longitude: <input type="text" name="longitude"><br>
+  Pan: <input type="text" name="pan"><br>
+  Tilt: <input type="text" name="tilt"><br>
+  Tilt correction:
   <input type="checkbox" name="tilt_correction" value="1"> Enable<br>
 
-  <label for="country">Country:</label>
-  <select id="country" name="country">
-    <option value="">-- Select your country --</option>
+  Country:
+  <select name="country">
+    <option value="">-- Select --</option>
     <option value="Spain">Spain</option>
-    <option value="Spain_Canary">Spain (Canary Islands)</option>
+    <option value="Spain_Canary">Spain (Canary)</option>
     <option value="UK">United Kingdom</option>
     <option value="Poland">Poland</option>
     <option value="Argentina">Argentina</option>
   </select><br>
 
-  <button type="button" onclick="window.location.href='/config_begin'">Begin</button>
+  <button type="button" onclick="location.href='/config_begin'">Begin</button>
   <input type="submit" value="Submit">
-  <button type="button" onclick="window.location.href='/reset'">Reset</button>
+  <button type="button" onclick="location.href='/reset'">Reset</button>
 </form>
 
 <!-- SECTION 2: Ephemeris Input -->
 <h2>Ephemeris Input</h2>
 <form action="/eph_submit" method="get">
-  <label>Azimuth:</label> <input type="text" name="azimuth"><br>
-  <label>Elevation:</label> <input type="text" name="elevation"><br>
-  <button type="button" onclick="window.location.href='/eph_begin'">Begin</button>
+  Azimuth: <input type="text" name="azimuth"><br>
+  Elevation: <input type="text" name="elevation"><br>
+  <button type="button" onclick="location.href='/eph_begin'">Begin</button>
   <input type="submit" value="Submit">
-  <button type="button" onclick="window.location.href='/end_eph'">End</button>
+  <button type="button" onclick="location.href='/end_eph'">End</button>
 </form>
-
 
 <!-- SECTION 3: Manual Movement -->
 <h2>Manual Movement</h2>
 <div class="section">
-
-  <!-- PAD ORIGINAL X / Z -->
   <h3>Global X / Z</h3>
   <div class="pad-grid">
     <div></div>
     <button id="x_plus"
       onmousedown="startMove('x_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('x_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X+</button>
+      ontouchstart="startMove('x_plus')" ontouchend="stopMove()">X+</button>
     <div></div>
 
     <button id="z_minus"
       onmousedown="startMove('z_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('z_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">Z-</button>
+      ontouchstart="startMove('z_minus')" ontouchend="stopMove()">Z-</button>
     <div></div>
 
     <button id="z_plus"
       onmousedown="startMove('z_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('z_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">Z+</button>
+      ontouchstart="startMove('z_plus')" ontouchend="stopMove()">Z+</button>
     <div></div>
 
     <button id="x_minus"
       onmousedown="startMove('x_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('x_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">X-</button>
-    <div></div>
-  </div>
-
-  <!-- PAD 1: MXLE / MXLI -->
-  <h3>MXL (External / Internal)</h3>
-  <div class="pad-grid">
-    <div></div>
-    <button id="mxle_plus"
-      onmousedown="startMove('mxle_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxle_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE+</button>
-    <div></div>
-
-    <button id="mxli_minus"
-      onmousedown="startMove('mxli_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxli_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI-</button>
-    <div></div>
-
-    <button id="mxli_plus"
-      onmousedown="startMove('mxli_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxli_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLI+</button>
-    <div></div>
-
-    <button id="mxle_minus"
-      onmousedown="startMove('mxle_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxle_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXLE-</button>
-    <div></div>
-  </div>
-
-  <!-- PAD 2: MXRE / MXRI -->
-  <h3>MXR (External / Internal)</h3>
-  <div class="pad-grid">
-    <div></div>
-    <button id="mxre_plus"
-      onmousedown="startMove('mxre_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxre_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE+</button>
-    <div></div>
-
-    <button id="mxri_minus"
-      onmousedown="startMove('mxri_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxri_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI-</button>
-    <div></div>
-
-    <button id="mxri_plus"
-      onmousedown="startMove('mxri_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxri_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRI+</button>
-    <div></div>
-
-    <button id="mxre_minus"
-      onmousedown="startMove('mxre_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mxre_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MXRE-</button>
+      ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
     <div></div>
   </div>
 
@@ -240,33 +254,20 @@ const char index_html[] PROGMEM = R"rawliteral(
       ontouchstart="startMove('mzl_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL-</button>
     <div></div>
   </div>
-
-  <!-- MANUAL GOTO -->
-  <form action="/manual_goto" method="get" style="margin-top:10px;">
-    <label>X target:</label>
-    <input type="text" name="x"><br>
-    <label>Z target:</label>
-    <input type="text" name="z"><br><br>
+  
+  <form action="/manual_goto" method="get">
+    X target: <input type="text" name="x"><br>
+    Z target: <input type="text" name="z"><br>
     <input type="submit" value="Go to X / Z">
   </form>
 
-  <button class="manual-begin" type="button" onclick="window.location.href='/manual_begin'">Begin</button>
-  <button class="manual-begin" type="button" onclick="window.location.href='/end_manual'">End</button>
-
+  <button class="manual-begin" onclick="location.href='/manual_begin'">Begin</button>
+  <button class="manual-begin" onclick="location.href='/end_manual'">End</button>
 </div>
-
-
 
 <!-- SECTION 4: Status -->
 <h2>System Status</h2>
-<div id="sys" style="
-  background:white;
-  display:inline-block;
-  padding:20px;
-  border-radius:12px;
-  margin:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.1);">
-
+<div class="status-box">
   State: <b><span id="st">---</span></b><br>
   Latitude: <span id="lat">---</span><br>
   Longitude: <span id="lon">---</span><br>
@@ -279,11 +280,18 @@ const char index_html[] PROGMEM = R"rawliteral(
   Z position: <span id="z">---</span><br>
 </div>
 
+<!-- SECTION 5: Sun Angles -->
+<h2>Sun-Surface Angles</h2>
+<div class="status-box">
+  Azimuth: <span id="az">---</span><br>
+  Elevation: <span id="ele">---</span><br>
+  AOIl: <span id="aoil">---</span><br>
+  AOIt: <span id="aoit">---</span><br>
+</div>
 
-
-<!-- SECTION 5: AUTO MODE BUTTON -->
+<!-- AUTO MODE -->
 <br><br>
-<button id="autoBtn" class="auto-btn" type="button" onclick="toggleAutoMode()">AUTO MODE</button>
+<button id="autoBtn" class="auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
 
 <script>
 let interval = null;
@@ -293,58 +301,55 @@ setInterval(() => {
   fetch('/status')
     .then(r => r.json())
     .then(d => {
-      document.getElementById("st").innerText = d.state;
-      document.getElementById("lat").innerText = d.latitude;
-      document.getElementById("lon").innerText = d.longitude;
-      document.getElementById("pan").innerText = d.pan;
-      document.getElementById("tilt").innerText = d.tilt;
-      document.getElementById("tc").innerText = d.tilt_correction ? "Enabled" : "Disabled";
-      document.getElementById("date").innerText = d.date;
-      document.getElementById("time").innerText = d.time;
-      document.getElementById("x").innerText = d.x;
-      document.getElementById("z").innerText = d.z;
-    })
-    .catch(e => console.error(e));
-}, 300);
+      st.innerText=d.state;
+      lat.innerText=d.latitude;
+      lon.innerText=d.longitude;
+      pan.innerText=d.pan;
+      tilt.innerText=d.tilt;
+      tc.innerText=d.tilt_correction?"Enabled":"Disabled";
+      date.innerText=d.date;
+      time.innerText=d.time;
+      x.innerText=d.x;
+      z.innerText=d.z;
+    });
+}, 600);
 
-function startMove(direction) {
-  const btn = document.getElementById(direction);
-  btn.classList.add("pressed");
-  sendMove(direction);
-  interval = setInterval(() => sendMove(direction), 200);
+setInterval(() => {
+  fetch('/sunstatus')
+    .then(r => r.json())
+    .then(d => {
+      az.innerText=d.azimuth;
+      ele.innerText=d.elevation;
+      aoil.innerText=d.aoil;
+      aoit.innerText=d.aoit;
+    });
+}, 600);
+
+function startMove(dir){
+  document.getElementById(dir).classList.add("pressed");
+  sendMove(dir);
+  interval=setInterval(()=>sendMove(dir),200);
 }
-
-function stopMove() {
+function stopMove(){
   clearInterval(interval);
-  interval = null;
-  document.querySelectorAll(".pad-grid button").forEach(btn => btn.classList.remove("pressed"));
+  document.querySelectorAll(".pad-grid button")
+    .forEach(b=>b.classList.remove("pressed"));
+}
+function sendMove(dir){
+  fetch(`/manual?dir=${dir}`);
 }
 
-function sendMove(direction) {
-  fetch(`/manual?dir=${direction}`)
-    .then(res => console.log("Move:", direction))
-    .catch(err => console.error(err));
-}
-
-function toggleAutoMode() {
-  autoMode = !autoMode;
-  const btn = document.getElementById('autoBtn');
-
-  btn.classList.toggle('active');
-  btn.innerText = autoMode ? 'STOP AUTO' : 'AUTO MODE';
-
-  const endpoint = autoMode ? '/auto_mode_on' : '/auto_mode_off';
-
-  fetch(endpoint)
-    .then(res => console.log("Auto mode:", autoMode))
-    .catch(err => console.error(err));
+function toggleAutoMode(){
+  autoMode=!autoMode;
+  autoBtn.classList.toggle("active");
+  autoBtn.innerText=autoMode?"STOP AUTO":"AUTO MODE";
+  fetch(autoMode?"/auto_mode_on":"/auto_mode_off");
 }
 </script>
 
 </body>
 </html>
 )rawliteral";
-
 
 
 //---------------------- END HTML -----------------------
@@ -645,18 +650,32 @@ server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
     json += "\"state\":\"" + stateToText(thisSt) + "\",";
     json += "\"latitude\":" + String(g_SPAInputs.latitude, 6) + ",";
     json += "\"longitude\":" + String(g_SPAInputs.longitude, 6) + ",";
-    json += "\"pan\":" + String(g_AOIInputs.pan, 3) + ",";
-    json += "\"tilt\":" + String(g_AOIInputs.tilt, 3) + ",";
+    json += "\"pan\":" + String(g_AOIInputs.pan, 2) + ",";
+    json += "\"tilt\":" + String(g_AOIInputs.tilt, 2) + ",";
     json += "\"tilt_correction\":" + String(g_AOIInputs.tilt_correction ? "true" : "false") + ",";
     json += "\"date\":\"" + String(date_str) + "\",";
     json += "\"time\":\"" + String(time_str) + "\",";
-    json += "\"x\":" + String(g_x_val, 3) + ",";
-    json += "\"z\":" + String(g_z_val, 3);
+    json += "\"x\":" + String(g_x_val, 2) + ",";
+    json += "\"z\":" + String(g_z_val, 2);
     json += "}";
 
     request->send(200, "application/json", json);
 });
 
+
+// ----- SUN STATUS -----
+
+server.on("/sunstatus", HTTP_GET, [](AsyncWebServerRequest *request){
+
+    String json = "{";
+    json += "\"azimuth\":"   + String(g_AOIInputs.azimuth, 2) + ",";
+    json += "\"elevation\":" + String(g_AOIInputs.elevation, 2) + ",";
+    json += "\"aoil\":"      + String(g_InterpolInputs.AOIl, 2) + ",";
+    json += "\"aoit\":"      + String(g_InterpolInputs.AOIt, 2);
+    json += "}";
+
+    request->send(200, "application/json", json);
+});
 
 
   // Not found

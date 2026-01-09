@@ -17,9 +17,13 @@ void interpolation_f(){
 	g_InterpolInputs.matrix_X = matrix_X;
 	g_InterpolInputs.matrix_Z = matrix_Z;
 
-	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
+	query_points[0] = (float)(g_InterpolInputs.AOIt);
 	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
 	
+	Serial.print("AOIt value to interpolate: ");
+	Serial.println(g_InterpolInputs.AOIt, 6);
+	Serial.print("AOIl value to interpolate: ");
+	Serial.println(g_InterpolInputs.AOIl, 6);
 
 	for (int i = 0; i < 2; i++){
 		if (query_points[i] < 0) query_points[i] = 0;
@@ -37,9 +41,10 @@ void interpolation_f(){
 
 
 	g_x_val = interpolate(coords, n, 	g_InterpolInputs.matrix_X, query_points);
-	g_z_val = interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points);
+	g_z_val = fabs(interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points));
 
 	
+
 	Serial.print("Interpolated x value: ");
 	Serial.println(g_x_val, 6);
 	Serial.print("Interpolated z value: ");

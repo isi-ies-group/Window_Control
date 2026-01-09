@@ -26,6 +26,7 @@ void aoicalc_f() {
 	aoi_data.azimuth = g_AOIInputs.azimuth;
 	aoi_data.elevation = g_AOIInputs.elevation;	
 
+
 	aoi_data = ephToAOI(aoi_data.azimuth, aoi_data.elevation, aoi_data.pan, aoi_data.tilt, aoi_data.tilt_correction);
 	
 	g_InterpolInputs.AOIl = aoi_data.AOIl;

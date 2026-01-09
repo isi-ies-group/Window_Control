@@ -14,16 +14,6 @@ void manualMode(const String& dir){
     // Serial.printf("[MANUAL] dir=%s x=%.2f z=%.2f\n", dir.c_str(), g_x_val, g_z_val);
 
 
-    HTML    MOTOR
-
-    mxli    mxri
-    mxle    mxre
-    mxri    mxli   solo funciona el negativo
-    mxre    mxle
-
-    mzr     mzl
-    mzl     mzr solo se mueve en neg
-
 
     // ----- PAD ORIGINAL (X / Z GLOBAL) -----
     if (dir == "x_plus")        g_x_val++;

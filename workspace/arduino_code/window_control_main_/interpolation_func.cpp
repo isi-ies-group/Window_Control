@@ -17,7 +17,7 @@ void interpolation_f(){
 	g_InterpolInputs.matrix_X = matrix_X;
 	g_InterpolInputs.matrix_Z = matrix_Z;
 
-	query_points[0] = (float)(g_InterpolInputs.AOIt);
+	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
 	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
 	
 	Serial.print("AOIt value to interpolate: ");

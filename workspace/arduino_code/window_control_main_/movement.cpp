@@ -77,7 +77,7 @@ bool ZLDone = false;
 bool ZRDone = false;
 long CurrentStep1 = 0;    // vertical
 long CurrentStep2 = 0;    // horizontal
-long Speed = 750;         // microseconds
+long Speed = 600;         // microseconds
 
 long verticalSteps;
 long horizontalSteps;

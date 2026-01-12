@@ -229,31 +229,6 @@ const char index_html[] PROGMEM = R"rawliteral(
       ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
     <div></div>
   </div>
-
-  <!-- PAD 3: MZL / MZR -->
-  <h3>MZ (Left / Right)</h3>
-  <div class="pad-grid">
-    <div></div>
-    <button id="mzl_plus"
-      onmousedown="startMove('mzl_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mzl_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL+</button>
-    <div></div>
-
-    <button id="mzr_minus"
-      onmousedown="startMove('mzr_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mzr_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR-</button>
-    <div></div>
-
-    <button id="mzr_plus"
-      onmousedown="startMove('mzr_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mzr_plus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZR+</button>
-    <div></div>
-
-    <button id="mzl_minus"
-      onmousedown="startMove('mzl_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('mzl_minus')" ontouchend="stopMove()" ontouchcancel="stopMove()">MZL-</button>
-    <div></div>
-  </div>
   
   <form action="/manual_goto" method="get">
     X target: <input type="text" name="x"><br>
@@ -533,6 +508,7 @@ server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
   // ----- MANUAL MOVEMENT -----
 
   server.on("/manual", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (thisSt != MANUAL) return;
     if (!request->hasParam("dir")) {
       request->send(400, "text/plain", "Missing dir");
       return;

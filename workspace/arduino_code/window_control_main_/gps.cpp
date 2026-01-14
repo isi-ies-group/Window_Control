@@ -34,7 +34,19 @@ void debugGPS() {
 
 
 void setSystemTimeFromGPS() {
+
     struct tm t;
+
+    if (!gps.date.isValid() || !gps.time.isValid()) {
+        Serial.println("[GPS] Invalid date/time, skipping system time set");
+        return;
+    }
+
+    if (gps.date.year() < 2020) {
+        Serial.println("[GPS] Year not valid yet");
+        return;
+    }
+
     t.tm_year = gps.date.year() - 1900;
     t.tm_mon  = gps.date.month() - 1;
     t.tm_mday = gps.date.day();
@@ -58,12 +70,17 @@ void setSystemTimeFromGPS() {
 
 
 void setLocalTime() {
+    static unsigned long lastPrint = 0;
     unsigned long start = millis();
     bool sync = false;
 
     while (millis() - start < 5000 && !sync) {
         while (hs.available()) gps.encode(hs.read());
-        debugGPS();
+        
+        if (millis() - lastPrint > 2000) {
+            debugGPS();
+            lastPrint = millis();
+        }
 
         if (gps.time.isValid() && gps.date.isValid() && gps.date.year() > 2020) {
             setSystemTimeFromGPS();

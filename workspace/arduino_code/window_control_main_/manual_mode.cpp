@@ -2,6 +2,8 @@
 #include "global_structs.h"
 #include "movement.h"
 
+float manual_increment_mm = 1.0;
+
 void manualMode(const String& dir){
     // static int test = 0;
     // test++;

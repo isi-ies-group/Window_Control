@@ -303,7 +303,7 @@ setInterval(() => {
 function startMove(dir){
   document.getElementById(dir).classList.add("pressed");
   sendMove(dir);
-  interval=setInterval(()=>sendMove(dir),200);
+  interval=setInterval(()=>sendMove(dir),500);
 }
 function stopMove(){
   clearInterval(interval);

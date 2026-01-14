@@ -22,6 +22,7 @@ void SecondTouchPair(long speed_us);
 void BackoffAll(int steps, long speed_us);
 
 //backlash
+int adjustmentZ();
 void antiBacklashZ(int cycles, int steps, long speed_us);
 
 //#endif

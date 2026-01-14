@@ -30,7 +30,11 @@ void autoMode (){
     interpolation_f();
     move(g_x_val, g_z_val);
     auto_counter++;
-    if (auto_counter == 12){
+    if (auto_counter % 60 == 0){
+        antiBacklashZ(5, 40, 750); 
+    }
+        auto_counter++;
+    if (auto_counter == 299){
         antiBacklashZ(5, 40, 750); 
         auto_counter = 0; 
     }

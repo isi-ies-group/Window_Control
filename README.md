@@ -5,7 +5,7 @@
 * This repository holds an Arduino project able to control the mechatronic system for the integrated tracking of a building-integrated concentrator photovoltaics modules (BICPV) based on linear Fresnel lenses.
 * The program locates a BICPV window on Earth, transforms ephemeris to cartesian coordinates and moves the rear glass (solar cell array) using stepper motors to accomodate solar movements throughout the day.
   
-* Version [0.0.5]
+* Version [1.0.1]
 
 ### How do I get set up? ###
 

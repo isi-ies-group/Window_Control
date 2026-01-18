@@ -5,6 +5,7 @@
 #include "storage.h"
 #include "state_machine.h"
 #include "movement.h"
+#include "movement_task.h"
 
 #define DEBUG 1  // 0 to unable _print(pt)
 
@@ -26,6 +27,7 @@ void setup() {
   serverInit();
   setLocalTime();
   init_motors();
+  initMovementTask();
 }
 
 void loop() {

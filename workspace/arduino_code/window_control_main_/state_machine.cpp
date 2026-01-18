@@ -75,7 +75,7 @@ void runMachine() {
 			case MANUAL:
 				Serial.println("[FSM]: MANUAL");
 				saveState();
-				GoHomePair(g_x_val, g_z_val);
+				requestHome();
 				break;
 
 			case SLEEP:
@@ -90,13 +90,13 @@ void runMachine() {
 			case EPH_INPUT:
 				saveState();
 				Serial.println("[FSM]: EPH_INPUT");
-				GoHomePair(g_x_val, g_z_val);
+				requestHome();
 				break;
 
 			case AUTO_MODE:
 				saveState();
 				Serial.println("[FSM]: AUTO_MODE");
-				GoHomePair(g_x_val, g_z_val);
+				requestHome();
 				start = millis();
 			break;
 		}

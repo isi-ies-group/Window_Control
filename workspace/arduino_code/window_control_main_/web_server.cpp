@@ -597,7 +597,7 @@ void serverInit() {
     }
 
     Serial.printf("[MANUAL_GOTO] Target X=%.3f Z=%.3f\n", g_x_val, g_z_val);
-    moveTo(g_x_val,g_z_val);
+    requestMove();
 
     request->send(200, "text/html",
       "<p style='color:green;'>Manual target updated.</p>");

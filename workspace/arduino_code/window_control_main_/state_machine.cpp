@@ -15,12 +15,8 @@ unsigned long start = millis();
 
 
 void initFSM() {
-	thisSt = STDBY;
-	nextSt = thisSt;
-	prevSt = thisSt;
-
 	Serial.print("Machine initialized. Current State: ");
-
+	loadState();
 	switch (thisSt) {
 		case STDBY:       
 			Serial.println("STDBY"); 
@@ -67,14 +63,18 @@ void runMachine() {
 	if (thisSt != prevSt) {
 		switch (thisSt) {
 			case CONFIG:
+				saveState();
 				Serial.println("[FSM]: CONFIG");
 				break;
 			case STDBY:
+				auto_on = false;
+				saveState();
 				Serial.println("[FSM]: STDBY");
 				break;
 
 			case MANUAL:
 				Serial.println("[FSM]: MANUAL");
+				saveState();
 				GoHomePair(g_x_val, g_z_val);
 				break;
 
@@ -83,15 +83,18 @@ void runMachine() {
 				break;
 
 			case AWAKENING:
+				saveState();
 				Serial.println("[FSM]: AWAKENING");
 				break;
 
 			case EPH_INPUT:
+				saveState();
 				Serial.println("[FSM]: EPH_INPUT");
 				GoHomePair(g_x_val, g_z_val);
 				break;
 
 			case AUTO_MODE:
+				saveState();
 				Serial.println("[FSM]: AUTO_MODE");
 				GoHomePair(g_x_val, g_z_val);
 				start = millis();
@@ -103,6 +106,7 @@ void runMachine() {
 
 	if (thisSt == AUTO_MODE) {
 		if (millis() - start >= 5000) {
+			auto_on = true;
 			autoMode();
 			start = millis();       
 		}

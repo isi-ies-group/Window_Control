@@ -190,7 +190,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
   <button type="button" onclick="location.href='/config_begin'">Begin</button>
   <input type="submit" value="Submit">
-  <button type="button" onclick="location.href='/reset'">Reset</button>
+  <button type="button" onclick="location.href='/end_config'">End</button>
 </form>
 
 <!-- SECTION 2: Ephemeris Input -->
@@ -264,9 +264,40 @@ const char index_html[] PROGMEM = R"rawliteral(
   AOIt: <span id="aoit">---</span><br>
 </div>
 
-<!-- AUTO MODE -->
+<! -- SECTION 6: AUTO MODE -->
 <br><br>
 <button id="autoBtn" class="auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
+
+
+<! -- SECTION 7: SYSTEM_BUTTON -->
+<hr>
+
+<div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
+
+  <form action="/reset" method="post" style="flex:1;">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px; background:#c00; color:white;">
+      RESET
+    </button>
+  </form>
+
+  <form action="/sleep" method="post" style="flex:1;">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px;">
+      SLEEP
+    </button>
+  </form>
+
+  <form action="/wakeup" method="post" style="flex:1;">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px;">
+      WAKE-UP
+    </button>
+  </form>
+
+</div>
+
+
 
 <script>
 let interval = null;
@@ -417,13 +448,24 @@ void serverInit() {
     }
   });
 
-  // ----- RESET -----
-  server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", "<p>Restarting...</p>");
-    Serial.println("[WEB] Reset");
-    delay(500);
-    ESP.restart();
+
+  // ----- CONFIG END-----
+
+  server.on("/end_config", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+  if (thisSt != CONFIG) {
+    request->send(200, "text/html",
+      "<p style='color:red;'>Not in ephemeris mode.</p>");
+    return;
+  }
+
+  changeState(fsmProcess(end_config, false));
+  Serial.println("[FSM] End EPH_INPUT");
+
+  request->send(200, "text/html",
+    "<p style='color:green;'>Config ended.</p>");
   });
+
 
 
   // ----- EPH INPUT BEGIN -----
@@ -441,50 +483,50 @@ void serverInit() {
 
   request->send(200, "text/html",
     "<p style='color:green;'>EPH input started.</p>");
-});
+  });
 
-  // ----- EPH INPUT SUBMIT -----
+    // ----- EPH INPUT SUBMIT -----
 
-server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
 
-  if (thisSt != EPH_INPUT) {
+    if (thisSt != EPH_INPUT) {
+        request->send(200, "text/html",
+            "<p style='color:red;'>Error: Press Begin first.</p>");
+        return;
+    }
+
+    if (!request->hasParam("azimuth") || !request->hasParam("elevation")) {
       request->send(200, "text/html",
-          "<p style='color:red;'>Error: Press Begin first.</p>");
+        "<p style='color:red;'>Missing parameters.</p>");
       return;
-  }
+    }
 
-  if (!request->hasParam("azimuth") || !request->hasParam("elevation")) {
+    g_AOIInputs.azimuth   = request->getParam("azimuth")->value().toDouble();
+    g_AOIInputs.elevation = request->getParam("elevation")->value().toDouble();
+
+    Serial.printf("[EPH] Received az=%.2f el=%.2f\n", g_AOIInputs.azimuth, g_AOIInputs.elevation);
+    ephInputMode();
     request->send(200, "text/html",
-      "<p style='color:red;'>Missing parameters.</p>");
-    return;
-  }
-
-  g_AOIInputs.azimuth   = request->getParam("azimuth")->value().toDouble();
-  g_AOIInputs.elevation = request->getParam("elevation")->value().toDouble();
-
-  Serial.printf("[EPH] Received az=%.2f el=%.2f\n", g_AOIInputs.azimuth, g_AOIInputs.elevation);
-  ephInputMode();
-  request->send(200, "text/html",
-    "<p style='color:green;'>EPH submitted.</p>");
-});
+      "<p style='color:green;'>EPH submitted.</p>");
+  });
 
 
-  // ----- END EPH INPUT -----
+    // ----- END EPH INPUT -----
 
-  server.on("/end_eph", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on("/end_eph", HTTP_GET, [](AsyncWebServerRequest *request) {
 
-  if (thisSt != EPH_INPUT) {
+    if (thisSt != EPH_INPUT) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>Not in ephemeris mode.</p>");
+      return;
+    }
+
+    changeState(fsmProcess(end_eph_input, false));
+    Serial.println("[FSM] End EPH_INPUT");
+
     request->send(200, "text/html",
-      "<p style='color:red;'>Not in ephemeris mode.</p>");
-    return;
-  }
-
-  changeState(fsmProcess(end_eph_input, false));
-  Serial.println("[FSM] End EPH_INPUT");
-
-  request->send(200, "text/html",
-    "<p style='color:green;'>EPH input ended.</p>");
-});
+      "<p style='color:green;'>EPH input ended.</p>");
+  });
 
 
   // ----- MANUAL BEGIN -----
@@ -519,47 +561,47 @@ server.on("/eph_submit", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "OK");
   });
 
-// ----- MANUAL GOTO X / Z -----
-server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
+  // ----- MANUAL GOTO X / Z -----
+  server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
 
-  if (thisSt != MANUAL) {
-    request->send(200, "text/html",
-      "<p style='color:red;'>Not in manual mode.</p>");
-    return;
-  }
-
-  bool updated = false;
-
-  // X
-  if (request->hasParam("x")) {
-    String xStr = request->getParam("x")->value();
-    if (xStr.length() > 0) {    
-      g_x_val = xStr.toDouble();
-      updated = true;
+    if (thisSt != MANUAL) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>Not in manual mode.</p>");
+      return;
     }
-  }
 
-  // Z
-  if (request->hasParam("z")) {
-    String zStr = request->getParam("z")->value();
-    if (zStr.length() > 0) {            
-      g_z_val = zStr.toDouble();
-      updated = true;
+    bool updated = false;
+
+    // X
+    if (request->hasParam("x")) {
+      String xStr = request->getParam("x")->value();
+      if (xStr.length() > 0) {    
+        g_x_val = xStr.toDouble();
+        updated = true;
+      }
     }
-  }
 
-  if (!updated) {
+    // Z
+    if (request->hasParam("z")) {
+      String zStr = request->getParam("z")->value();
+      if (zStr.length() > 0) {            
+        g_z_val = zStr.toDouble();
+        updated = true;
+      }
+    }
+
+    if (!updated) {
+      request->send(200, "text/html",
+        "<p style='color:orange;'>No values updated.</p>");
+      return;
+    }
+
+    Serial.printf("[MANUAL_GOTO] Target X=%.3f Z=%.3f\n", g_x_val, g_z_val);
+    moveTo(g_x_val,g_z_val);
+
     request->send(200, "text/html",
-      "<p style='color:orange;'>No values updated.</p>");
-    return;
-  }
-
-  Serial.printf("[MANUAL_GOTO] Target X=%.3f Z=%.3f\n", g_x_val, g_z_val);
-  moveTo(g_x_val,g_z_val);
-
-  request->send(200, "text/html",
-    "<p style='color:green;'>Manual target updated.</p>");
-});
+      "<p style='color:green;'>Manual target updated.</p>");
+  });
 
   // ----- END MANUAL -----
   server.on("/end_manual", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -584,8 +626,7 @@ server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
         "<p style='color:red;'>AutoMode can only start from STDBY.</p>");
       return;
     }
-    auto_mode_on = true;
-    changeState(fsmProcess(toggle_auto_mode, false));
+    changeState(fsmProcess(toggle_auto_mode, auto_on));
     request->send(200, "text/html",
       "<p style='color:green;'>Auto mode enabled.</p>");
     Serial.println("[FSM] Auto mode ON");
@@ -594,12 +635,12 @@ server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
 
   // ----- AUTO MODE OFF -----
   server.on("/auto_mode_off", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!auto_mode_on) { 
+    if (thisSt != AUTO_MODE) { 
       request->send(200, "text/html",
         "<p style='color:red;'>Not in Auto mode.</p>");
       return;   
     }
-    changeState(fsmProcess(toggle_auto_mode, true));
+    changeState(fsmProcess(toggle_auto_mode, auto_on));
     request->send(200, "text/html",
     "<p style='color:green;'>Auto mode disabled.</p>");
     Serial.println("[FSM] Auto mode OFF");
@@ -608,57 +649,67 @@ server.on("/manual_goto", HTTP_GET, [](AsyncWebServerRequest *request) {
 
 
   // ----- STATUS -----
-server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request){
 
-    struct tm timeinfo;
-    char date_str[11];
-    char time_str[9];
+      time_t now;
+      struct tm timeinfo;
+      char date_str[11];
+      char time_str[9];
 
-    if (getLocalTime(&timeinfo)) {
+      time(&now);
+      localtime_r(&now, &timeinfo);
+
       strftime(date_str, sizeof(date_str), "%Y-%m-%d", &timeinfo);
       strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
-    } else {
-      strcpy(date_str, "----/--/--");
-      strcpy(time_str, "--:--:--");
-    }
 
-    String json = "{";
-    json += "\"state\":\"" + stateToText(thisSt) + "\",";
-    json += "\"latitude\":" + String(g_SPAInputs.latitude, 6) + ",";
-    json += "\"longitude\":" + String(g_SPAInputs.longitude, 6) + ",";
-    json += "\"pan\":" + String(g_AOIInputs.pan, 2) + ",";
-    json += "\"tilt\":" + String(g_AOIInputs.tilt, 2) + ",";
-    json += "\"tilt_correction\":" + String(g_AOIInputs.tilt_correction ? "true" : "false") + ",";
-    json += "\"date\":\"" + String(date_str) + "\",";
-    json += "\"time\":\"" + String(time_str) + "\",";
-    json += "\"x\":" + String(g_x_val, 2) + ",";
-    json += "\"z\":" + String(g_z_val, 2);
-    json += "}";
+      String json = "{";
+      json += "\"state\":\"" + stateToText(thisSt) + "\",";
+      json += "\"latitude\":" + String(g_SPAInputs.latitude, 2) + ",";
+      json += "\"longitude\":" + String(g_SPAInputs.longitude, 2) + ",";
+      json += "\"pan\":" + String(g_AOIInputs.pan, 2) + ",";
+      json += "\"tilt\":" + String(g_AOIInputs.tilt, 2) + ",";
+      json += "\"tilt_correction\":" + String(g_AOIInputs.tilt_correction ? "true" : "false") + ",";
+      json += "\"date\":\"" + String(date_str) + "\",";
+      json += "\"time\":\"" + String(time_str) + "\",";
+      json += "\"x\":" + String(g_x_val, 6) + ",";
+      json += "\"z\":" + String(g_z_val, 6);
+      json += "}";
 
-    request->send(200, "application/json", json);
-});
+      request->send(200, "application/json", json);
+  });
 
 
-// ----- SUN STATUS -----
 
-server.on("/sunstatus", HTTP_GET, [](AsyncWebServerRequest *request){
+  // ----- SUN STATUS -----
 
-    String json = "{";
-    json += "\"azimuth\":"   + String(g_AOIInputs.azimuth, 2) + ",";
-    json += "\"elevation\":" + String(g_AOIInputs.elevation, 2) + ",";
-    json += "\"aoil\":"      + String(g_InterpolInputs.AOIl, 2) + ",";
-    json += "\"aoit\":"      + String(g_InterpolInputs.AOIt, 2);
-    json += "}";
+  server.on("/sunstatus", HTTP_GET, [](AsyncWebServerRequest *request){
 
-    request->send(200, "application/json", json);
-});
+      String json = "{";
+      json += "\"azimuth\":"   + String(g_AOIInputs.azimuth, 6) + ",";
+      json += "\"elevation\":" + String(g_AOIInputs.elevation, 6) + ",";
+      json += "\"aoil\":"      + String(g_InterpolInputs.AOIl, 6) + ",";
+      json += "\"aoit\":"      + String(g_InterpolInputs.AOIt, 6);
+      json += "}";
 
+      request->send(200, "application/json", json);
+  });
 
   // Not found
   server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
   });
+ 
+  // ----- RESET -----
+  server.on("/reset", HTTP_POST, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", "<p>Restarting...</p>");
+    Serial.println("[WEB] Reset");
+    delay(500);
+    ESP.restart();
+  });
 
   server.begin();
   Serial.println("Web server started.");
 }
+
+
+

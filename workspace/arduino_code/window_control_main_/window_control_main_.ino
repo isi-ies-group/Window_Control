@@ -21,8 +21,8 @@
 void setup() {
   Serial.begin(115200);
   initFSM();
-  loadData();
   gpsInit();
+  loadData();
   serverInit();
   setLocalTime();
   init_motors();

@@ -18,6 +18,8 @@ void saveData() {
 
     prefs.putString("country",   g_country); 
     
+    prefs.putBool("auto_mode_on", auto_on);
+
     Serial.println("Data saved to flash:");
     Serial.print("Latitude: "); Serial.println(g_SPAInputs.latitude);
     Serial.print("Longitude: "); Serial.println(g_SPAInputs.longitude);
@@ -40,6 +42,8 @@ void loadData() {
 
     g_country = prefs.getString("country",  "Spain");
 
+    auto_on = prefs.getBool("auto_mode_on", false);
+
     
     Serial.println("Data loaded from flash:");
     Serial.print("Latitude: "); Serial.println(g_SPAInputs.latitude);
@@ -51,35 +55,35 @@ void loadData() {
 
     prefs.end();
 }
-// void loadState(){
-//     prefs.begin("state", true);  
+void loadState(){
+    prefs.begin("state", true);  
 
-//     thisSt = (States)prefs.getInt("fsm_state", STDBY);
-//     Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
+    thisSt = (States)prefs.getInt("fsm_state", STDBY);
+    Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
 
-//     prefs.end();
-// }
-// void saveState(){
-//     prefs.begin("state", false);
+    prefs.end();
+}
+void saveState(){
+    prefs.begin("state", false);
 
-//     prefs.putInt("fsm_state", (int)thisSt);
-//     Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
+    prefs.putInt("fsm_state", (int)thisSt);
+    Serial.print("FSM state: "); Serial.println(stateToText(thisSt));
 
-//     prefs.end();
-// }
-// void savePos(){
-//     prefs.begin("pos", false);
+    prefs.end();
+}
+void savePos(){
+    prefs.begin("pos", false);
 
-//     prefs.putFloat("x_pos", g_x_val);
-//     prefs.putFloat("z_pos", g_z_val);
+    prefs.putFloat("x_pos", g_x_val);
+    prefs.putFloat("z_pos", g_z_val);
 
-//     prefs.end();
-// }
-// void loadPos(){
-//     prefs.begin("pos", true);
+    prefs.end();
+}
+void loadPos(){
+    prefs.begin("pos", true);
 
-//     g_x_val = prefs.getFloat("x_pos", 0);
-//     g_z_val = prefs.getFloat("z_pos", 0);
+    g_x_val = prefs.getFloat("x_pos", 0);
+    g_z_val = prefs.getFloat("z_pos", 0);
 
-//     prefs.end();
-// }
+    prefs.end();
+}

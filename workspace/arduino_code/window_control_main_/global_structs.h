@@ -50,6 +50,6 @@ extern String g_country;
 
 extern float g_x_val;
 extern float g_z_val;
-
+extern bool auto_on;
 
 #endif

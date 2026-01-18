@@ -29,7 +29,7 @@ typedef enum{
 extern States thisSt;
 extern States nextSt;
 extern Events event;
-
+extern bool auto_on;
 String stateToText(States s);
 void runMachine();
 States fsmProcess(Events event, bool auto_running);

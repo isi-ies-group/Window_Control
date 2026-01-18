@@ -62,7 +62,7 @@ const int ZR = 45;// 26 END-STOP Z AXIS, LEFT
 
 
 // ---------------- VARIABLES -----------------
-const long HOMING_SPEED_FAST = 500;
+const long HOMING_SPEED_FAST = 400;
 const long HOMING_SPEED_SLOW = 1000;
 const long MAX_X_HOMING_STEPS = 1500;
 const long MAX_Z_HOMING_STEPS = 1200;
@@ -331,6 +331,8 @@ void move(float xmm, float zmm) {
 
 
 void GoHomePair(float& posX, float& posZ) {
+    Serial.println("[HOMING before if]");
+
     if (
     (digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) && digitalRead(ZL) == HIGH) return;
 
@@ -700,8 +702,7 @@ void BackoffAll(int steps, long speed_us) {
     digitalWrite(STEP5, LOW);
     digitalWrite(STEP6, LOW);
 }
-int adjustmentZ() {
-    adjusted = 0;
+void adjustmentZ() {
     const int STEPS_PER_MM = 20;
 
     const int Z_INIT_MM = 20;
@@ -752,7 +753,7 @@ int adjustmentZ() {
             digitalWrite(STEP6, HIGH);
             delayMicroseconds(Speed);
         }
-        if (digitalRead(YRE) == HIGH || digitalRead(YRI) == HIGH) adjusted = 1;
+        //if (digitalRead(YRE) == HIGH || digitalRead(YRI) == HIGH) adjusted = 1;
         // --- Z+ 4 mm ---
         digitalWrite(DIR5, LOW);
         digitalWrite(DIR6, HIGH);
@@ -790,7 +791,7 @@ int adjustmentZ() {
             digitalWrite(STEP6, HIGH);
             delayMicroseconds(Speed);
         }
-        if (digitalRead(YRE) == HIGH || digitalRead(YRI) == HIGH) adjusted = 1;
+        //if (digitalRead(YRE) == HIGH || digitalRead(YRI) == HIGH) adjusted = 1;
 
     }
 

@@ -122,7 +122,7 @@ void setLocalTime() {
     Serial.println(tz);
     setenv("TZ", tz, 1);
     tzset();
-
+    printLocalTime();
     Serial.printf("Timezone set for %s: %s\n", g_country.c_str(), tz);
 }
 

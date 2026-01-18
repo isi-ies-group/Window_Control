@@ -5,9 +5,9 @@
 
 void saveData();
 void loadData();
-// void loadPos();
-// void savePos();
-// void loadState():
-// void saveState();
+void loadPos();
+void savePos();
+void loadState();
+void saveState();
 
 #endif

@@ -121,7 +121,6 @@
 #include <math.h>
 #include "spa.h"
 #include "commonlib.h"
-
 #define SUN_RADIUS 0.26667
 
 #define L_COUNT 6

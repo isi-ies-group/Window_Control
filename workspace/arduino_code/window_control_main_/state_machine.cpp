@@ -5,8 +5,11 @@
 #include "storage.h"
 #include <time.h>
 #include "movement_task.h"
+#include "commonlib.h"
 #include <Arduino.h>
-
+#include "gps.h"
+#include "spa_func.h"
+#include "stdint.h"
 
 States thisSt;
 States nextSt;
@@ -44,6 +47,15 @@ void initFSM() {
 			Serial.println("UNKNOWN");
 			break;
 	}
+	if (thisSt == SLEEP && esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER) {
+    Serial.println("[BOOT] Wakeup from sleep");
+
+    auto_on   = rtc_auto_mode_on;
+    g_sunrise_epoch = rtc_sunrise_epoch;
+    g_sunset_epoch  = rtc_sunset_epoch;
+
+    thisSt = AWAKENING;
+	}
 }	
 
 String stateToText(States s) {
@@ -61,6 +73,9 @@ String stateToText(States s) {
 
 
 void runMachine() {
+	int64_t sleep_us = 0;
+	time_t now;
+	time(&now);
 	if (thisSt != prevSt) {
 		switch (thisSt) {
 			case CONFIG:
@@ -81,11 +96,43 @@ void runMachine() {
 
 			case SLEEP:
 				Serial.println("[FSM]: SLEEP");
-				break;
+				saveState();
+				rtc_auto_mode_on   = auto_on;
+				rtc_sunrise_epoch = g_sunrise_epoch;
+				rtc_sunset_epoch  = g_sunset_epoch;
+
+
+				sleep_us = (rtc_sunrise_epoch - now) * 1000000LL;
+
+				if (sleep_us > 0) {
+					Serial.println("[SLEEP] Deep sleep");
+					esp_sleep_enable_timer_wakeup(sleep_us);
+					delay(50);
+					esp_deep_sleep_start();
+				} 
+				
+				else {
+					Serial.println("[SLEEP] Sunrise already passed, skipping sleep");
+				}
+
+				break;			
 
 			case AWAKENING:
-				saveState();
 				Serial.println("[FSM]: AWAKENING");
+				saveState();
+				loadData();
+				if (syncTimeFromGPSQuick()) {
+						Serial.println("[AWAKE] Time synced from GPS");
+				} 
+				else {
+						Serial.println("[AWAKE] GPS time sync failed");
+				}
+
+				// 2. SPA 
+				SPA_f();
+
+				// 4. changestate
+				changeState(fsmProcess(woke_up, rtc_auto_mode_on));
 				break;
 
 			case EPH_INPUT:
@@ -96,6 +143,7 @@ void runMachine() {
 
 			case AUTO_MODE:
 				saveState();
+				auto_on = true;
 				Serial.println("[FSM]: AUTO_MODE");
 				requestHome();
 				start = millis();
@@ -106,6 +154,15 @@ void runMachine() {
 	}
 
 	if (thisSt == AUTO_MODE) {
+		time_t now;
+    time(&now);
+
+    if (rtc_sunset_epoch > 0 && now >= rtc_sunset_epoch) {
+        Serial.println("[AUTO] Sunset reached → going to sleep");
+        changeState(fsmProcess(go_sleep, auto_on));
+        return;
+    }
+
 		if (millis() - start >= 5000) {
 			auto_on = true;
 			autoMode();

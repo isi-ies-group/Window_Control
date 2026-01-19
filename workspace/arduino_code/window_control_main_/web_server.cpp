@@ -8,6 +8,8 @@
 #include "eph_input_mode.h"
 #include "manual_mode.h"
 #include "movement_task.h"
+#include "commonlib.h"
+
 
 
 //Paste this below Manual Movement Pad and uncomment functions in manual_mode and movement
@@ -282,6 +284,7 @@ const char index_html[] PROGMEM = R"rawliteral(
   </form>
 
   <form action="/sleep" method="post" style="flex:1;">
+    Sleep duration (minutes): <input type="number" name="minutes" min="1" max="1440">
     <button type="submit"
             style="width:100%; padding:12px; font-size:16px;">
       SLEEP
@@ -382,9 +385,9 @@ void serverInit() {
   // ----- CONFIG BEGIN -----
 
   server.on("/config_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (thisSt == AUTO_MODE) {
+    if (thisSt == STDBY) {
       request->send(200, "text/html",
-        "<p style='color:red;'>AutoMode must be off.</p>");
+        "<p style='color:red;'>Go to STANDBY first.</p>");
       return;
     }
 
@@ -455,7 +458,7 @@ void serverInit() {
 
   if (thisSt != CONFIG) {
     request->send(200, "text/html",
-      "<p style='color:red;'>Not in ephemeris mode.</p>");
+      "<p style='color:red;'>Not in Config mode.</p>");
     return;
   }
 
@@ -707,8 +710,40 @@ void serverInit() {
     ESP.restart();
   });
 
+// ----- SLEEP -----
+server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
+
+    if (thisSt != STDBY && thisSt != AUTO_MODE) {
+        request->send(403, "text/html",
+            "<p style='color:red;'>Sleep only allowed from STDBY</p>");
+        return;
+    }
+
+    if (!request->hasParam("minutes", true)) {
+      request->send(400, "text/html", "Missing duration");
+      return;
+    }
+
+    int mins = request->getParam("minutes", true)->value().toInt();
+    if (mins <= 0) mins = 1;
+
+    Serial.printf("[WEB] Deep sleep requested for %d minutes\n", mins);
+
+    time_t now;
+    time(&now);
+    g_sunrise_epoch = now + mins * 60;
+    
+    changeState(fsmProcess(go_sleep, auto_on));
+
+    request->send(200, "text/html",
+        "<p>Entering deep sleep...</p>");
+});
+
+
+
   server.begin();
   Serial.println("Web server started.");
+
 }
 
 

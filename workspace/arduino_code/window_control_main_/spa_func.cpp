@@ -163,7 +163,44 @@ void SPA_f() {
 
 		Serial.print("Sunset: ");
 		printTimeDecimal(spa.sunset);
+	
+
+		if (spa.sunrise > 0 && spa.sunset > 0) {
+
+			struct tm t;
+			time_t now;
+			time(&now);
+			localtime_r(&now, &t);
+
+			//local midnight
+			t.tm_hour = 0;
+			t.tm_min  = 0;
+			t.tm_sec  = 0;
+
+			time_t midnight = mktime(&t);
+
+			time_t sunrise = midnight + (time_t)(spa.sunrise * 3600.0);
+			time_t sunset  = midnight + (time_t)(spa.sunset  * 3600.0);
+
+			if (sunrise <= now) {
+					sunrise += 24 * 3600;
+					Serial.println("[SPA] Sunrise already passed, using tomorrow");
+			}
+
+			if (sunset <= now) {
+					sunset += 24 * 3600;
+					Serial.println("[SPA] Sunset already passed, using tomorrow");
+			}
+
+			g_sunrise_epoch = sunrise;
+			g_sunset_epoch  = sunset;
+
+			Serial.printf("Sunrise epoch: %ld\n", g_sunrise_epoch);
+			Serial.printf("Sunset  epoch: %ld\n", g_sunset_epoch);
+		}
+
 	} 
+
 	else
 		Serial.print("SPA Error Code: "); Serial.println(result);
 

@@ -12,6 +12,7 @@ HardwareSerial hs(2);
 void gpsInit() {
     hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
     //hs.begin(9600, SERIAL_8N1);
+    hs.setTimeout(10);
     Serial.println("Waiting for GPS time (UTC)...");
     Serial.println();
 }
@@ -136,3 +137,22 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
+bool syncTimeFromGPSQuick() {
+
+    unsigned long start = millis();
+
+    while (millis() - start < 1500) {
+        while (hs.available()) gps.encode(hs.read());
+
+        if (gps.date.isValid() &&
+            gps.time.isValid() &&
+            gps.date.year() > 2020) {
+
+            setSystemTimeFromGPS();
+            return true;
+        }
+    }
+
+    return false;
+}
+

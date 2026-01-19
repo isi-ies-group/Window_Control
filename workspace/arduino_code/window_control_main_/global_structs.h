@@ -52,4 +52,9 @@ extern float g_x_val;
 extern float g_z_val;
 extern bool auto_on;
 
+
+extern time_t g_sunrise_epoch;
+extern time_t g_sunset_epoch;
+extern bool g_auto_mode_on;
+
 #endif

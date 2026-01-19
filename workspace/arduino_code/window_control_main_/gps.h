@@ -7,5 +7,7 @@ void gpsInit();
 void setSystemTimeFromGPS();
 void setLocalTime();
 void debugGPS();
+bool syncTimeFromGPSQuick();
+
 
 #endif

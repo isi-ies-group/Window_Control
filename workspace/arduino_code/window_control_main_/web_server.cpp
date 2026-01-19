@@ -7,7 +7,7 @@
 #include "gps.h"
 #include "eph_input_mode.h"
 #include "manual_mode.h"
-
+#include "movement_task.h"
 
 
 //Paste this below Manual Movement Pad and uncomment functions in manual_mode and movement

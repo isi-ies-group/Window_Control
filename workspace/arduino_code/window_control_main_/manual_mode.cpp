@@ -20,7 +20,7 @@ void manualMode(const String& dir){
 
     //  X/Z  move()
     if (dir.startsWith("x_") || dir.startsWith("z_")) {
-        move(g_x_val, g_z_val);
+        requestMove();
         Serial.printf("[MANUAL] dir=%s x=%.2f z=%.2f\n",
                       dir.c_str(), g_x_val, g_z_val);
     }

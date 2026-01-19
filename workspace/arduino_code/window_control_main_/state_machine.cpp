@@ -4,7 +4,7 @@
 #include "matrices.h"
 #include "storage.h"
 #include <time.h>
-#include "movement.h"
+#include "movement_task.h"
 #include <Arduino.h>
 
 
@@ -17,6 +17,7 @@ unsigned long start = millis();
 void initFSM() {
 	Serial.print("Machine initialized. Current State: ");
 	loadState();
+	thisSt = STDBY;
 	switch (thisSt) {
 		case STDBY:       
 			Serial.println("STDBY"); 

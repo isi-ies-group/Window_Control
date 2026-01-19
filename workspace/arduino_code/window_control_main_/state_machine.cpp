@@ -20,7 +20,6 @@ unsigned long start = millis();
 void initFSM() {
 	Serial.print("Machine initialized. Current State: ");
 	loadState();
-	thisSt = STDBY;
 	switch (thisSt) {
 		case STDBY:       
 			Serial.println("STDBY"); 

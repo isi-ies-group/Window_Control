@@ -1,6 +1,7 @@
 #include "movement_task.h"
 #include "movement.h"
 #include "global_structs.h"
+#include <Arduino.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,20 +14,33 @@ enum MoveCmd {
     CMD_ADJUSTZ
 };
 
+typedef struct {
+    MoveCmd cmd;
+    float x;
+    float z;
+} MovementMsg;
+
 static TaskHandle_t movementTaskHandle = NULL;
-static volatile MoveCmd pendingCmd = CMD_NONE;
-static QueueHandle_t movementQueue;
+static QueueHandle_t movementQueue = NULL;
 
 static void movementTask(void *pvParameters) {
-        
-    for (;;) {
-        if (xQueueReceive(movementQueue, &cmd, portMAX_DELAY) == pdTRUE) {
-            MoveCmd cmd = pendingCmd;
-            pendingCmd = CMD_NONE;
 
-            switch (cmd) {
+     MovementMsg msg;
+
+    for (;;) {
+        if (xQueueReceive(movementQueue, &msg, portMAX_DELAY) == pdTRUE) {
+
+            switch (msg.cmd) {
                 case CMD_MOVE:
-                    move(g_x_val, g_z_val);
+                    move(msg.x, msg.z);
+                    g_x_val = msg.x;
+                    g_z_val = msg.z;
+                    Serial.print("Requested Move case: x z val:: x z msg");
+                    Serial.println(g_x_val, 6);
+                    Serial.println(g_z_val, 6);
+                    Serial.println(msg.x, 6);
+                    Serial.println(msg.z, 6);
+
                     break;
 
                 case CMD_HOME:
@@ -45,14 +59,12 @@ static void movementTask(void *pvParameters) {
                     break;
             }
         }
-        else {
-            vTaskDelay(1 / portTICK_PERIOD_MS);
-        }
     }
 }
 
 void initMovementTask() {
-    movementQueue = xQueueCreate(5, sizeof(MoveCmd));
+    movementQueue = xQueueCreate(5, sizeof(MovementMsg));
+
     xTaskCreatePinnedToCore(
         movementTask,
         "movementTask",
@@ -65,22 +77,45 @@ void initMovementTask() {
 }
 
 void requestMove() {
-    MoveCmd cmd = CMD_MOVE;
-    xQueueSend(movementQueue, &cmd, 0);
+    MovementMsg msg;
+    msg.cmd = CMD_MOVE;
+    msg.x   = g_x_val;
+    msg.z   = g_z_val;
+    	
+	Serial.print("RequestedMove: x z val:: x z msg");
+	Serial.println(g_x_val, 6);
+	Serial.println(g_z_val, 6);
+    Serial.println(msg.x, 6);
+	Serial.println(msg.z, 6);
+
+
+    xQueueSend(movementQueue, &msg, portMAX_DELAY);
 }
 
 void requestHome() {
-    MoveCmd cmd = CMD_HOME;
-    xQueueSend(movementQueue, &cmd, 0);
+    MovementMsg msg;
+    msg.cmd = CMD_HOME;
+    msg.x   = g_x_val;
+    msg.z   = g_z_val;
+    xQueueSend(movementQueue, &msg, portMAX_DELAY);
 }
 
 void requestAntiBacklash() {
-    MoveCmd cmd = CMD_ANTIBACKLASH;
-    xQueueSend(movementQueue, &cmd, 0);
+    MovementMsg msg;
+    msg.cmd = CMD_ANTIBACKLASH;
+    msg.x   = 0;
+    msg.z   = 0;
+    xQueueSend(movementQueue, &msg, portMAX_DELAY);
 }
 
+
 void requestAdjustZ() {
-    MoveCmd cmd = CMD_ADJUSTZ;
-    xQueueSend(movementQueue, &cmd, 0);
+    MovementMsg msg;
+    msg.cmd = CMD_ADJUSTZ;
+    msg.x   = 0;
+    msg.z   = 0;
+    xQueueSend(movementQueue, &msg, portMAX_DELAY);
 }
+
+
 

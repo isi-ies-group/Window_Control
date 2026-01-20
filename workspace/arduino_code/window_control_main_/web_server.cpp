@@ -667,8 +667,8 @@ void serverInit() {
 
       String json = "{";
       json += "\"state\":\"" + stateToText(thisSt) + "\",";
-      json += "\"latitude\":" + String(g_SPAInputs.latitude, 2) + ",";
-      json += "\"longitude\":" + String(g_SPAInputs.longitude, 2) + ",";
+      json += "\"latitude\":" + String(g_SPAInputs.latitude, 6) + ",";
+      json += "\"longitude\":" + String(g_SPAInputs.longitude, 6) + ",";
       json += "\"pan\":" + String(g_AOIInputs.pan, 2) + ",";
       json += "\"tilt\":" + String(g_AOIInputs.tilt, 2) + ",";
       json += "\"tilt_correction\":" + String(g_AOIInputs.tilt_correction ? "true" : "false") + ",";

@@ -385,7 +385,7 @@ void serverInit() {
   // ----- CONFIG BEGIN -----
 
   server.on("/config_begin", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (thisSt == STDBY) {
+    if (thisSt != STDBY) {
       request->send(200, "text/html",
         "<p style='color:red;'>Go to STANDBY first.</p>");
       return;

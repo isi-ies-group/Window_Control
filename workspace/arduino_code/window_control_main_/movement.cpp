@@ -31,34 +31,6 @@ const int ZL = 35; // 25 END-STOP Z AXIS, LEFT
 const int ZR = 45;// 26 END-STOP Z AXIS, LEFT
 
 
-// const iniciales
-// const int DIR1 = 13;  //INTERNAL VERTICAL DIR, RIGHT  
-// const int STEP1 = 12; //INTERNAL VERTICAL STEP, RIGHT associate with YRI end-STOP
-// const int DIR2 = 14;  //EXTERNAL VERTICAL DIR, RIGHT  
-// const int STEP2 = 27;  //EXTERNAL VERTICAL STEP, RIGHT  associate with YRE end-STOP
-// const int DIR3 = 33;  // HORIZONTAL DIR, RIGHT
-// const int STEP3 = 32;  // HORIZONTAL DIR, RIGHT         
-// const int enable = 23;  // ENABLE right
-// //const int enable2 = 5;  // ENABLE left
-
-// const int DIR4 = 17;  //INTERNAL  VERTICAL DIR, LEFT  orange
-// const int STEP4 = 16; //INTERNAL VERTICAL STEP,  LEFT yellow   associate with YLI end-STOP
-// const int DIR5 = 4;  //EXTERNAL VERTICAL DIR,  LEFT green
-// const int STEP5 = 0;  //EXTERNAL VERTICAL STEP,  LEFT      associate with YLE end-STOP
-// const int DIR6 = 5;  // HORIZONTAL DIR,  LEFT
-// const int STEP6 = 15;  // HORIZONTAL STEP,  LEFT
-
-// const int YLE = 36; //END-STOP Y AXIS, LEFT EXTERNAL
-// const int YLI = 39; //END-STOP Y AXIS, LEFT INTERNAL
-// const int YRE = 34; //END-STOP Y AXIS, RIGHT EXTERNAL
-// const int YRI = 35; //END-STOP Y AXIS, RIGHT INTERNAL
-// const int ZL = 25;  //END-STOP Z AXIS, LEFT
-// const int ZR = 26;  //END-STOP Z AXIS, LEFT
-
-
-
-
-
 
 
 // ---------------- VARIABLES -----------------
@@ -133,33 +105,47 @@ void move(float xmm, float zmm) {
             digitalWrite(DIR3, HIGH);
             digitalWrite(DIR4, HIGH);
         }
-        for (int i = 0; i < Step; i++) {
+        bool verticalDone = false;
+
+        for (int i = 0; i < Step && !verticalDone; i++) {
+
+            if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
+                digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
+                verticalDone = true;
+                break;
+            }
+
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, LOW);
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP1, HIGH);
             digitalWrite(STEP2, LOW);
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, HIGH);
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, LOW);
             digitalWrite(STEP3, HIGH);
             digitalWrite(STEP4, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, LOW);
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, HIGH);
             delayMicroseconds(Speed);
         }
+
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
@@ -202,164 +188,43 @@ void move(float xmm, float zmm) {
     }
 }
 
-// void move(float xmm, float zmm) {
-
-// 	verticalSteps = (long)(xmm * 25);   // vertical motors 1,2,4,5
-// 	horizontalSteps = (long)(zmm * 20); // horizontal motors 3,6
-
-
-//   // ------ vertical movement ------
-// 	if (verticalSteps != CurrentStep1) {
-// 		diff = verticalSteps - CurrentStep1;
-// 		Step = abs(diff);
-// 		digitalWrite(enable, LOW);
-	
-// 		if (diff > 0){
-// 			digitalWrite(DIR1, LOW);
-// 			digitalWrite(DIR2, LOW);
-// 			digitalWrite(DIR3, LOW);
-// 			digitalWrite(DIR4, LOW);
-// 			Serial.print("Vertical down ");
-// 		} 
-// 		else {
-// 			digitalWrite(DIR1, HIGH);
-// 			digitalWrite(DIR2, HIGH);
-// 			digitalWrite(DIR3, HIGH);
-// 			digitalWrite(DIR4, HIGH);
-// 			Serial.print("Vertical up ");
-// 		}
-// 		Serial.print(Step);
-// 		Serial.println(" steps");
-		
-// 		for (int i = 0; i < Step; i++) {
-//             digitalWrite(STEP1, LOW);
-//             digitalWrite(STEP2, LOW);
-//             digitalWrite(STEP3, LOW);
-//             digitalWrite(STEP4, LOW);
-//             delayMicroseconds(Speed);
-
-//             digitalWrite(STEP1, HIGH);
-//             digitalWrite(STEP2, LOW);
-//             digitalWrite(STEP3, LOW);
-//             digitalWrite(STEP4, LOW);
-//             delayMicroseconds(Speed);
-
-//             digitalWrite(STEP1, LOW);
-//             digitalWrite(STEP2, HIGH);
-//             digitalWrite(STEP3, LOW);
-//             digitalWrite(STEP4, LOW);
-//             delayMicroseconds(Speed);
-
-//             digitalWrite(STEP1, LOW);
-//             digitalWrite(STEP2, LOW);
-//             digitalWrite(STEP3, HIGH);
-//             digitalWrite(STEP4, LOW);
-//             delayMicroseconds(Speed);
-
-//             digitalWrite(STEP1, LOW);
-//             digitalWrite(STEP2, LOW);
-//             digitalWrite(STEP3, LOW);
-//             digitalWrite(STEP4, HIGH);
-//             delayMicroseconds(Speed);
-//             }
-//             digitalWrite(STEP4, LOW);
-
-// 		// Reset DIR
-// 		digitalWrite(DIR1, LOW);
-// 		digitalWrite(DIR2, LOW);
-// 		digitalWrite(DIR3, LOW);
-// 		digitalWrite(DIR4, LOW);
-// 		CurrentStep1 = verticalSteps;
-// 		Serial.println("Vertical movement finished.");
-// 	}
-// 	Serial.print("current vertical step..");
-// 	Serial.println (CurrentStep1);
-
-
-
-// 	// ------ Horizontal movement ------
-
-// 	if (horizontalSteps != CurrentStep2) {
-// 		diff = horizontalSteps - CurrentStep2;
-// 		Step = abs(diff);
-// 		digitalWrite(enable_z, LOW);
-// 		int estad = digitalRead(enable_z);
-// 		if (estad == LOW){
-// 			Serial.print("Enable Low");
-// 		}
-// 		else Serial.print("Enable high");
-// 		if(diff > 0) {
-// 			digitalWrite(DIR5, LOW);
-// 			digitalWrite(DIR6, HIGH);
-// 			Serial.print("horizontal forward ");
-// 		}
-// 		else{
-// 			digitalWrite(DIR5, HIGH);
-// 			digitalWrite(DIR6, LOW);
-// 			Serial.print("horizontal backwards ");
-// 		}
-		
-// 		Serial.print(Step);
-// 		Serial.println(" steps");	
-
-// 		for (int i = 0; i < Step; i++) {
-// 			digitalWrite(STEP5, LOW);
-// 			digitalWrite(STEP6, LOW);
-// 			delayMicroseconds(Speed);
-
-// 			digitalWrite(STEP5, HIGH);
-// 			digitalWrite(STEP6, LOW);
-// 			delayMicroseconds(Speed);
-
-// 			digitalWrite(STEP5, LOW);
-// 			digitalWrite(STEP6, HIGH);
-// 			delayMicroseconds(Speed);            
-// 		}
-// 		digitalWrite(STEP6, LOW);
-// 		CurrentStep2 = horizontalSteps;
-
-// 		Serial.println("Horizontal movement completed.");
-
-// 		Serial.print("current vertical step..");
-//         Serial.println (CurrentStep1);
-// 	}
-// 	Serial.print("current horizontal step..");
-//     Serial.println (CurrentStep2);
-//     digitalWrite(enable, HIGH);
-//     digitalWrite(enable_z, HIGH);
-// }
-
 
 void GoHomePair(float& posX, float& posZ) {
-    Serial.println("[HOMING before if]");
-
-    if (
-    (digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) && digitalRead(ZL) == HIGH) return;
-
-    Serial.println("[HOMING]");
-
-    const long FAST = HOMING_SPEED_FAST;
-    const long SLOW = HOMING_SPEED_SLOW;
+   
     bool xHomingReached = false;
     bool zHomingReached = false;
+   
+    if ((digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) && digitalRead(ZL) == HIGH) return;
+    if (digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) xHomingReached = true;
+        Serial.println("[HOMING]");
 
-    digitalWrite(enable, LOW);
-    digitalWrite(enable_z, LOW);
-
-    digitalWrite(DIR1, HIGH);
-    digitalWrite(DIR2, HIGH);
-    digitalWrite(DIR3, HIGH);
-    digitalWrite(DIR4, HIGH);
-    digitalWrite(DIR5, HIGH);
-    digitalWrite(DIR6, LOW);
+        const long FAST = HOMING_SPEED_FAST;
+        const long SLOW = HOMING_SPEED_SLOW;
 
 
-    // Homing fast
+        digitalWrite(enable, LOW);
+        digitalWrite(enable_z, LOW);
 
-    // Vertical
-    SAFE_STEPS = 0;
-    while (!xHomingReached && SAFE_STEPS < MAX_X_HOMING_STEPS) {
-        SAFE_STEPS++;
+        digitalWrite(DIR1, HIGH);
+        digitalWrite(DIR2, HIGH);
+        digitalWrite(DIR3, HIGH);
+        digitalWrite(DIR4, HIGH);
+        digitalWrite(DIR5, HIGH);
+        digitalWrite(DIR6, LOW);
+
+
+        // Homing fast
+
+        // Vertical
+        SAFE_STEPS = 0;
+        while (!xHomingReached && SAFE_STEPS < MAX_X_HOMING_STEPS) {
+
+        if ((digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH)||
+        (digitalRead(YLI) == HIGH && digitalRead(YLE) == HIGH)) {
+            xHomingReached = true;
+            break;
+        }
+
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
@@ -395,8 +260,9 @@ void GoHomePair(float& posX, float& posZ) {
 
         delayMicroseconds(FAST);
 
-        if (digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) xHomingReached = true;
+        SAFE_STEPS++;
     }
+
 
     digitalWrite(STEP1, LOW);
     digitalWrite(STEP2, LOW);
@@ -422,7 +288,7 @@ void GoHomePair(float& posX, float& posZ) {
                  
         delayMicroseconds(FAST);
 
-        if (digitalRead(ZL) == HIGH && digitalRead(ZR) == HIGH) zHomingReached = true;
+        if (digitalRead(ZL) == HIGH || digitalRead(ZR) == HIGH) zHomingReached = true;
     }
     
     digitalWrite(STEP5, LOW);
@@ -441,100 +307,7 @@ void GoHomePair(float& posX, float& posZ) {
     posZ = 0.0f;
 }
 
-// void SecondTouchPair(long speed_us) {
-//     bool yr_nd_touch = false;
-//     bool yl_nd_touch = false;
-//     bool zr_nd_touch = false;
-//     bool zl_nd_touch = false;
-    
-//     digitalWrite(DIR1, HIGH);
-//     digitalWrite(DIR2, HIGH);
-//     digitalWrite(DIR3, HIGH);
-//     digitalWrite(DIR4, HIGH);
-//     digitalWrite(DIR5, HIGH);
-//     digitalWrite(DIR6, LOW);   
 
-//     while (yl_nd_touch == false || yr_nd_touch == false){
-//         digitalWrite(STEP1, LOW);
-//         digitalWrite(STEP2, LOW);
-//         digitalWrite(STEP3, LOW);
-//         digitalWrite(STEP4, LOW);
-        
-//         delayMicroseconds(speed_us);
-
-//         if (yr_nd_touch == true && yl_nd_touch == false){
-//             digitalWrite(STEP1, HIGH);
-//             digitalWrite(STEP2, LOW);
-//             delayMicroseconds(speed_us);
-//             digitalWrite(STEP1, LOW);
-//             digitalWrite(STEP2, HIGH);
-//             delayMicroseconds(speed_us);
-//         }
-
-//         else if (yr_nd_touch == false && yl_nd_touch == true){
-//             digitalWrite(STEP3, HIGH);
-//             digitalWrite(STEP4, LOW);
-//             delayMicroseconds(speed_us);
-//             digitalWrite(STEP3, LOW);
-//             digitalWrite(STEP4, HIGH);
-//             delayMicroseconds(speed_us);
-//         }
-//         else if (yr_nd_touch == false &&  yl_nd_touch == false){
-//         digitalWrite(STEP1, HIGH);
-//         digitalWrite(STEP2, LOW);
-//         digitalWrite(STEP3, LOW);
-//         digitalWrite(STEP4, LOW);
-
-//         delayMicroseconds(speed_us);
-
-//         digitalWrite(STEP1, LOW);
-//         digitalWrite(STEP2, HIGH);
-//         digitalWrite(STEP3, LOW);
-//         digitalWrite(STEP4, LOW);
-
-//         delayMicroseconds(speed_us);
-
-//         digitalWrite(STEP1, LOW);
-//         digitalWrite(STEP2, LOW);
-//         digitalWrite(STEP3, HIGH);
-//         digitalWrite(STEP4, LOW);
-
-//         delayMicroseconds(speed_us);
-        
-//         if (digitalRead(YLI) == HIGH && digitalRead(YLE) == HIGH) yl_nd_touch = true;
-//         if (digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) yr_nd_touch = true;
-//         }
-//     } 
-
-//     digitalWrite(STEP1, LOW);
-//     digitalWrite(STEP2, LOW);
-//     digitalWrite(STEP3, LOW);
-//     digitalWrite(STEP4, LOW);
-
-//     while (digitalRead(ZL) != HIGH || digitalRead(ZR) != HIGH) {
-
-//         digitalWrite(STEP5, LOW);
-//         digitalWrite(STEP6, LOW);
-
-//         delayMicroseconds(speed_us);
-    
-//         digitalWrite(STEP5, HIGH);
-//         digitalWrite(STEP6, LOW);
-
-//         delayMicroseconds(speed_us);
-
-//         digitalWrite(STEP5, LOW);
-//         digitalWrite(STEP6, HIGH);
-                 
-//         delayMicroseconds(speed_us);
-
-//     }
-    
-//     digitalWrite(STEP5, LOW);
-//     digitalWrite(STEP6, LOW);
-
-//     Serial.println("HOMING Finished");
-// }
 
 void SecondTouchPair(long speed_us) {
 
@@ -603,8 +376,8 @@ void SecondTouchPair(long speed_us) {
             digitalWrite(STEP5, HIGH);
             delayMicroseconds(speed_us);
         }
-        if (digitalRead(ZL) != LOW && digitalRead(ZR) == HIGH){
-            digitalWrite(STEP5, HIGH);
+        if (digitalRead(ZL) != HIGH && digitalRead(ZR) == HIGH){
+            digitalWrite(STEP6, HIGH);
             delayMicroseconds(speed_us);
 
         }

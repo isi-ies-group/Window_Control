@@ -15,10 +15,12 @@ enum MoveCmd {
 
 static TaskHandle_t movementTaskHandle = NULL;
 static volatile MoveCmd pendingCmd = CMD_NONE;
+static QueueHandle_t movementQueue;
 
 static void movementTask(void *pvParameters) {
+        
     for (;;) {
-        if (pendingCmd != CMD_NONE) {
+        if (xQueueReceive(movementQueue, &cmd, portMAX_DELAY) == pdTRUE) {
             MoveCmd cmd = pendingCmd;
             pendingCmd = CMD_NONE;
 
@@ -50,6 +52,7 @@ static void movementTask(void *pvParameters) {
 }
 
 void initMovementTask() {
+    movementQueue = xQueueCreate(5, sizeof(MoveCmd));
     xTaskCreatePinnedToCore(
         movementTask,
         "movementTask",
@@ -62,17 +65,22 @@ void initMovementTask() {
 }
 
 void requestMove() {
-    pendingCmd = CMD_MOVE;
+    MoveCmd cmd = CMD_MOVE;
+    xQueueSend(movementQueue, &cmd, 0);
 }
 
 void requestHome() {
-    pendingCmd = CMD_HOME;
+    MoveCmd cmd = CMD_HOME;
+    xQueueSend(movementQueue, &cmd, 0);
 }
 
 void requestAntiBacklash() {
-    pendingCmd = CMD_ANTIBACKLASH;
+    MoveCmd cmd = CMD_ANTIBACKLASH;
+    xQueueSend(movementQueue, &cmd, 0);
 }
 
 void requestAdjustZ() {
-    pendingCmd = CMD_ADJUSTZ;
+    MoveCmd cmd = CMD_ADJUSTZ;
+    xQueueSend(movementQueue, &cmd, 0);
 }
+

@@ -14,13 +14,13 @@
 States thisSt;
 States nextSt;
 States prevSt;
+
 unsigned long start = millis();
 
 
 void initFSM() {
 	Serial.print("Machine initialized. Current State: ");
 	loadState();
-	thisSt = STDBY;
 	switch (thisSt) {
 		case STDBY:       
 			Serial.println("STDBY"); 
@@ -122,19 +122,13 @@ void runMachine() {
 				Serial.println("[FSM]: AWAKENING");
 				saveState();
 				loadData();
-				if (syncTimeFromGPSQuick()) {
-						Serial.println("[AWAKE] Time synced from GPS");
-						time_t now;
-						struct tm time_info;
-						time(&now);
-						localtime_r(&now, &time_info);
-						updateSPAInputsFromTime(&time_info, &g_SPAInputs);
-						printLocalTime();
-						SPA_f();
-					} 
-				else {
-						Serial.println("[AWAKE] GPS time sync failed");
-				}			
+				setLocalTime();		
+				time_t now;
+				struct tm time_info;
+				time(&now);
+				localtime_r(&now, &time_info);
+				updateSPAInputsFromTime(&time_info, &g_SPAInputs);
+				SPA_f();
 				changeState(fsmProcess(woke_up, rtc_auto_mode_on));
 				break;
 
@@ -159,7 +153,7 @@ void runMachine() {
 	if (thisSt == AUTO_MODE) {
 		time_t now;
     time(&now);
-
+		
     if (rtc_sunset_epoch > 0 && now >= rtc_sunset_epoch) {
         Serial.println("[AUTO] Sunset reached → going to sleep");
         changeState(fsmProcess(go_sleep, auto_on));

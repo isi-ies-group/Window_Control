@@ -40,7 +40,7 @@ void interpolation_f(){
 	int n[2] = {N, N};
 
 
-	g_x_val = interpolate(coords, n, 	g_InterpolInputs.matrix_X, query_points);
+	g_x_val = fabs(interpolate(coords, n, 	g_InterpolInputs.matrix_X, query_points));
 	g_z_val = fabs(interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points));
 
 	

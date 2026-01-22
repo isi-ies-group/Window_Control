@@ -101,7 +101,7 @@ void setLocalTime() {
         {"Spain_Canary", "WET0WEST,M3.5.0/01:00,M10.5.0/02:00"},
         {"UK", "GMT0BST,M3.5.0/01:00,M10.5.0/02:00"},
         {"Poland", "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00"},
-        {"Argentina", "ART-3"}
+        {"Argentina", "ART3"}
     };
 
     const char* tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00";
@@ -137,22 +137,5 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
-bool syncTimeFromGPSQuick() {
 
-    unsigned long start = millis();
-
-    while (millis() - start < 1500) {
-        while (hs.available()) gps.encode(hs.read());
-
-        if (gps.date.isValid() &&
-            gps.time.isValid() &&
-            gps.date.year() > 2020) {
-
-            setSystemTimeFromGPS();
-            return true;
-        }
-    }
-
-    return false;
-}
 

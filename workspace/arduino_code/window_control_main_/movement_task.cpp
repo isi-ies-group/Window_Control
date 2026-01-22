@@ -20,9 +20,8 @@ static QueueHandle_t movementQueue;
 static void movementTask(void *pvParameters) {
         
     for (;;) {
+        MoveCmd cmd;
         if (xQueueReceive(movementQueue, &cmd, portMAX_DELAY) == pdTRUE) {
-            MoveCmd cmd = pendingCmd;
-            pendingCmd = CMD_NONE;
 
             switch (cmd) {
                 case CMD_MOVE:

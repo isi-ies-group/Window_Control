@@ -109,8 +109,8 @@ void move(float xmm, float zmm) {
 
         for (int i = 0; i < Step && !verticalDone; i++) {
 
-            if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
-                digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
+            if ((digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) ||
+                (digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH)) {
                 verticalDone = true;
                 break;
             }
@@ -311,6 +311,10 @@ void GoHomePair(float& posX, float& posZ) {
 
 void SecondTouchPair(long speed_us) {
 
+    bool verticalDone = false;
+    bool zLeftDone = false;
+    bool zRightDone = false;
+
     digitalWrite(DIR1, HIGH);
     digitalWrite(DIR2, HIGH);
     digitalWrite(DIR3, HIGH);
@@ -318,87 +322,84 @@ void SecondTouchPair(long speed_us) {
     digitalWrite(DIR5, HIGH);
     digitalWrite(DIR6, LOW);   
 
-    // while (
-    // !(digitalRead(YLI) == HIGH && digitalRead(YLE) == HIGH) ||
-    // !(digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH)
-    // ) {
-    while (!(digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH)){
-        
+    // -------- VERTICAL SECOND TOUCH --------
+    while (!verticalDone) {
+
+        if (digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH ||
+            digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH) {
+            verticalDone = true;
+            break;
+        }
+
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, LOW);
-
         delayMicroseconds(speed_us);
 
         digitalWrite(STEP1, HIGH);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, LOW);
-
         delayMicroseconds(speed_us);
 
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, HIGH);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, LOW);
-
         delayMicroseconds(speed_us);
 
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, HIGH);
         digitalWrite(STEP4, LOW);
-
         delayMicroseconds(speed_us);
 
         digitalWrite(STEP1, LOW);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, HIGH);
-
-        delayMicroseconds(speed_us);  
-    } 
+        delayMicroseconds(speed_us);
+    }
 
     digitalWrite(STEP1, LOW);
     digitalWrite(STEP2, LOW);
     digitalWrite(STEP3, LOW);
     digitalWrite(STEP4, LOW);
 
-    while (digitalRead(ZL) != HIGH && digitalRead(ZR) != HIGH) {
-        
-        digitalWrite(STEP5, LOW);
-        digitalWrite(STEP6, LOW);
-
-        delayMicroseconds(speed_us);
-        
-        if (digitalRead(ZL) == HIGH && digitalRead(ZR) != HIGH){
-            digitalWrite(STEP5, HIGH);
-            delayMicroseconds(speed_us);
-        }
-        if (digitalRead(ZL) != HIGH && digitalRead(ZR) == HIGH){
-            digitalWrite(STEP6, HIGH);
-            delayMicroseconds(speed_us);
-
-        }
-        else {
-        digitalWrite(STEP5, HIGH);
-        digitalWrite(STEP6, LOW);
-
-        delayMicroseconds(speed_us);
+    while (!zLeftDone || !zRightDone) {
 
         digitalWrite(STEP5, LOW);
-        digitalWrite(STEP6, HIGH);
-                 
+        digitalWrite(STEP6, LOW);
         delayMicroseconds(speed_us);
+
+        // RIGHT Z
+        if (!zRightDone) {
+            if (digitalRead(ZR) == HIGH) {
+                zRightDone = true;
+            } else {
+                digitalWrite(STEP5, HIGH);
+            }
         }
+
+        // LEFT Z
+        if (!zLeftDone) {
+            if (digitalRead(ZL) == HIGH) {
+                zLeftDone = true;
+            } else {
+                digitalWrite(STEP6, HIGH);
+            }
+        }
+
+        delayMicroseconds(speed_us);
     }
 
     digitalWrite(STEP5, LOW);
     digitalWrite(STEP6, LOW);
 
-    Serial.println("HOMING Finished");
+    Serial.println("SecondTouch finished");
 }
+
 
 void BackoffAll(int steps, long speed_us) {
 

@@ -6,6 +6,7 @@
 #include "spa_func.h"
 #include "matrices.h"
 #include "movement_task.h"
+#include "gps.h"
 
 void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
     spa->year   = time_info->tm_year + 1900;
@@ -36,11 +37,16 @@ void autoMode (){
     interpolation_f();
     requestMove();
     auto_counter++;
+    Serial.println(auto_counter);
+    if (auto_counter % 15 == 0){
+        setLocalTime();
+    }
     if (auto_counter % 60 == 0){
         requestAntiBacklash(); 
     }
         auto_counter++;
     if (auto_counter == 299){
+        setLocalTime();
         requestHome(); 
         auto_counter = 0; 
     }

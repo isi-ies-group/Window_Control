@@ -9,7 +9,7 @@
 #include "manual_mode.h"
 #include "movement_task.h"
 #include "commonlib.h"
-
+#include "gps.h"
 
 
 //Paste this below Manual Movement Pad and uncomment functions in manual_mode and movement
@@ -291,10 +291,10 @@ const char index_html[] PROGMEM = R"rawliteral(
     </button>
   </form>
 
-  <form action="/wakeup" method="post" style="flex:1;">
+  <form action="/settime" method="post" style="flex:1;">
     <button type="submit"
             style="width:100%; padding:12px; font-size:16px;">
-      WAKE-UP
+      SET TIME
     </button>
   </form>
 
@@ -739,7 +739,13 @@ server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
         "<p>Entering deep sleep...</p>");
 });
 
-
+// ----- WAKE UP -----
+server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
+  request->send(200, "text/html", "<p>Setting time...</p>");
+  Serial.println("[WEB] Reset");
+  delay(500);
+  setLocalTime();
+});
 
   server.begin();
   Serial.println("Web server started.");

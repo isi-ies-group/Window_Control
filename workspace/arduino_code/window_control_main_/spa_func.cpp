@@ -6,42 +6,41 @@
 
 extern AOIInputs g_AOIInputs;
 
-int getTimezone(int year, int month, int day) {
-	int lastSundayMarch = 31;
-	while (true) {
-		tm t = {};
-		t.tm_year = year - 1900;
-		t.tm_mon = 2;
-		t.tm_mday = lastSundayMarch;
-		mktime(&t);
-		if (t.tm_wday == 0) break;
-		lastSundayMarch--;
-	}
+// int getTimezone(int year, int month, int day) {
+// 	int lastSundayMarch = 31;
+// 	while (true) {
+// 		tm t = {};
+// 		t.tm_year = year - 1900;
+// 		t.tm_mon = 2;
+// 		t.tm_mday = lastSundayMarch;
+// 		mktime(&t);
+// 		if (t.tm_wday == 0) break;
+// 		lastSundayMarch--;
+// 	}
 
 
-	int lastSundayOctober = 31;
-	while (true) {
-		tm t = {};
-		t.tm_year = year - 1900;
-		t.tm_mon = 9;
-		t.tm_mday = lastSundayOctober;
-		mktime(&t);
-		if (t.tm_wday == 0) break;
-		lastSundayOctober--;
-	}
+// 	int lastSundayOctober = 31;
+// 	while (true) {
+// 		tm t = {};
+// 		t.tm_year = year - 1900;
+// 		t.tm_mon = 9;
+// 		t.tm_mday = lastSundayOctober;
+// 		mktime(&t);
+// 		if (t.tm_wday == 0) break;
+// 		lastSundayOctober--;
+// 	}
 
-	if ((month > 3 && month < 10) ||
-			(month == 3 && day >= lastSundayMarch) ||
-			(month == 10 && day < lastSundayOctober)) {
-		return 2;
-	} 
-	else
-		return 1;
-}
-// Devuelve el timezone en horas, según país y fecha
+// 	if ((month > 3 && month < 10) ||
+// 			(month == 3 && day >= lastSundayMarch) ||
+// 			(month == 10 && day < lastSundayOctober)) {
+// 		return 2;
+// 	} 
+// 	else
+// 		return 1;
+// }
 int getTimezoneForCountry(const String& country, int year, int month, int day) {
 
-    // --- Base offset por país (en horas respecto a UTC)
+    // --- Base offset--
     int baseOffset = 0;
     bool hasDST = false;
 
@@ -61,7 +60,6 @@ int getTimezoneForCountry(const String& country, int year, int month, int day) {
         baseOffset = -3; hasDST = false;
     }
     else {
-        // País desconocido → UTC por defecto
         baseOffset = 0; hasDST = false;
     }
 
@@ -71,7 +69,7 @@ int getTimezoneForCountry(const String& country, int year, int month, int day) {
         while (true) {
             struct tm t = {};
             t.tm_year = year - 1900;
-            t.tm_mon = 2; // Marzo
+            t.tm_mon = 2; 
             t.tm_mday = lastSundayMarch;
             mktime(&t);
             if (t.tm_wday == 0) break;
@@ -82,7 +80,7 @@ int getTimezoneForCountry(const String& country, int year, int month, int day) {
         while (true) {
             struct tm t = {};
             t.tm_year = year - 1900;
-            t.tm_mon = 9; // Octubre
+            t.tm_mon = 9;
             t.tm_mday = lastSundayOctober;
             mktime(&t);
             if (t.tm_wday == 0) break;
@@ -118,90 +116,84 @@ void printTimeDecimal(double time) {
   if ((int)sec < 10) Serial.print('0');
   Serial.println((int)sec);
 }
-
 void SPA_f() {
-	spa_data spa;
-	spa.year = g_SPAInputs.year;
-	spa.month = g_SPAInputs.month;
-	spa.day = g_SPAInputs.day;
-	spa.hour = g_SPAInputs.hour;
-	spa.minute = g_SPAInputs.minute;
-	spa.second = g_SPAInputs.second;
-	spa.latitude = g_SPAInputs.latitude;
-	spa.longitude = g_SPAInputs.longitude;
-	spa.timezone = spa.timezone = getTimezoneForCountry(g_country, spa.year, spa.month, spa.day);
-	spa.delta_ut1     = 0;
-	spa.delta_t       = 67;
-	spa.elevation     = 670;
-	spa.pressure      = 820;
-	spa.temperature   = 20;
-	spa.slope         = 30;
-	spa.azm_rotation  = -10;
-	spa.atmos_refract = 0.5667;
-	spa.function      = SPA_ZA_RTS;
 
-	
-	int result = spa_calculate(&spa);
+    spa_data spa;
 
-	if (result == 0) {
+    spa.year   = g_SPAInputs.year;
+    spa.month  = g_SPAInputs.month;
+    spa.day    = g_SPAInputs.day;
+    spa.hour   = g_SPAInputs.hour;
+    spa.minute = g_SPAInputs.minute;
+    spa.second = g_SPAInputs.second;
 
-		g_AOIInputs.azimuth = spa.azimuth;
-		g_AOIInputs.elevation = spa.e;
-		Serial.print("g_elvation: "); 
-		Serial.println(g_AOIInputs.elevation, 6);
-		Serial.print("Zenith: "); 
-		Serial.println(spa.zenith, 6);
+    spa.latitude  = g_SPAInputs.latitude;
+    spa.longitude = g_SPAInputs.longitude;
 
-		Serial.print("Azimuth: "); 
-		Serial.println(spa.azimuth, 6);
+    // 🔴 ESTO ES LO IMPORTANTE 🔴
+    spa.timezone = getTimezoneForCountry(
+        g_country,
+        spa.year,
+        spa.month,
+        spa.day
+    );
 
-		Serial.print("Elevation: "); 
-		Serial.println(spa.e, 6);		
+    spa.delta_ut1     = 0;
+    spa.delta_t       = 67;
+    spa.elevation     = 670;
+    spa.pressure      = 820;
+    spa.temperature   = 20;
+    spa.slope         = 30;
+    spa.azm_rotation  = -10;
+    spa.atmos_refract = 0.5667;
+    spa.function      = SPA_ZA_RTS;
 
-		Serial.print("Sunrise: ");	
-		printTimeDecimal(spa.sunrise);
+    Serial.printf(
+        "[SPA INPUT] %04d-%02d-%02d %02d:%02d:%02d  tz=%d\n",
+        spa.year, spa.month, spa.day,
+        spa.hour, spa.minute, spa.second,
+        spa.timezone
+    );
 
-		Serial.print("Sunset: ");
-		printTimeDecimal(spa.sunset);
-	
+    int result = spa_calculate(&spa);
 
-		if (spa.sunrise > 0 && spa.sunset > 0) {
+    if (result != 0) {
+        Serial.print("SPA Error Code: ");
+        Serial.println(result);
+        return;
+    }
 
-			struct tm t;
-			time_t now;
-			time(&now);
-			localtime_r(&now, &t);
+    g_AOIInputs.azimuth   = spa.azimuth;
+    g_AOIInputs.elevation = spa.e;
 
-			//local midnight
-			t.tm_hour = 0;
-			t.tm_min  = 0;
-			t.tm_sec  = 0;
+    Serial.print("Azimuth: ");
+    Serial.println(spa.azimuth, 6);
+    Serial.print("Elevation: ");
+    Serial.println(spa.e, 6);
 
-			time_t midnight = mktime(&t);
+    if (spa.sunrise > 0 && spa.sunset > 0) {
 
-			time_t sunrise = midnight + (time_t)(spa.sunrise * 3600.0);
-			time_t sunset  = midnight + (time_t)(spa.sunset  * 3600.0);
+        struct tm t;
+        time_t now;
+        time(&now);
+        localtime_r(&now, &t);
 
-			if (sunrise <= now) {
-					sunrise += 24 * 3600;
-					Serial.println("[SPA] Sunrise already passed, using tomorrow");
-			}
+        t.tm_hour = 0;
+        t.tm_min  = 0;
+        t.tm_sec  = 0;
 
-			if (sunset <= now) {
-					sunset += 24 * 3600;
-					Serial.println("[SPA] Sunset already passed, using tomorrow");
-			}
+        time_t midnight = mktime(&t);
 
-			g_sunrise_epoch = sunrise;
-			g_sunset_epoch  = sunset;
+        time_t sunrise = midnight + (time_t)(spa.sunrise * 3600.0);
+        time_t sunset  = midnight + (time_t)(spa.sunset  * 3600.0);
 
-			Serial.printf("Sunrise epoch: %ld\n", g_sunrise_epoch);
-			Serial.printf("Sunset  epoch: %ld\n", g_sunset_epoch);
-		}
+        if (sunrise <= now) sunrise += 24 * 3600;
+        if (sunset  <= now) sunset  += 24 * 3600;
 
-	} 
+        g_sunrise_epoch = sunrise;
+        g_sunset_epoch  = sunset;
 
-	else
-		Serial.print("SPA Error Code: "); Serial.println(result);
-
+        Serial.printf("Sunrise epoch: %ld\n", g_sunrise_epoch);
+        Serial.printf("Sunset  epoch: %ld\n", g_sunset_epoch);
+    }
 }

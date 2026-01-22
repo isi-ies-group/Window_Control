@@ -739,8 +739,9 @@ server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
         "<p>Entering deep sleep...</p>");
 });
 
-// ----- WAKE UP -----
+// ----- set_time -----
 server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
+  manual_time = false;
   request->send(200, "text/html", "<p>Setting time...</p>");
   Serial.println("[WEB] Reset");
   delay(500);
@@ -749,6 +750,48 @@ server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
 
   server.begin();
   Serial.println("Web server started.");
+
+//-------- Date-time ---------
+server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
+  manual_time = true;
+  if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
+    request->send(400, "text/html", "<p>Missing date or time</p>");
+    return;
+  }
+
+  String dateStr = request->getParam("date", true)->value();
+  String timeStr = request->getParam("time", true)->value();
+
+  int year, month, day;
+  int hour, min, sec;
+
+  if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3 ||
+      sscanf(timeStr.c_str(), "%d:%d:%d", &hour, &min, &sec) != 3) {
+    request->send(400, "text/html", "<p>Invalid date/time format</p>");
+    return;
+  }
+
+  struct tm t = {};
+  t.tm_year = year - 1900;
+  t.tm_mon  = month - 1;
+  t.tm_mday = day;
+  t.tm_hour = hour;
+  t.tm_min  = min;
+  t.tm_sec  = sec;
+  t.tm_isdst = -1;
+
+  // IMPORTANTE: interpretamos lo que mete el usuario como LOCAL TIME
+  time_t local_epoch = mktime(&t);
+
+  struct timeval now = {
+   
+  setSystemTimeManualLocal(year, month, day, hour, min, sec);
+
+  printLocalTime();
+
+  request->send(200, "text/html",
+    "<p style='color:green;'>Date and time set manually.</p>");
+});
 
 }
 

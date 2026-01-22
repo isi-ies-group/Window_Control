@@ -51,7 +51,7 @@ extern String g_country;
 extern float g_x_val;
 extern float g_z_val;
 extern bool auto_on;
-
+extern bool manual_time;
 
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;

@@ -11,6 +11,7 @@ HardwareSerial hs(2);
 
 void gpsInit() {
     hs.begin(9600, SERIAL_8N1, RXD2, TXD2);
+    manual_time = false;
     //hs.begin(9600, SERIAL_8N1);
     hs.setTimeout(10);
     Serial.println("Waiting for GPS time (UTC)...");
@@ -71,6 +72,9 @@ void setSystemTimeFromGPS() {
 
 
 void setLocalTime() {
+    if (manual_time == true) {
+        Serial.println("System using manual date-time");
+    }
     static unsigned long lastPrint = 0;
     unsigned long start = millis();
     bool sync = false;
@@ -138,4 +142,29 @@ void printLocalTime() {
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
+void setSystemTimeManualLocal(int year, int month, int day,
+                              int hour, int min, int sec) {
+
+    tzset();
+
+    struct tm t = {};
+    t.tm_year = year - 1900;
+    t.tm_mon  = month - 1;
+    t.tm_mday = day;
+    t.tm_hour = hour;
+    t.tm_min  = min;
+    t.tm_sec  = sec;
+    t.tm_isdst = -1;  
+    
+    time_t epoch_utc = mktime(&t);
+
+    struct timeval now = {
+        .tv_sec = epoch_utc,
+        .tv_usec = 0
+    };
+
+    settimeofday(&now, NULL);
+
+    Serial.println("[TIME] System time set manually (local time)");
+}
 

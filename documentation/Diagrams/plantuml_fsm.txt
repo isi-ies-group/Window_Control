@@ -1,0 +1,25 @@
+@startuml
+[*] --> Init
+
+Init --> Standby
+
+Config --> Standby : end_config
+Standby --> Eph_Input : begin_eph_input
+Standby --> Manual : begin_manual
+Standby --> Auto_Mode : toggle_auto_mode && !auto_mode
+Standby --> Sleep : go_sleep
+Standby --> Config: begin_config
+
+Eph_Input --> Standby : end_eph_input
+Eph_Input --> Manual : begin_manual
+
+Manual --> Standby : end_manual
+Manual --> Eph_Input : begin_eph_input
+
+Auto_Mode --> Standby : toggle_auto_mode && auto_mode
+Auto_Mode --> Sleep : go_sleep && auto_mode
+
+Sleep --> Waking_up : wake_up
+Waking_up --> Auto_Mode : auto_mode && data_loaded
+Waking_up --> Standby : !auto_mode && data_loaded
+@enduml

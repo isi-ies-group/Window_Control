@@ -74,6 +74,7 @@ void setSystemTimeFromGPS() {
 void setLocalTime() {
     if (manual_time == true) {
         Serial.println("System using manual date-time");
+        return;
     }
     static unsigned long lastPrint = 0;
     unsigned long start = millis();
@@ -145,8 +146,22 @@ void printLocalTime() {
 void setSystemTimeManualLocal(int year, int month, int day,
                               int hour, int min, int sec) {
 
+    manual_time = true;
+
+    // 1️⃣ Guardar TZ actual
+    const char* oldTZ = getenv("TZ");
+
+    // 2️⃣ Aplicar TZ del país
+    const char* tz = "UTC0";
+    if (g_country == "Argentina") tz = "ART3";
+    else if (g_country == "Spain") tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00";
+    else if (g_country == "Spain_Canary") tz = "WET0WEST,M3.5.0/01:00,M10.5.0/02:00";
+    else if (g_country == "UK") tz = "GMT0BST,M3.5.0/01:00,M10.5.0/02:00";
+
+    setenv("TZ", tz, 1);
     tzset();
 
+    // 3️⃣ Interpretar input como LOCAL TIME
     struct tm t = {};
     t.tm_year = year - 1900;
     t.tm_mon  = month - 1;
@@ -154,17 +169,21 @@ void setSystemTimeManualLocal(int year, int month, int day,
     t.tm_hour = hour;
     t.tm_min  = min;
     t.tm_sec  = sec;
-    t.tm_isdst = -1;  
-    
-    time_t epoch_utc = mktime(&t);
+    t.tm_isdst = -1;
 
-    struct timeval now = {
-        .tv_sec = epoch_utc,
-        .tv_usec = 0
-    };
+    time_t local_epoch = mktime(&t);   // ← convertido a UTC internamente
 
+    // 4️⃣ Volver a UTC
+    setenv("TZ", "UTC0", 1);
+    tzset();
+
+    struct timeval now = { local_epoch, 0 };
     settimeofday(&now, NULL);
 
-    Serial.println("[TIME] System time set manually (local time)");
+    // 5️⃣ Restaurar TZ original
+    if (oldTZ) setenv("TZ", oldTZ, 1);
+    tzset();
+
+    Serial.println("[TIME] Manual local time set correctly");
 }
 

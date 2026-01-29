@@ -1,0 +1,45 @@
+@startuml
+
+Package "CNC_Shield" #LightGray{
+    component Logic_Vin
+    component Motors_Vin
+    component Motors_logic
+	component drivers
+}
+
+package "Power" #LightPink{
+    component Power_supply
+    component Buck_converter
+}
+
+package "Control" #LightYellow{
+    component MCU
+    component GPS_module
+}
+
+
+package "Window" #LightGreen{
+    package "Sensors" #LightBlue{
+        component end_stop
+    }
+    component Mobile_platform   
+    package "Actuators" #LightCyan{
+        component Motors
+    }
+}
+
+
+Power_supply --> Buck_converter :12V
+Power_supply --> Motors_Vin :12V
+Buck_converter --> MCU :5V 
+Buck_converter --> Logic_Vin :5V
+
+GPS_module --> MCU :date&time
+MCU -left-> Motors_logic
+Motors_logic --> Motors
+
+Motors --> Mobile_platform
+Mobile_platform --> end_stop
+end_stop --> MCU
+
+@enduml

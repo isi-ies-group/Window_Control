@@ -1,0 +1,48 @@
+@startuml
+
+package "CNC_Shield" #LightGray{
+    component Motors_logic
+}
+
+
+package "Window" #LightGreen{
+    package "Sensors" #LightBlue{
+        component end_stop
+    }
+    component Mobile_platform   
+    package "Actuators" #LightCyan{
+        component Motors
+    }
+}    
+
+Actor User #White
+
+package "GUI" #LightPink{
+    component Wireless_link
+    component Web_client
+    component Web_server
+}
+
+package "Control" #LightYellow{
+    component MCU
+    component GPS_module
+}
+GPS_module --> MCU :date&time
+MCU -left-> Motors_logic
+Motors_logic --> Motors
+
+Motors --> Mobile_platform
+Mobile_platform --> end_stop
+end_stop --> MCU
+
+User --> Web_client :handle 
+Web_client --> Wireless_link :request
+Wireless_link --> Web_server :request
+Web_server --> MCU
+MCU --> Web_server
+Web_server --> Wireless_link :status
+Wireless_link --> Web_client :status
+Web_server --> Web_client :create
+
+@enduml
+

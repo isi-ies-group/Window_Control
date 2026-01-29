@@ -195,6 +195,18 @@ const char index_html[] PROGMEM = R"rawliteral(
   <button type="button" onclick="location.href='/end_config'">End</button>
 </form>
 
+<h3>Manual Date & Time</h3>
+
+<form action="/set_datetime" method="post">
+  Date (YYYY-MM-DD):<br>
+  <input type="text" name="date" placeholder="2026-01-20"><br>
+
+  Time (HH:MM:SS):<br>
+  <input type="text" name="time" placeholder="11:44:15"><br>
+
+  <input type="submit" value="Set Date & Time">
+</form>
+
 <!-- SECTION 2: Ephemeris Input -->
 <h2>Ephemeris Input</h2>
 <form action="/eph_submit" method="get">
@@ -711,7 +723,7 @@ void serverInit() {
   });
 
 // ----- SLEEP -----
-server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
 
     if (thisSt != STDBY && thisSt != AUTO_MODE) {
         request->send(403, "text/html",
@@ -737,61 +749,87 @@ server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
 
     request->send(200, "text/html",
         "<p>Entering deep sleep...</p>");
-});
+  });
 
 // ----- set_time -----
-server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
-  manual_time = false;
-  request->send(200, "text/html", "<p>Setting time...</p>");
-  Serial.println("[WEB] Reset");
-  delay(500);
-  setLocalTime();
-});
+  server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", "<p>Setting time...</p>");
+    manual_time = false;
+    Serial.println("[Time] GPS");
+    delay(500);
+    setLocalTime();
+  });
+
+  //-------- Date-time ---------
+  server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (thisSt != CONFIG) {
+      request->send(200, "text/html",
+        "<p style='color:red;'>To set time manually init configuration.</p>");
+      return;
+    }
+
+    if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
+      request->send(400, "text/html", "<p>Missing date or time</p>");
+      return;
+    }
+
+    String dateStr = request->getParam("date", true)->value();
+    String timeStr = request->getParam("time", true)->value();
+
+    int year, month, day;
+    int hour, min, sec;
+
+    if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3 ||
+        sscanf(timeStr.c_str(), "%d:%d:%d", &hour, &min, &sec) != 3) {
+      request->send(400, "text/html", "<p>Invalid date/time format</p>");
+      return;
+    }
+
+    struct tm t = {};
+    t.tm_year = year - 1900;
+    t.tm_mon  = month - 1;
+    t.tm_mday = day;
+    t.tm_hour = hour;
+    t.tm_min  = min;
+    t.tm_sec  = sec;
+    t.tm_isdst = -1;
+
+      if (year < 2000 || year > 3000) {
+    request->send(400, "text/html",
+      "<p style='color:red;'>Year must be between 2000 and 3000</p>");
+    return;
+  }
+
+  if (month < 1 || month > 12) {
+    request->send(400, "text/html",
+      "<p style='color:red;'>Month must be between 1 and 12</p>");
+    return;
+  }
+
+  if (day < 1 || day > 31) {
+    request->send(400, "text/html",
+      "<p style='color:red;'>Day must be between 1 and 31</p>");
+    return;
+  }
+
+  if (hour < 0 || hour > 23 ||
+      min  < 0 || min  > 59 ||
+      sec  < 0 || sec  > 59) {
+    request->send(400, "text/html",
+      "<p style='color:red;'>Invalid time values</p>");
+    return;
+  }
+
+    setSystemTimeManualLocal(year, month, day, hour, min, sec);
+
+    printLocalTime();
+
+    request->send(200, "text/html",
+      "<p style='color:green;'>Date and time set manually.</p>");
+  });
 
   server.begin();
   Serial.println("Web server started.");
-
-//-------- Date-time ---------
-server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
-  manual_time = true;
-  if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
-    request->send(400, "text/html", "<p>Missing date or time</p>");
-    return;
-  }
-
-  String dateStr = request->getParam("date", true)->value();
-  String timeStr = request->getParam("time", true)->value();
-
-  int year, month, day;
-  int hour, min, sec;
-
-  if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3 ||
-      sscanf(timeStr.c_str(), "%d:%d:%d", &hour, &min, &sec) != 3) {
-    request->send(400, "text/html", "<p>Invalid date/time format</p>");
-    return;
-  }
-
-  struct tm t = {};
-  t.tm_year = year - 1900;
-  t.tm_mon  = month - 1;
-  t.tm_mday = day;
-  t.tm_hour = hour;
-  t.tm_min  = min;
-  t.tm_sec  = sec;
-  t.tm_isdst = -1;
-
-  // IMPORTANTE: interpretamos lo que mete el usuario como LOCAL TIME
-  time_t local_epoch = mktime(&t);
-
-  struct timeval now = {
-   
-  setSystemTimeManualLocal(year, month, day, hour, min, sec);
-
-  printLocalTime();
-
-  request->send(200, "text/html",
-    "<p style='color:green;'>Date and time set manually.</p>");
-});
 
 }
 

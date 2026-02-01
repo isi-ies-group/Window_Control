@@ -91,7 +91,7 @@ void move(float xmm, float zmm) {
 	if (xmm < 0) xmm = 0;
 	if (xmm > 70) xmm = 70;
 	if (zmm < 0) zmm = 0;
-	if (zmm > 70) zmm = 70;
+	if (zmm > 80) zmm = 80;
     long steps_vertical = computeStepMove(xmm, CurrentStep1, 25.0, 10, residual_vertical);
     if (steps_vertical != 0) {
         diff = steps_vertical;
@@ -141,6 +141,9 @@ void move(float xmm, float zmm) {
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, HIGH);
             delayMicroseconds(Speed);
+            if (i % 100 == 0) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
         }
 
         digitalWrite(STEP1, LOW);
@@ -177,6 +180,9 @@ void move(float xmm, float zmm) {
             digitalWrite(STEP5, LOW);
             digitalWrite(STEP6, HIGH);
             delayMicroseconds(Speed);
+            if (i % 100 == 0) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
         }
         digitalWrite(STEP5, LOW);
         digitalWrite(STEP6, LOW);

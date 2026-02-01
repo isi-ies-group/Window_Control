@@ -4,7 +4,6 @@ Package "CNC_Shield" #LightGray{
     component Logic_Vin
     component Motors_Vin
     component Motors_logic
-	component drivers
 }
 
 package "Power" #LightPink{

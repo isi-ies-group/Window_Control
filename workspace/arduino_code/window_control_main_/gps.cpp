@@ -141,10 +141,13 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
-
 void setSystemTimeManualLocal(int year, int month, int day,
                               int hour, int min, int sec) {
 
+    manual_time = true;
+
+    // FORZAMOS UTC PARA QUE NO HAYA DESPLAZAMIENTOS
+    setenv("TZ", "UTC0", 1);
     tzset();
 
     struct tm t = {};
@@ -154,17 +157,17 @@ void setSystemTimeManualLocal(int year, int month, int day,
     t.tm_hour = hour;
     t.tm_min  = min;
     t.tm_sec  = sec;
-    t.tm_isdst = -1;  
-    
-    time_t epoch_utc = mktime(&t);
+    t.tm_isdst = 0;
+
+    time_t epoch = mktime(&t);  // sin offsets raros
 
     struct timeval now = {
-        .tv_sec = epoch_utc,
+        .tv_sec = epoch,
         .tv_usec = 0
     };
 
     settimeofday(&now, NULL);
 
-    Serial.println("[TIME] System time set manually (local time)");
+    Serial.println("[TIME] Manual time set EXACT (no TZ)");
 }
 

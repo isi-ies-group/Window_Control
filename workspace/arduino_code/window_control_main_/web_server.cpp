@@ -748,12 +748,12 @@ server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
   setLocalTime();
 });
 
-  server.begin();
-  Serial.println("Web server started.");
 
 //-------- Date-time ---------
 server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
+
   manual_time = true;
+
   if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
     request->send(400, "text/html", "<p>Missing date or time</p>");
     return;
@@ -771,20 +771,18 @@ server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
     return;
   }
 
-  struct tm t = {};
-  t.tm_year = year - 1900;
-  t.tm_mon  = month - 1;
-  t.tm_mday = day;
-  t.tm_hour = hour;
-  t.tm_min  = min;
-  t.tm_sec  = sec;
-  t.tm_isdst = -1;
+  // Validaciones básicas (como pediste)
+  if (year < 2000 || year > 3000 ||
+      month < 1 || month > 12 ||
+      day < 1 || day > 31 ||
+      hour < 0 || hour > 23 ||
+      min < 0 || min > 59 ||
+      sec < 0 || sec > 59) {
+    request->send(400, "text/html", "<p>Date/time out of range</p>");
+    return;
+  }
 
-  // IMPORTANTE: interpretamos lo que mete el usuario como LOCAL TIME
-  time_t local_epoch = mktime(&t);
-
-  struct timeval now = {
-   
+  // AQUÍ SE HACE TODO
   setSystemTimeManualLocal(year, month, day, hour, min, sec);
 
   printLocalTime();
@@ -793,6 +791,9 @@ server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
     "<p style='color:green;'>Date and time set manually.</p>");
 });
 
+
+  server.begin();
+  Serial.println("Web server started.");
 }
 
 

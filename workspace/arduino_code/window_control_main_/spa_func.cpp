@@ -130,7 +130,6 @@ void SPA_f() {
     spa.latitude  = g_SPAInputs.latitude;
     spa.longitude = g_SPAInputs.longitude;
 
-    // 🔴 ESTO ES LO IMPORTANTE 🔴
     spa.timezone = getTimezoneForCountry(
         g_country,
         spa.year,

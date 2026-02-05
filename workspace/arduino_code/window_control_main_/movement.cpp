@@ -52,7 +52,8 @@ bool ZRDone = false;
 int adjusted = 0;
 long CurrentStep1 = 0;    // vertical
 long CurrentStep2 = 0;    // horizontal
-
+static float acc_vertical = 0.0;
+static float acc_horizontal = 0.0;
 long verticalSteps;
 long horizontalSteps;
 
@@ -68,49 +69,32 @@ long Step_MXRI = 0;
 long Step_MZL = 0;
 long Step_MZR = 0;
 
-
-static float residual_vertical = 0.0;
-static float residual_horizontal = 0.0;
-
-long computeStepMove(float target_mm, long current_step, float steps_per_mm,
-                     long min_steps, float &residual) 
+void move(float xmm, float zmm)
 {
-    float target_steps_f = target_mm * steps_per_mm;
-    float diff = target_steps_f - current_step;
-    diff += residual;
-    if (abs(diff) < min_steps) {
-        residual = diff;
-        return 0;
-    }
-    long steps_to_move = (long)diff;
-    residual = diff - steps_to_move;
-    return steps_to_move;
-}
+    // ---------- VERTICAL (X) ----------
+    long targetStepsX = (long)(xmm * 25.0f);
+    long diffX = targetStepsX - CurrentStep1;
 
-void move(float xmm, float zmm) {
-	if (xmm < 0) xmm = 0;
-	if (xmm > 70) xmm = 70;
-	if (zmm < 0) zmm = 0;
-	if (zmm > 80) zmm = 80;
-    long steps_vertical = computeStepMove(xmm, CurrentStep1, 25.0, 10, residual_vertical);
-    if (steps_vertical != 0) {
-        diff = steps_vertical;
-        Step = abs(diff);
+    if (diffX != 0) {
+        long steps = abs(diffX);
+
         digitalWrite(enable, LOW);
-        if (diff > 0){
+
+        if (diffX > 0) {
+            // subir
             digitalWrite(DIR1, LOW);
             digitalWrite(DIR2, LOW);
             digitalWrite(DIR3, LOW);
             digitalWrite(DIR4, LOW);
         } else {
+            // bajar
             digitalWrite(DIR1, HIGH);
             digitalWrite(DIR2, HIGH);
             digitalWrite(DIR3, HIGH);
             digitalWrite(DIR4, HIGH);
         }
-        bool verticalDone = false;
 
-        for (int i = 0; i < Step && !verticalDone; i++) {
+        for (long i = 0; i < steps; i++) {
 
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, LOW);
@@ -141,6 +125,7 @@ void move(float xmm, float zmm) {
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, HIGH);
             delayMicroseconds(Speed);
+
             if (i % 100 == 0) {
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
@@ -150,46 +135,55 @@ void move(float xmm, float zmm) {
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, LOW);
-        digitalWrite(DIR1, LOW);
-        digitalWrite(DIR2, LOW);
-        digitalWrite(DIR3, LOW);
-        digitalWrite(DIR4, LOW);
-        CurrentStep1 += steps_vertical;
+
+        CurrentStep1 = targetStepsX;
         digitalWrite(enable, HIGH);
     }
 
-    long steps_horizontal = computeStepMove(zmm, CurrentStep2, 20.0, 5, residual_horizontal);
-    if (steps_horizontal != 0) {
-        diff = steps_horizontal;
-        Step = abs(diff);
+    // ---------- HORIZONTAL (Z) ----------
+    long targetStepsZ = (long)(zmm * 20.0f);
+    long diffZ = targetStepsZ - CurrentStep2;
+
+    if (diffZ != 0) {
+        long steps = abs(diffZ);
+
         digitalWrite(enable_z, LOW);
-        if(diff > 0) {
+
+        if (diffZ > 0) {
             digitalWrite(DIR5, LOW);
             digitalWrite(DIR6, HIGH);
         } else {
             digitalWrite(DIR5, HIGH);
             digitalWrite(DIR6, LOW);
         }
-        for (int i = 0; i < Step; i++) {
+
+        for (long i = 0; i < steps; i++) {
+
             digitalWrite(STEP5, LOW);
             digitalWrite(STEP6, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP5, HIGH);
             digitalWrite(STEP6, LOW);
             delayMicroseconds(Speed);
+
             digitalWrite(STEP5, LOW);
             digitalWrite(STEP6, HIGH);
             delayMicroseconds(Speed);
+
             if (i % 100 == 0) {
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
         }
+
         digitalWrite(STEP5, LOW);
         digitalWrite(STEP6, LOW);
-        CurrentStep2 += steps_horizontal;
+
+        CurrentStep2 = targetStepsZ;
         digitalWrite(enable_z, HIGH);
     }
 }
+
 
 
 void GoHomePair(float& posX, float& posZ) {
@@ -227,8 +221,8 @@ void GoHomePair(float& posX, float& posZ) {
         SAFE_STEPS = 0;
         while (!xHomingReached && SAFE_STEPS < MAX_X_HOMING_STEPS) {
 
-        if ((digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH) &&
-        (digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH)) {
+        if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
+        digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
             xHomingReached = true;
             break;
         }
@@ -316,61 +310,59 @@ void GoHomePair(float& posX, float& posZ) {
 
 
 
-void SecondTouchPair(long speed_us) {
-
+void SecondTouchPair(long speed_us)
+{
     bool verticalDone = false;
     bool zLeftDone = false;
     bool zRightDone = false;
 
+    const long MAX_SECOND_TOUCH_STEPS = 50;
+    long safeSteps = 0;
+
+    // Direcciones hacia home
     digitalWrite(DIR1, HIGH);
     digitalWrite(DIR2, HIGH);
     digitalWrite(DIR3, HIGH);
     digitalWrite(DIR4, HIGH);
     digitalWrite(DIR5, HIGH);
-    digitalWrite(DIR6, LOW);   
+    digitalWrite(DIR6, LOW);
+
+    delayMicroseconds(DIR_CHANGE_DELAY_US);
+
+    digitalWrite(enable, LOW);
+    digitalWrite(enable_z, LOW);
 
     // -------- VERTICAL SECOND TOUCH --------
-    while (!verticalDone) {
+    while (!verticalDone && safeSteps < MAX_SECOND_TOUCH_STEPS) {
 
-        if (digitalRead(YLI) == HIGH && digitalRead(YLE) == HIGH &&
-            digitalRead(YRI) == HIGH && digitalRead(YRE) == HIGH) {
+        if (digitalRead(YLI) == HIGH &&
+            digitalRead(YLE) == HIGH &&
+            digitalRead(YRI) == HIGH &&
+            digitalRead(YRE) == HIGH) {
             verticalDone = true;
             break;
         }
 
+        // Decidir ANTES de stepear
+        bool moveMXLI = !digitalRead(YLI);
+        bool moveMXLE = !digitalRead(YLE);
+        bool moveMXRI = !digitalRead(YRI);
+        bool moveMXRE = !digitalRead(YRE);
+
         digitalWrite(STEP1, LOW);
-        digitalWrite(STEP2, LOW);
-        digitalWrite(STEP3, LOW);
-        digitalWrite(STEP4, LOW);
-        delayMicroseconds(speed_us);
-       
-	   if (!digitalRead(YLI))
-			digitalWrite(STEP1, HIGH);
         digitalWrite(STEP2, LOW);
         digitalWrite(STEP3, LOW);
         digitalWrite(STEP4, LOW);
         delayMicroseconds(speed_us);
 
-        digitalWrite(STEP1, LOW);
-		if (!digitalRead(YLE))
-			digitalWrite(STEP2, HIGH);
-        digitalWrite(STEP3, LOW);
-        digitalWrite(STEP4, LOW);
+        if (moveMXLI) digitalWrite(STEP1, HIGH);
+        if (moveMXLE) digitalWrite(STEP2, HIGH);
+        if (moveMXRI) digitalWrite(STEP3, HIGH);
+        if (moveMXRE) digitalWrite(STEP4, HIGH);
+
         delayMicroseconds(speed_us);
 
-        digitalWrite(STEP1, LOW);
-        digitalWrite(STEP2, LOW);
-		if (!digitalRead(YRI))
-			digitalWrite(STEP3, HIGH);
-        digitalWrite(STEP4, LOW);
-        delayMicroseconds(speed_us);
-
-        digitalWrite(STEP1, LOW);
-        digitalWrite(STEP2, LOW);
-        digitalWrite(STEP3, LOW);
-		if (!digitalRead(YRI))
-			digitalWrite(STEP4, HIGH);
-        delayMicroseconds(speed_us);
+        safeSteps++;
     }
 
     digitalWrite(STEP1, LOW);
@@ -378,35 +370,50 @@ void SecondTouchPair(long speed_us) {
     digitalWrite(STEP3, LOW);
     digitalWrite(STEP4, LOW);
 
-    while (!zLeftDone || !zRightDone) {
+    // -------- HORIZONTAL SECOND TOUCH --------
+    safeSteps = 0;
+
+    while ((!zLeftDone || !zRightDone) && safeSteps < MAX_SECOND_TOUCH_STEPS) {
+
+        // evaluar finales
+        if (digitalRead(ZL) == HIGH) zLeftDone = true;
+        if (digitalRead(ZR) == HIGH) zRightDone = true;
+
+        bool moveZL = !zLeftDone;
+        bool moveZR = !zRightDone;
 
         digitalWrite(STEP5, LOW);
         digitalWrite(STEP6, LOW);
         delayMicroseconds(speed_us);
 
-        // RIGHT Z
-        if (!zRightDone) {
-            if (digitalRead(ZR) == HIGH) {
-                zRightDone = true;
-            } else {
-                digitalWrite(STEP5, HIGH);
-            }
-        }
-
-        // LEFT Z
-        if (!zLeftDone) {
-            if (digitalRead(ZL) == HIGH) {
-                zLeftDone = true;
-            } else {
-                digitalWrite(STEP6, HIGH);
-            }
-        }
+        if (moveZR) digitalWrite(STEP5, HIGH); // RIGHT Z
+        if (moveZL) digitalWrite(STEP6, HIGH); // LEFT Z
 
         delayMicroseconds(speed_us);
-    }
 
+        safeSteps++;
+    }
+    digitalWrite(DIR5, LOW);
+    digitalWrite(DIR6, HIGH);
+    delayMicroseconds(speed_us);
+    
+
+    digitalWrite(STEP5, HIGH);
+    digitalWrite(STEP6, HIGH);
+    delayMicroseconds(speed_us);
     digitalWrite(STEP5, LOW);
     digitalWrite(STEP6, LOW);
+    
+    digitalWrite(DIR1, LOW);
+    digitalWrite(DIR2, LOW);
+    digitalWrite(DIR3, LOW);
+    digitalWrite(DIR4, LOW);
+    digitalWrite(DIR5, LOW);
+    digitalWrite(DIR6, LOW);
+
+    digitalWrite(enable, HIGH);
+    digitalWrite(enable_z, HIGH);
+
 
     Serial.println("SecondTouch finished");
 }
@@ -486,6 +493,7 @@ void BackoffAll(int steps, long speed_us) {
     
     digitalWrite(STEP5, LOW);
     digitalWrite(STEP6, LOW);
+    
 }
 void adjustmentZ() {
     const int STEPS_PER_MM = 20;

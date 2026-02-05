@@ -142,13 +142,24 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
-
 void setSystemTimeManualLocal(int year, int month, int day,
                               int hour, int min, int sec) {
 
     manual_time = true;
 
-    setenv("TZ", "UTC0", 1);
+    const char* tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00"; // España default
+
+    if (g_country == "Argentina") {
+        tz = "ART-3";
+    } else if (g_country == "Spain") {
+        tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00";
+    } else if (g_country == "Spain_Canary") {
+        tz = "WET0WEST,M3.5.0/01:00,M10.5.0/02:00";
+    } else if (g_country == "UK") {
+        tz = "GMT0BST,M3.5.0/01:00,M10.5.0/02:00";
+    }
+
+    setenv("TZ", tz, 1);
     tzset();
 
     struct tm t = {};
@@ -158,15 +169,17 @@ void setSystemTimeManualLocal(int year, int month, int day,
     t.tm_hour = hour;
     t.tm_min  = min;
     t.tm_sec  = sec;
-    t.tm_isdst = 0;
+    t.tm_isdst = -1;  
 
-    time_t epoch = mktime(&t);
+    time_t local_epoch = mktime(&t);
+
     struct timeval now = {
-        .tv_sec = epoch,
+        .tv_sec = local_epoch,
         .tv_usec = 0
     };
 
     settimeofday(&now, NULL);
 
-    Serial.println("[TIME] Manual time set EXACT (no TZ)");
+    Serial.println("[TIME] Manual LOCAL time set (SPA-safe)");
 }
+

@@ -56,5 +56,6 @@ extern bool manual_time;
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;
 extern bool g_auto_mode_on;
+extern bool use_simulated_time;
 
 #endif

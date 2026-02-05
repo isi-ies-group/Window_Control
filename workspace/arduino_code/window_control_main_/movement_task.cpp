@@ -44,9 +44,6 @@ static void movementTask(void *pvParameters) {
                     break;
             }
         }
-        else {
-            vTaskDelay(1 / portTICK_PERIOD_MS);
-        }
     }
 }
 

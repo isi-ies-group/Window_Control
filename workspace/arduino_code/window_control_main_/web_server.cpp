@@ -195,6 +195,18 @@ const char index_html[] PROGMEM = R"rawliteral(
   <button type="button" onclick="location.href='/end_config'">End</button>
 </form>
 
+<h3>Manual Date & Time</h3>
+
+<form action="/set_datetime" method="post">
+  Date (YYYY-MM-DD):<br>
+  <input type="text" name="date" placeholder="2026-01-20"><br>
+
+  Time (HH:MM:SS):<br>
+  <input type="text" name="time" placeholder="11:44:15"><br>
+
+  <input type="submit" value="Set Date & Time">
+</form>
+
 <!-- SECTION 2: Ephemeris Input -->
 <h2>Ephemeris Input</h2>
 <form action="/eph_submit" method="get">
@@ -711,7 +723,7 @@ void serverInit() {
   });
 
 // ----- SLEEP -----
-server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
 
     if (thisSt != STDBY && thisSt != AUTO_MODE) {
         request->send(403, "text/html",
@@ -737,16 +749,16 @@ server.on("/sleep", HTTP_POST, [](AsyncWebServerRequest *request) {
 
     request->send(200, "text/html",
         "<p>Entering deep sleep...</p>");
-});
+  });
 
 // ----- set_time -----
-server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
-  manual_time = false;
-  request->send(200, "text/html", "<p>Setting time...</p>");
-  Serial.println("[WEB] Reset");
-  delay(500);
-  setLocalTime();
-});
+  server.on("/settime", HTTP_POST, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", "<p>Setting time...</p>");
+    manual_time = false;
+    Serial.println("[Time] GPS");
+    delay(500);
+    setLocalTime();
+  });
 
 
 //-------- Date-time ---------
@@ -771,7 +783,6 @@ server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
     return;
   }
 
-  // Validaciones básicas (como pediste)
   if (year < 2000 || year > 3000 ||
       month < 1 || month > 12 ||
       day < 1 || day > 31 ||
@@ -782,7 +793,6 @@ server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
     return;
   }
 
-  // AQUÍ SE HACE TODO
   setSystemTimeManualLocal(year, month, day, hour, min, sec);
 
   printLocalTime();
@@ -794,6 +804,7 @@ server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
 
   server.begin();
   Serial.println("Web server started.");
+
 }
 
 

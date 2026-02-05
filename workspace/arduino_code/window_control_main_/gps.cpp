@@ -74,6 +74,7 @@ void setSystemTimeFromGPS() {
 void setLocalTime() {
     if (manual_time == true) {
         Serial.println("System using manual date-time");
+        return;
     }
     static unsigned long lastPrint = 0;
     unsigned long start = millis();
@@ -141,12 +142,12 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
+
 void setSystemTimeManualLocal(int year, int month, int day,
                               int hour, int min, int sec) {
 
     manual_time = true;
 
-    // FORZAMOS UTC PARA QUE NO HAYA DESPLAZAMIENTOS
     setenv("TZ", "UTC0", 1);
     tzset();
 
@@ -159,8 +160,7 @@ void setSystemTimeManualLocal(int year, int month, int day,
     t.tm_sec  = sec;
     t.tm_isdst = 0;
 
-    time_t epoch = mktime(&t);  // sin offsets raros
-
+    time_t epoch = mktime(&t);
     struct timeval now = {
         .tv_sec = epoch,
         .tv_usec = 0
@@ -170,4 +170,3 @@ void setSystemTimeManualLocal(int year, int month, int day,
 
     Serial.println("[TIME] Manual time set EXACT (no TZ)");
 }
-

@@ -39,7 +39,7 @@ void autoMode (){
     auto_counter++;
     Serial.println(auto_counter);
     if (auto_counter % 15 == 0){
-        setLocalTime();
+        if (!manual_time) setLocalTime();
     }
     if (auto_counter % 60 == 0){
         requestAntiBacklash(); 

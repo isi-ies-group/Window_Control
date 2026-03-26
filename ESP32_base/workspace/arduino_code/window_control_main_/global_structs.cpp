@@ -20,3 +20,4 @@ int auto_counter = 0;
 time_t g_sunrise_epoch = 0;
 time_t g_sunset_epoch  = 0;
 
+bool use_simulated_time = true;

@@ -86,6 +86,7 @@ void runMachine() {
 				break;
 			case STDBY:
 				auto_on = false;
+				use_simulated_time = false;
 				saveState();
 				Serial.println("[FSM]: STDBY");
 				break;
@@ -145,6 +146,9 @@ void runMachine() {
 				Serial.println("[FSM]: AUTO_MODE");
 				requestHome();
 				start = millis();
+				if(!use_simulated_time)
+					startDaySimulation(1782970000); // sunrise
+
 			break;
 		}
 
@@ -161,8 +165,7 @@ void runMachine() {
         return;
     }
 
-		if (millis() - start >= 5000) {
-			auto_on = true;
+		if (millis() - start >= 1000) {
 			autoMode();
 			start = millis();       
 		}

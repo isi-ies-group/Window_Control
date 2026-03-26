@@ -25,4 +25,10 @@ void BackoffAll(int steps, long speed_us);
 void adjustmentZ();
 void antiBacklashZ(int cycles, int steps, long speed_us);
 
+
+long computeHorizontalSteps(float delta_mm);
+
+
+long computeVerticalSteps(float delta_mm);
+
 //#endif

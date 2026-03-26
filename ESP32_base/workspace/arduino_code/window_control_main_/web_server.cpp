@@ -736,73 +736,47 @@ void serverInit() {
     setLocalTime();
   });
 
-  //-------- Date-time ---------
-  server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (thisSt != CONFIG) {
-      request->send(200, "text/html",
-        "<p style='color:red;'>To set time manually init configuration.</p>");
-      return;
-    }
 
-    if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
-      request->send(400, "text/html", "<p>Missing date or time</p>");
-      return;
-    }
+//-------- Date-time ---------
+server.on("/set_datetime", HTTP_POST, [](AsyncWebServerRequest *request) {
 
-    String dateStr = request->getParam("date", true)->value();
-    String timeStr = request->getParam("time", true)->value();
+  manual_time = true;
 
-    int year, month, day;
-    int hour, min, sec;
-
-    if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3 ||
-        sscanf(timeStr.c_str(), "%d:%d:%d", &hour, &min, &sec) != 3) {
-      request->send(400, "text/html", "<p>Invalid date/time format</p>");
-      return;
-    }
-
-    struct tm t = {};
-    t.tm_year = year - 1900;
-    t.tm_mon  = month - 1;
-    t.tm_mday = day;
-    t.tm_hour = hour;
-    t.tm_min  = min;
-    t.tm_sec  = sec;
-    t.tm_isdst = -1;
-
-      if (year < 2000 || year > 3000) {
-    request->send(400, "text/html",
-      "<p style='color:red;'>Year must be between 2000 and 3000</p>");
+  if (!request->hasParam("date", true) || !request->hasParam("time", true)) {
+    request->send(400, "text/html", "<p>Missing date or time</p>");
     return;
   }
 
-  if (month < 1 || month > 12) {
-    request->send(400, "text/html",
-      "<p style='color:red;'>Month must be between 1 and 12</p>");
+  String dateStr = request->getParam("date", true)->value();
+  String timeStr = request->getParam("time", true)->value();
+
+  int year, month, day;
+  int hour, min, sec;
+
+  if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3 ||
+      sscanf(timeStr.c_str(), "%d:%d:%d", &hour, &min, &sec) != 3) {
+    request->send(400, "text/html", "<p>Invalid date/time format</p>");
     return;
   }
 
-  if (day < 1 || day > 31) {
-    request->send(400, "text/html",
-      "<p style='color:red;'>Day must be between 1 and 31</p>");
+  if (year < 2000 || year > 3000 ||
+      month < 1 || month > 12 ||
+      day < 1 || day > 31 ||
+      hour < 0 || hour > 23 ||
+      min < 0 || min > 59 ||
+      sec < 0 || sec > 59) {
+    request->send(400, "text/html", "<p>Date/time out of range</p>");
     return;
   }
 
-  if (hour < 0 || hour > 23 ||
-      min  < 0 || min  > 59 ||
-      sec  < 0 || sec  > 59) {
-    request->send(400, "text/html",
-      "<p style='color:red;'>Invalid time values</p>");
-    return;
-  }
+  setSystemTimeManualLocal(year, month, day, hour, min, sec);
 
-    setSystemTimeManualLocal(year, month, day, hour, min, sec);
+  printLocalTime();
 
-    printLocalTime();
+  request->send(200, "text/html",
+    "<p style='color:green;'>Date and time set manually.</p>");
+});
 
-    request->send(200, "text/html",
-      "<p style='color:green;'>Date and time set manually.</p>");
-  });
 
   server.begin();
   Serial.println("Web server started.");

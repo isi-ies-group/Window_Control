@@ -69,8 +69,6 @@ long Step_MXRI = 0;
 long Step_MZL = 0;
 long Step_MZR = 0;
 
-
-// ----- movement func ----
 void move(float xmm, float zmm)
 {
     // ---------- VERTICAL (X) ----------
@@ -83,12 +81,15 @@ void move(float xmm, float zmm)
         digitalWrite(enable, LOW);
 
         if (diffX > 0) {
+
             // up
+
             digitalWrite(DIR1, LOW);
             digitalWrite(DIR2, LOW);
             digitalWrite(DIR3, LOW);
             digitalWrite(DIR4, LOW);
         } else {
+
             // down
             digitalWrite(DIR1, HIGH);
             digitalWrite(DIR2, HIGH);
@@ -197,28 +198,25 @@ void GoHomePair(float& posX, float& posZ) {
         // Vertical
         SAFE_STEPS = 0;
         while (!xHomingReached && SAFE_STEPS < MAX_X_HOMING_STEPS) {
-
-            if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
-            digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
-                xHomingReached = true;
-                break;
-            }
-
             digitalWrite(STEP1, LOW);
             digitalWrite(STEP2, LOW);
             digitalWrite(STEP3, LOW);
             digitalWrite(STEP4, LOW);
 
-            delayMicroseconds(SLOW);
+            delayMicroseconds(Speed);
 
             digitalWrite(STEP1, HIGH);
             digitalWrite(STEP2, HIGH);
             digitalWrite(STEP3, HIGH);
             digitalWrite(STEP4, HIGH);
 
-            delayMicroseconds(SLOW);
+            delayMicroseconds(Speed);
 
             SAFE_STEPS++;
+
+			if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
+			digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
+				xHomingReached = true;
         }
 
 
@@ -295,7 +293,6 @@ void SecondTouchPair(long speed_us)
             break;
         }
 
-     
         bool moveMXLI = !digitalRead(YLI);
         bool moveMXLE = !digitalRead(YLE);
         bool moveMXRI = !digitalRead(YRI);
@@ -326,9 +323,7 @@ void SecondTouchPair(long speed_us)
     safeSteps = 0;
 
     while ((!zLeftDone || !zRightDone) && safeSteps < MAX_SECOND_TOUCH_STEPS) {
-
-    
-        if (digitalRead(ZL) == HIGH) zLeftDone = true;
+		if (digitalRead(ZL) == HIGH) zLeftDone = true;
         if (digitalRead(ZR) == HIGH) zRightDone = true;
 
         bool moveZL = !zLeftDone;

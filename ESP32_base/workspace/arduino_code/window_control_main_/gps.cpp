@@ -146,11 +146,11 @@ void printLocalTime() {
         timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
         timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
-
 void setSystemTimeManualLocal(int year, int month, int day,
                               int hour, int min, int sec) {
 
     manual_time = true;
+
 
     const char* tz = "CET-1CEST,M3.5.0/02:00,M10.5.0/03:00"; // Spain default
 

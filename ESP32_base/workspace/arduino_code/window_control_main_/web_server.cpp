@@ -218,41 +218,17 @@ const char index_html[] PROGMEM = R"rawliteral(
 </form>
 
 <!-- SECTION 3: Manual Movement -->
+
 <h2>Manual Movement</h2>
-<div class="section">
-  <h3>Global X / Z</h3>
-  <div class="pad-grid">
-    <div></div>
-    <button id="x_plus"
-      onmousedown="startMove('x_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('x_plus')" ontouchend="stopMove()">X+</button>
-    <div></div>
 
-    <button id="z_minus"
-      onmousedown="startMove('z_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('z_minus')" ontouchend="stopMove()">Z-</button>
-    <div></div>
+<form action="/manual_goto" method="get">
+	X target: <input type="text" name="x"><br>
+	Z target: <input type="text" name="z"><br>
+	<button class="manual-begin" onclick="location.href='/manual_begin'">Begin</button>
+	<input type="submit" value="Go to X / Z">
+	<button class="manual-begin" onclick="location.href='/end_manual'">End</button>
 
-    <button id="z_plus"
-      onmousedown="startMove('z_plus')" onmouseup="stopMove()"
-      ontouchstart="startMove('z_plus')" ontouchend="stopMove()">Z+</button>
-    <div></div>
-
-    <button id="x_minus"
-      onmousedown="startMove('x_minus')" onmouseup="stopMove()"
-      ontouchstart="startMove('x_minus')" ontouchend="stopMove()">X-</button>
-    <div></div>
-  </div>
-  
-  <form action="/manual_goto" method="get">
-    X target: <input type="text" name="x"><br>
-    Z target: <input type="text" name="z"><br>
-    <input type="submit" value="Go to X / Z">
-  </form>
-
-  <button class="manual-begin" onclick="location.href='/manual_begin'">Begin</button>
-  <button class="manual-begin" onclick="location.href='/end_manual'">End</button>
-</div>
+</form>
 
 <!-- SECTION 4: Status -->
 <h2>System Status</h2>

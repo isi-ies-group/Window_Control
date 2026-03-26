@@ -31,6 +31,7 @@ void saveData() {
     prefs.end();
 }
 
+// ------ get<data_type>(<data_name>,<default_value>) -------------
 void loadData() {
     prefs.begin("config", true);
 

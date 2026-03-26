@@ -47,6 +47,7 @@ static void movementTask(void *pvParameters) {
     }
 }
 
+// task declartion
 void initMovementTask() {
     movementQueue = xQueueCreate(5, sizeof(MoveCmd));
     xTaskCreatePinnedToCore(
@@ -60,6 +61,7 @@ void initMovementTask() {
     );
 }
 
+// ------ Requests ----
 void requestMove() {
     MoveCmd cmd = CMD_MOVE;
     xQueueSend(movementQueue, &cmd, 0);

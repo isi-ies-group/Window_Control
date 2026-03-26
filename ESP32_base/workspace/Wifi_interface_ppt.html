@@ -1,0 +1,258 @@
+<!--const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>-->
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>ESP32 Control Interface</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    h2 { color: #333; }
+    form, .pad, .section, .status-box {
+      background: white;
+      display: inline-block;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 150px;
+      padding: 6px;
+      margin: 6px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button, input[type="submit"] {
+      background-color: #0078D7;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .pad-grid {
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .pad-grid button {
+      width: 80px;
+      height: 60px;
+      font-size: 16px;
+    }
+    .pressed {
+      background-color: #004b80 !important;
+    }
+    .manual-begin {
+      background-color: #0078D7;
+      font-size: 14px;
+      padding: 10px 25px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+    .auto-btn {
+      background-color: #28a745;
+      font-size: 20px;
+      padding: 15px 40px;
+      margin-top: 25px;
+    }
+    .auto-btn.active {
+      background-color: #dc3545 !important;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- SECTION 1: Initial Configuration -->
+<h2>Initial Configuration</h2>
+<form action="/config_submit" method="get">
+  Latitude: <input type="text" name="latitude"><br>
+  Longitude: <input type="text" name="longitude"><br>
+  Pan: <input type="text" name="pan"><br>
+  Tilt: <input type="text" name="tilt"><br>
+  Tilt correction:
+  <input type="checkbox" name="tilt_correction" value="1"> Enable<br>
+
+  Country:
+  <select name="country">
+    <option value="">-- Select --</option>
+    <option value="Spain">Spain</option>
+    <option value="Spain_Canary">Spain (Canary)</option>
+    <option value="UK">United Kingdom</option>
+    <option value="Poland">Poland</option>
+    <option value="Argentina">Argentina</option>
+  </select><br>
+
+  <button type="button" onclick="location.href='/config_begin'">Begin</button>
+  <input type="submit" value="Submit">
+  <button type="button" onclick="location.href='/end_config'">End</button>
+  	<hr>
+	<h3>Manual Date & Time</h3>
+
+	<form action="/set_datetime" method="post">
+	  Date (YYYY-MM-DD):<br>
+	  <input type="text" name="date" placeholder="2026-01-20"><br>
+
+	  Time (HH:MM:SS):<br>
+	  <input type="text" name="time" placeholder="11:44:15"><br>
+
+	  <input type="submit" value="Set Date & Time">
+	</form>
+
+</form>
+
+<!-- SECTION 2: Ephemeris Input -->
+<h2>Ephemeris Input</h2>
+<form action="/eph_submit" method="get">
+  Azimuth: <input type="text" name="azimuth"><br>
+  Elevation: <input type="text" name="elevation"><br>
+  <button type="button" onclick="location.href='/eph_begin'">Begin</button>
+  <input type="submit" value="Submit">
+  <button type="button" onclick="location.href='/end_eph'">End</button>
+</form>
+
+<!-- SECTION 3: Manual Movement -->
+<h2>Manual Movement</h2>
+
+<form action="/manual_goto" method="get">
+	X target: <input type="text" name="x"><br>
+	Z target: <input type="text" name="z"><br>
+	<button class="manual-begin" onclick="location.href='/manual_begin'">Begin</button>
+	<input type="submit" value="Go to X / Z">
+	<button class="manual-begin" onclick="location.href='/end_manual'">End</button>
+
+</form>
+
+
+
+<!-- SECTION 4: Status -->
+<h2>System Status</h2>
+<div class="status-box">
+  State: <b><span id="st">---</span></b><br>
+  Latitude: <span id="lat">---</span><br>
+  Longitude: <span id="lon">---</span><br>
+  Pan: <span id="pan">---</span><br>
+  Tilt: <span id="tilt">---</span><br>
+  Tilt correction: <span id="tc">---</span><br>
+  Date: <span id="date">---</span><br>
+  Time: <span id="time">---</span><br>
+  X position: <span id="x">---</span><br>
+  Z position: <span id="z">---</span><br>
+</div>
+
+<!-- SECTION 5: Sun Angles -->
+<h2>Sun-Surface Angles</h2>
+<div class="status-box">
+  Azimuth: <span id="az">---</span><br>
+  Elevation: <span id="ele">---</span><br>
+  AOIl: <span id="aoil">---</span><br>
+  AOIt: <span id="aoit">---</span><br>
+</div>
+
+<! -- SECTION 6: AUTO MODE -->
+<br><br>
+<button id="autoBtn" class="auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
+
+
+<! -- SECTION 7: SYSTEM_BUTTON -->
+<hr>
+
+<div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
+
+  <form action="/reset" method="post" style="flex:1;">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px; background:#c00; color:white;">
+      RESET
+    </button>
+  </form>
+
+  <form action="/sleep" method="post" style="flex:1;">
+    Sleep duration (minutes): <input type="number" name="minutes" min="1" max="1440">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px;">
+      SLEEP
+    </button>
+  </form>
+
+  <form action="/settime" method="post" style="flex:1;">
+    <button type="submit"
+            style="width:100%; padding:12px; font-size:16px;">
+      SET TIME
+    </button>
+  </form>
+
+</div>
+
+
+
+<script>
+let interval = null;
+let autoMode = false;
+
+setInterval(() => {
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      st.innerText=d.state;
+      lat.innerText=d.latitude;
+      lon.innerText=d.longitude;
+      pan.innerText=d.pan;
+      tilt.innerText=d.tilt;
+      tc.innerText=d.tilt_correction?"Enabled":"Disabled";
+      date.innerText=d.date;
+      time.innerText=d.time;
+      x.innerText=d.x;
+      z.innerText=d.z;
+    });
+}, 600);
+
+setInterval(() => {
+  fetch('/sunstatus')
+    .then(r => r.json())
+    .then(d => {
+      az.innerText=d.azimuth;
+      ele.innerText=d.elevation;
+      aoil.innerText=d.aoil;
+      aoit.innerText=d.aoit;
+    });
+}, 600);
+
+function startMove(dir){
+  document.getElementById(dir).classList.add("pressed");
+  sendMove(dir);
+  interval=setInterval(()=>sendMove(dir),500);
+}
+function stopMove(){
+  clearInterval(interval);
+  document.querySelectorAll(".pad-grid button")
+    .forEach(b=>b.classList.remove("pressed"));
+}
+function sendMove(dir){
+  fetch(`/manual?dir=${dir}`);
+}
+
+function toggleAutoMode(){
+  autoMode=!autoMode;
+  autoBtn.classList.toggle("active");
+  autoBtn.innerText=autoMode?"STOP AUTO":"AUTO MODE";
+  fetch(autoMode?"/auto_mode_on":"/auto_mode_off");
+}
+</script>
+
+</body>
+</html>
+<!--)rawliteral";-->

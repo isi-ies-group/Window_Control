@@ -17,7 +17,7 @@ States prevSt;
 
 unsigned long start = millis();
 
-
+// ----- FSM initialization ------
 void initFSM() {
 	Serial.print("Machine initialized. Current State: ");
 	loadState();
@@ -47,6 +47,7 @@ void initFSM() {
 			Serial.println("UNKNOWN");
 			break;
 	}
+	//------- Awakening -------
 	if (thisSt == SLEEP && esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TIMER) {
     Serial.println("[BOOT] Wakeup from sleep");
 
@@ -72,7 +73,7 @@ String stateToText(States s) {
     }
 }
 
-
+// ---------- PROGRAM LOOP RUNS THIS FSM --------
 void runMachine() {
 	int64_t sleep_us = 0;
 	time_t now;
@@ -168,7 +169,7 @@ void runMachine() {
 	}
 }
 
-
+//------------------- declaration of events --------------------
 States fsmProcess(Events event, bool auto_running){
 	if (event == begin_config) return CONFIG;
 	if (event == end_config) return STDBY;
@@ -185,7 +186,7 @@ States fsmProcess(Events event, bool auto_running){
 		else return STDBY;
 }
 
-
+// ---------- FSM transitions--------------
 void changeState(States newSt) {
     bool valid = true;
 

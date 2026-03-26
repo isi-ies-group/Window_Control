@@ -34,6 +34,8 @@ AOI applyTilt(double tilt, double _x, double _z) {
     return result;
 }
 
+//pi rotation
+
 AOI applyTiltCorrection(double _x, double _y, bool tilt_correction) {
     AOI result;
     double rot = PI; // 180°

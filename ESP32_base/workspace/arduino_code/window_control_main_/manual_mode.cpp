@@ -25,4 +25,3 @@ void manualMode(const String& dir){
                       dir.c_str(), g_x_val, g_z_val);
     }
 }
-

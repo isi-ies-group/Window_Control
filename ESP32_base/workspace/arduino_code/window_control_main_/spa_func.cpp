@@ -130,7 +130,7 @@ void SPA_f() {
     spa.latitude  = g_SPAInputs.latitude;
     spa.longitude = g_SPAInputs.longitude;
 
-    // 🔴 ESTO ES LO IMPORTANTE 🔴
+    // ----------- Set timezone ----  
     spa.timezone = getTimezoneForCountry(
         g_country,
         spa.year,
@@ -181,7 +181,8 @@ void SPA_f() {
         t.tm_hour = 0;
         t.tm_min  = 0;
         t.tm_sec  = 0;
-
+        
+        // calculate sunset and sunrise for automatic sleep mode
         time_t midnight = mktime(&t);
 
         time_t sunrise = midnight + (time_t)(spa.sunrise * 3600.0);

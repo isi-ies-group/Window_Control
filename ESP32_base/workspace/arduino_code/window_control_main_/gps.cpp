@@ -9,7 +9,7 @@
 TinyGPSPlus gps;
 HardwareSerial hs(2);
 
-\\ ---------- GPS INITIALIZATION-------
+// ---------- GPS INITIALIZATION-------
 
 void gpsInit() {
     hs.begin(9600, SERIAL_8N1, RXD2, TXD2);

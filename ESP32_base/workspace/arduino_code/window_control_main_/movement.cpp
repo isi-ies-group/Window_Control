@@ -217,6 +217,7 @@ void GoHomePair(float& posX, float& posZ) {
 			if (digitalRead(YRI) == HIGH || digitalRead(YRE) == HIGH ||
 			digitalRead(YLI) == HIGH || digitalRead(YLE) == HIGH) {
 				xHomingReached = true;
+            }
         }
 
 

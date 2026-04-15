@@ -5,22 +5,74 @@
 * This repository holds an Arduino project able to control the mechatronic system for the integrated tracking of a building-integrated concentrator photovoltaics modules (BICPV) based on linear Fresnel lenses.
 * The program locates a BICPV window on Earth, transforms ephemeris to cartesian coordinates and moves the rear glass (solar cell array) using stepper motors to accomodate solar movements throughout the day.
   
-* Version [1.0.1]
+* Version [1.3.0]
 
-### How do I get set up? ###
+### Contribution guide ###
 
-* Summary of setup
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+To work within the shared repository, follow the guidelines below:
 
-### Contribution guidelines ###
+1. Clone the repository
 
-* Writing tests
-* Code review
-* Other guidelines
+>>*git clone <repository_url>*
+>>*cd <repository_name>*
+
+2. Create a folder for your project
+
+Each project must be placed in its own directory at the root of the repository:
+
+>> */esp32-base*
+>> */stm32-ui*
+>> */stm32-communication*
+
+3. Create a main branch for your project
+
+Create a dedicated branch for your project starting from main:
+
+>> *git branch project/your_project_name*
+>> *git checkout project/your_project_name*
+
+4. Development workflow
+
+For each new feature or modification:
+
+Create a temporary working branch from your project branch:
+
+>> *git branch feature/feature_name*
+>> *git checkout feature/feature_name*
+
+Develop your changes and commit regularly.
+
+5. Merge changes into your project branch
+
+Once the feature is complete:
+
+>> *git checkout project/your_project_name*
+>> *git merge feature/feature_name*
+
+After merging, delete the temporary branch:
+
+*git branch -d feature/feature_name*
+
+6. Remote updates
+
+Only the main branch of each project (project/your_project_name) should be pushed and maintained in the remote repository.
+
+The main branch is reserved for stable versions or final integrations.
+
+7. Version control
+
+Each project must follow its own versioning scheme using standard semantic versioning:
+
+Examples:
+
+_esp32-base v1.0.0_
+_stm32-ui v0.1.4_
+
+Version numbers should be updated according to the scope of changes:
+
+_Major version → significant changes_
+_Minor version → new features_
+_Patch version → bug fixes_
 
 ### Who do I talk to? ###
 
@@ -28,6 +80,7 @@
 * ISI Team
 
 ### Funding ###
+
 * Project supported by grant SMARTWIN TED2021-130920B-C21 funded by MCIN/AEI/10.13039/501100011033 and by the “European Union NextGenerationEU/PRTR”
 <img width="100%" alt="image" src="https://github.com/user-attachments/assets/989816c9-557e-42d0-b824-13ecb4693869" />
 * Supported by the project MICROBEAM ref. PID2021-127810OB-I00, funded by MCIN/AEI/10.13039/501100011033  “ERDF A way of making Europe”

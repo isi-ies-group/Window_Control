@@ -5,41 +5,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Added
-
-- Taskization
-
-
-## [0.0.5] - 02-10-25
+## Released
 
 ### Added 
 
-- Taskization of SPA
-- HTML code for wifi user interface
+#### STM32_WiFi v[0.0.1] - 15-04-26
 
+- STM32_WiFi project folder created
 
-## [0.0.4] - 02-10-25
-
-### Added 
-
-- AOI angles calculation from ephemeris
-
-## [0.0.3] - 17-09-25
-
-### Added 
-
-- Solar Position Algorithm for ephemeris calculation
-
-## [0.0.2] - 15-09-25
 
 ### Added
 
-- Bilinear Interpolation
+#### v[1.3.0] - 15-04-26
 
-## [0.0.1] - 02-09-25
-
-### Added
-
-- WIFI control mode
+- ESP32 base project
 
 

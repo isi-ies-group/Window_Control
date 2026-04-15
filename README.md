@@ -21,7 +21,9 @@ To work within the shared repository, follow the guidelines below:
 Each project must be placed in its own directory at the root of the repository:
 
 > */esp32-base*
+
 > */stm32-ui*
+
 > */stm32-communication*
 
 3. Create a main branch for your project
@@ -29,6 +31,7 @@ Each project must be placed in its own directory at the root of the repository:
 Create a dedicated branch for your project starting from main:
 
 > *git branch project/your_project_name*
+
 > *git checkout project/your_project_name*
 
 4. Development workflow
@@ -38,6 +41,7 @@ For each new feature or modification:
 Create a temporary working branch from your project branch:
 
 > *git branch feature/feature_name*
+
 > *git checkout feature/feature_name*
 
 Develop your changes and commit regularly.
@@ -47,6 +51,7 @@ Develop your changes and commit regularly.
 Once the feature is complete:
 
 > *git checkout project/your_project_name*
+
 > *git merge feature/feature_name*
 
 After merging, delete the temporary branch:

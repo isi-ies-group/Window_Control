@@ -13,23 +13,23 @@ To work within the shared repository, follow the guidelines below:
 
 1. Clone the repository
 
->>*git clone <repository_url>*
->>*cd <repository_name>*
+> *git clone <repository_url>*
+> *cd <repository_name>*
 
 2. Create a folder for your project
 
 Each project must be placed in its own directory at the root of the repository:
 
->> */esp32-base*
->> */stm32-ui*
->> */stm32-communication*
+> */esp32-base*
+> */stm32-ui*
+> */stm32-communication*
 
 3. Create a main branch for your project
 
 Create a dedicated branch for your project starting from main:
 
->> *git branch project/your_project_name*
->> *git checkout project/your_project_name*
+> *git branch project/your_project_name*
+> *git checkout project/your_project_name*
 
 4. Development workflow
 
@@ -37,8 +37,8 @@ For each new feature or modification:
 
 Create a temporary working branch from your project branch:
 
->> *git branch feature/feature_name*
->> *git checkout feature/feature_name*
+> *git branch feature/feature_name*
+> *git checkout feature/feature_name*
 
 Develop your changes and commit regularly.
 
@@ -46,18 +46,18 @@ Develop your changes and commit regularly.
 
 Once the feature is complete:
 
->> *git checkout project/your_project_name*
->> *git merge feature/feature_name*
+> *git checkout project/your_project_name*
+> *git merge feature/feature_name*
 
 After merging, delete the temporary branch:
 
-*git branch -d feature/feature_name*
+> *git branch -d feature/feature_name*
 
 6. Remote updates
 
-Only the main branch of each project (project/your_project_name) should be pushed and maintained in the remote repository.
+**Only the main branch** of each project (project/your_project_name) **should be pushed and maintained in the remote repository**.
 
-The main branch is reserved for stable versions or final integrations.
+**The main branch is reserved for stable versions or final integrations**.
 
 7. Version control
 
@@ -65,14 +65,14 @@ Each project must follow its own versioning scheme using standard semantic versi
 
 Examples:
 
-_esp32-base v1.0.0_
-_stm32-ui v0.1.4_
+> _esp32-base v1.0.0_
+> _stm32-ui v0.1.4_
 
 Version numbers should be updated according to the scope of changes:
 
-_Major version → significant changes_
-_Minor version → new features_
-_Patch version → bug fixes_
+> _Major version → significant changes_
+> _Minor version → new features_
+> _Patch version → bug fixes_
 
 ### Who do I talk to? ###
 

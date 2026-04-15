@@ -31,7 +31,7 @@ Each project must be placed in its own directory at the root of the repository:
 Create a dedicated branch for your project starting from main:
 
 > *git branch project/your_project_name*
-
+>
 > *git checkout project/your_project_name*
 
 #### 4. Development workflow
@@ -70,9 +70,9 @@ Each project must follow its own versioning scheme using standard semantic versi
 
 Examples:
 
-> _esp32-base v1.0.0_
+> _esp32-base-V1.0.0_
 >
-> _stm32-ui v0.1.4_
+> _stm32-ui-V0.1.4_
 
 Version numbers should be updated according to the scope of changes:
 

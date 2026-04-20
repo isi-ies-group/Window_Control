@@ -30,9 +30,9 @@ Each project must be placed in its own directory at the root of the repository:
 
 Create a dedicated branch for your project starting from main:
 
-> *git branch project/your_project_name*
+> *git branch <directory_name>*
 >
-> *git checkout project/your_project_name*
+> *git checkout <directory_name>*
 
 #### 4. Development workflow
 
@@ -40,9 +40,9 @@ For each new feature or modification:
 
 Create a temporary working branch from your project branch:
 
-> *git branch feature/feature_name*
+> *git branch <local_branch_name>*
 >
-> *git checkout feature/feature_name*
+> *git checkout <local_branch_name>*
 
 Develop your changes and commit regularly.
 
@@ -50,17 +50,17 @@ Develop your changes and commit regularly.
 
 Once the feature is complete:
 
-> *git checkout project/your_project_name*
+> *git checkout <directory_name>*
 >
-> *git merge feature/feature_name*
+> *git merge <directory_name>*
 
 After merging, delete the temporary branch:
 
-> *git branch -d feature/feature_name*
+> *git branch -d <local_branch_name>*
 
 #### 6. Remote updates
 
-**Only the main branch** of each project (project/your_project_name) **should be pushed and maintained in the remote repository**.
+**Only the main branch** of each project **should be pushed and maintained in the remote repository**.
 
 **The main branch is reserved for stable versions or final integrations**.
 

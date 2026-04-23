@@ -1,0 +1,8 @@
+../Core/Src/aoicalc.c:7:5:degToCartesian	160	static
+../Core/Src/aoicalc.c:18:5:applyPan	168	static
+../Core/Src/aoicalc.c:29:5:applyTilt	168	static
+../Core/Src/aoicalc.c:39:5:applyTiltCorrection	168	static
+../Core/Src/aoicalc.c:46:8:zClip	16	static
+../Core/Src/aoicalc.c:53:5:cartesianToNewEph	160	static
+../Core/Src/aoicalc.c:72:5:cartesianToAngles	160	static
+../Core/Src/aoicalc.c:92:5:ephToAOI	288	static

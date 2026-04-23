@@ -52,3 +52,12 @@ Thumbs.db
 
 # UML
 /documentation/UML/UML_proyect/
+
+# STM32
+Debug/
+Release/
+*.o
+*.elf
+*.bin
+*.map
+.settings/

@@ -1,0 +1,4 @@
+Core/Src/spa.o: ../Core/Src/spa.c ../Core/Inc/spa.h \
+ ../Core/Inc/commonlib.h
+../Core/Inc/spa.h:
+../Core/Inc/commonlib.h:

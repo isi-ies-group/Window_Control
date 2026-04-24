@@ -3,6 +3,8 @@
 
 #include "global_def.h"
 #include <string.h>
+#include <string>
+#include <time.h>
 typedef struct {
     int year;
     int month;
@@ -20,15 +22,13 @@ typedef struct {
     double elevation;
     double tilt;
     bool tilt_correction;
-    float AOIt;
-    float AOIl;
 } AOIInputs;
 
 typedef struct {
     float AOIt;
     float AOIl;
-    const float (*matrix_X)[N];
-    const float (*matrix_Z)[N];
+    const float (*matrix_X)[MATRIX_SIZE];
+    const float (*matrix_Z)[MATRIX_SIZE];
 } InterpolInputs;
 
 
@@ -46,8 +46,8 @@ extern float g_z_val;
 extern bool auto_on;
 extern bool manual_time;
 
-//extern time_t g_sunrise_epoch;
-//extern time_t g_sunset_epoch;
+extern time_t g_sunrise_epoch;
+extern time_t g_sunset_epoch;
 //extern bool g_auto_mode_on;
 //extern bool use_simulated_time;
 

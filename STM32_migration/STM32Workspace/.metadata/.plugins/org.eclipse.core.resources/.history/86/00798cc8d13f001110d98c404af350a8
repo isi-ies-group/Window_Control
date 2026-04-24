@@ -1,0 +1,14 @@
+#include "test.h"
+#include "global_structs.h"
+
+extern RTC_TimeTypeDef sTime;
+extern RTC_DateTypeDef sDate;
+
+
+int dummy(int x){
+return ++x;
+}
+
+void autoModeInputs(float pan, float tilt, bool tilt_correction, float longitude, float latitude, RTC_TimeTypeDef stime, RTC_DateTypeDef sdate){
+
+}

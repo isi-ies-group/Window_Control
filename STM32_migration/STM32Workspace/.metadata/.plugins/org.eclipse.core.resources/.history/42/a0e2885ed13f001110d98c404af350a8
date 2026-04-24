@@ -1,0 +1,9 @@
+#include "test.h"
+
+int dummy(int x){
+return ++x;
+}
+
+void autoModeInputs(float pan, float tilt, bool tilt){
+
+}

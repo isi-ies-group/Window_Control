@@ -1,11 +1,14 @@
 #ifndef aoicalc_h
 #define aoicalc_h
 
+
+#include <stdbool.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h> 
 
 typedef struct{
 	double _AOI;
@@ -24,10 +27,10 @@ typedef struct{
 // spherical coordinates to Cartesian coordinates
 AOI degToCartesian(double azimuth, double elevation);
 //clockwise rotation around the Z axis
-AOI applyPan(double pan, double _x, double _y);  
+AOI applyPan(double pan, double _x, double _y, double _z);
 double zClip(double _z);
 // Tilt (y rotation)
-AOI applyTilt(double tilt, double _x, double _z);
+AOI applyTilt(double tilt, double _x, double _y, double _z);
 
  // Tilt correction when tilt > max_tilt
 AOI applyTiltCorrection(double _x, double _y, bool tilt_correction) ;

@@ -8,7 +8,6 @@ extern AOIInputs g_AOIInputs;
 
 void aoicalc_f() {	
 	AOI aoi_data;
-	
 	aoi_data.pan = g_AOIInputs.pan;
 	aoi_data.tilt = g_AOIInputs.tilt;
 	aoi_data.tilt_correction = g_AOIInputs.tilt_correction;
@@ -28,7 +27,7 @@ void aoicalc_f() {
 
 	aoi_data = ephToAOI(aoi_data.azimuth, aoi_data.elevation, aoi_data.pan, aoi_data.tilt, aoi_data.tilt_correction);
 	
-	g_InterpolInputs.AOIl = aoi_data.AOIl;
-	g_InterpolInputs.AOIt = aoi_data.AOIt;		
+	g_InterpolInputs.AOIl = (float)aoi_data.AOIl;
+	g_InterpolInputs.AOIt = (float)aoi_data.AOIt;
 
 }	

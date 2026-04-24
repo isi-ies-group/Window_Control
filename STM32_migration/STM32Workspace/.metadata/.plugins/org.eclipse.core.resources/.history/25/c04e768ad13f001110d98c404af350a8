@@ -1,0 +1,9 @@
+#include "test.h"
+#include "global_structs.h"
+int dummy(int x){
+return ++x;
+}
+
+void autoModeInputs(float pan, float tilt, bool tilt_correction, float g_SPAInputs.latitude, float g_SPAInputs.longitude){
+
+}

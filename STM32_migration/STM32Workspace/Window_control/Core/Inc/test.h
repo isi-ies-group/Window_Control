@@ -1,1 +1,16 @@
-int dummy(int x);
+#ifndef TEST_H
+#define TEST_H
+
+#include <string>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int dummy(int);
+void autoModeInputs(float pan, float tilt, bool tilt_correction, float longitude, float latitude, std::string country);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

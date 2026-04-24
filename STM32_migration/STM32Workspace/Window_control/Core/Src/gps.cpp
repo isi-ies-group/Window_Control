@@ -22,7 +22,14 @@ void RTC_SetFromTM(struct tm *t)
     if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK){
     	Error_Handler();
     }
-    if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK){
+    	Error_Handler();
+    }
+
+
+
+
+
 }
 
 void RTC_GetToTM(struct tm *t)
@@ -38,8 +45,8 @@ void RTC_GetToTM(struct tm *t)
     t->tm_sec  = sTime.Seconds;
 
     t->tm_mday = sDate.Date;
-    t->tm_mon  = sDate.Month - 1;
-    t->tm_year = sDate.Year + 100;
+    t->tm_mon  = sDate.Month - 1; //RTC 1-12 and tm 0-11
+    t->tm_year = sDate.Year + 100; //Year since 1900
 }
 
 void setManualTime(int year, int month, int day, int hour, int min, int sec)

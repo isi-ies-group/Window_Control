@@ -4,6 +4,7 @@
 #include "interpolation_func.h"
 #include "spa_func.h"
 #include "matrices.h"
+#include "gps.h"
 //#include "movement_task.h"
 //#include "gps.h"
 
@@ -22,16 +23,14 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 
 void autoMode() {
 
-    time_t now;
     struct tm time_info;
-    time(&now);
-    localtime_r(&now, &time_info);
+    RTC_GetToTM(&time_info);
 
     updateSPAInputsFromTime(&time_info, &g_SPAInputs);
+
     SPA_f();
     aoicalc_f();
     interpolation_f();
 
 }
-
 

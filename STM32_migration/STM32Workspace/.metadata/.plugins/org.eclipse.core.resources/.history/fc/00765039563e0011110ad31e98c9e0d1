@@ -1,4 +1,0 @@
-Core/Src/aoicalc.o: ../Core/Src/aoicalc.c ../Core/Inc/aoicalc.h \
- ../Core/Inc/commonlib.h
-../Core/Inc/aoicalc.h:
-../Core/Inc/commonlib.h:

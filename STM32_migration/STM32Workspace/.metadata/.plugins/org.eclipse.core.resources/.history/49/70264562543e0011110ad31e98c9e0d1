@@ -1,2 +1,0 @@
-Core/Src/commonlib.o: ../Core/Src/commonlib.c ../Core/Inc/commonlib.h
-../Core/Inc/commonlib.h:

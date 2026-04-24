@@ -1,8 +1,0 @@
-../Core/Src/aoicalc.c:7:5:degToCartesian	1
-../Core/Src/aoicalc.c:18:5:applyPan	1
-../Core/Src/aoicalc.c:29:5:applyTilt	1
-../Core/Src/aoicalc.c:39:5:applyTiltCorrection	1
-../Core/Src/aoicalc.c:46:8:zClip	3
-../Core/Src/aoicalc.c:53:5:cartesianToNewEph	2
-../Core/Src/aoicalc.c:72:5:cartesianToAngles	2
-../Core/Src/aoicalc.c:92:5:ephToAOI	2

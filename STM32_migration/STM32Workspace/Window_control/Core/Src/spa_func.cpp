@@ -2,16 +2,24 @@
 #include "spa.h"
 #include <time.h>
 #include "global_structs.h"
+#include <string>
+#include <gps.h>
+#include <stdio.h>
+
 
 extern AOIInputs g_AOIInputs;
 
-
-int getTimezoneForCountry(const char *country, int year, int month, int day) {
+/**
+ * Calculate timezone including DST
+ * European rules for countries with DST
+ */
+int getTimezoneForCountry(const std::string& country, int year, int month, int day) {
 
     // --- Base offset--
     int baseOffset = 0;
     bool hasDST = false;
 
+    // --- Countries definition ---
     if (country == "Spain") {
         baseOffset = 1; hasDST = true;
     }
@@ -31,22 +39,22 @@ int getTimezoneForCountry(const char *country, int year, int month, int day) {
         baseOffset = 0; hasDST = false;
     }
 
- 
+   // --- DST logic ---
     if (hasDST) {
         int lastSundayMarch = 31;
         while (true) {
-            struct tm t = {};
+            struct tm t = {0};
             t.tm_year = year - 1900;
             t.tm_mon = 2; 
             t.tm_mday = lastSundayMarch;
             mktime(&t);
-            if (t.tm_wday == 0) break;
+            if (t.tm_wday == 0) break; // tm_wday == 0 -> Sunday
             lastSundayMarch--;
         }
 
         int lastSundayOctober = 31;
         while (true) {
-            struct tm t = {};
+            struct tm t = {0};
             t.tm_year = year - 1900;
             t.tm_mon = 9;
             t.tm_mday = lastSundayOctober;
@@ -100,12 +108,12 @@ void SPA_f() {
     spa.atmos_refract = 0.5667;
     spa.function      = SPA_ZA_RTS;
 
-//    sprintf(
-//        "[SPA INPUT] %04d-%02d-%02d %02d:%02d:%02d  tz=%d\n",
-//        spa.year, spa.month, spa.day,
-//        spa.hour, spa.minute, spa.second,
-//        spa.timezone
-//    );
+    printf(
+        "[SPA INPUT] %04f-%02f-%02f %02f:%02f:%02f  tz=%f\n",
+        spa.year, spa.month, spa.day,
+        spa.hour, spa.minute, spa.second,
+        spa.timezone
+    );
 
     int result = spa_calculate(&spa);
 
@@ -116,35 +124,33 @@ void SPA_f() {
     g_AOIInputs.azimuth   = spa.azimuth;
     g_AOIInputs.elevation = spa.e;
 
-//    print("Azimuth: ");
-//    println(spa.azimuth, 6);
-//    print("Elevation: ");
-//    println(spa.e, 6);
+    printf("Azimuth: %f", spa.azimuth);
+    printf("Elevation: %f", spa.elevation);
 
+
+   //Sunrise - sunstet for automode
     if (spa.sunrise > 0 && spa.sunset > 0) {
 
-        struct tm t;
-        time_t now;
-        time(&now);
-        localtime_r(&now, &t);
+        struct tm t_now;
+        RTC_GetToTM(&t_now);
+        time_t now = mktime(&t_now);
 
-        t.tm_hour = 0;
-        t.tm_min  = 0;
-        t.tm_sec  = 0;
-        
-//        // calculate sunset and sunrise for automatic sleep mode
-//        time_t midnight = mktime(&t);
-//
-//        time_t sunrise = midnight + (time_t)(spa.sunrise * 3600.0);
-//        time_t sunset  = midnight + (time_t)(spa.sunset  * 3600.0);
-//
-//        if (sunrise <= now) sunrise += 24 * 3600;
-//        if (sunset  <= now) sunset  += 24 * 3600;
-//
-//        g_sunrise_epoch = sunrise;
-//        g_sunset_epoch  = sunset;
-//
-//        Serial.printf("Sunrise epoch: %ld\n", g_sunrise_epoch);
-//        Serial.printf("Sunset  epoch: %ld\n", g_sunset_epoch);
+       // midnight epoch
+        struct tm t_midnight = t_now;
+        t_midnight.tm_hour = 0;
+        t_midnight.tm_min  = 0;
+        t_midnight.tm_sec  = 0;
+        time_t midnight = mktime(&t_midnight);
+
+       // DECIMAL HOURS FROM SPA TO EPOCH SECONDS
+        time_t sunrise_epoch = midnight + (time_t)(spa.sunrise * 3600.0);
+        time_t sunset_epoch  = midnight + (time_t)(spa.sunset  * 3600.0);
+
+       // if sunrise and/or epoch are behind real time, add 24h
+        if (sunrise_epoch <= now) sunrise_epoch += 24 * 3600;
+        if (sunset_epoch  <= now) sunset_epoch  += 24 * 3600;
+
+        g_sunrise_epoch = sunrise_epoch;
+        g_sunset_epoch  = sunset_epoch;
     }
 }

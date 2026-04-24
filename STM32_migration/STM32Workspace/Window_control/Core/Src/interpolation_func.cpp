@@ -2,28 +2,24 @@
 #include "global_structs.h"
 #include "matrices.h"
 #include "interpolation_func.h"
-
-
+#include <cmath>
+#include <stdio.h>
 
 extern float g_x_val;
 extern float g_z_val;
 extern InterpolInputs g_InterpolInputs;
 
-
 void interpolation_f(){
-	float query_points[2];
 
+	float query_points[2];
 	g_InterpolInputs.matrix_X = matrix_X;
 	g_InterpolInputs.matrix_Z = matrix_Z;
 
-//	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
-//	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
-	query_points[0] = (float)(g_InterpolInputs.AOIt);
-	query_points[1] = (float)(g_InterpolInputs.AOIl);
-//  print("AOIt value to interpolate: ");
-//	println(g_InterpolInputs.AOIt, 6);
-//	print("AOIl value to interpolate: ");
-//	println(g_InterpolInputs.AOIl, 6);
+	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
+	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
+
+    printf("AOIt value to interpolate: %f", g_InterpolInputs.AOIt);
+	printf("AOIl value to interpolate: %f", g_InterpolInputs.AOIl);
 
 	for (int i = 0; i < 2; i++){
 		if (query_points[i] < 0) query_points[i] = 0;
@@ -45,9 +41,7 @@ void interpolation_f(){
 
 	
 
-//	Serial.print("Interpolated x value: ");
-//	Serial.println(g_x_val, 6);
-//	Serial.print("Interpolated z value: ");
-//	Serial.println(g_z_val, 6);
-//
+	printf("Interpolated x value: %f", g_x_val);
+	printf("Interpolated z value: %f", g_z_val);
+
 }

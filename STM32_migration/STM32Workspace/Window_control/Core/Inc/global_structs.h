@@ -2,9 +2,10 @@
 #define global_structs_h
 
 #include "global_def.h"
-#include <string.h>
-#include <string>
 #include <time.h>
+#include <string.h>
+#include <stdbool.h>
+
 typedef struct {
     int year;
     int month;
@@ -39,7 +40,7 @@ extern AOIInputs g_AOIInputs;
 extern InterpolInputs g_InterpolInputs;
 
 extern int auto_counter;
-extern std::string g_country;
+extern char g_country[32];
 
 extern float g_x_val;
 extern float g_z_val;

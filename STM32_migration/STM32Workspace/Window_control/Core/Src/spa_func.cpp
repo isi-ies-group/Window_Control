@@ -13,26 +13,26 @@ extern AOIInputs g_AOIInputs;
  * Calculate timezone including DST
  * European rules for countries with DST
  */
-int getTimezoneForCountry(const std::string& country, int year, int month, int day) {
+int getTimezoneForCountry(const char* country, int year, int month, int day) {
 
     // --- Base offset--
     int baseOffset = 0;
     bool hasDST = false;
 
     // --- Countries definition ---
-    if (country == "Spain") {
+    if (strcmp(country, "Spain") == 0) {
         baseOffset = 1; hasDST = true;
     }
-    else if (country == "Spain_Canary") {
+    else if (strcmp(country, "Spain_Canary") == 0) {
         baseOffset = 0; hasDST = true;
     }
-    else if (country == "UK") {
+    else if (strcmp(country, "UK") == 0) {
         baseOffset = 0; hasDST = true;
     }
-    else if (country == "Poland") {
+    else if (strcmp(country, "Poland") == 0) {
         baseOffset = 1; hasDST = true;
     }
-    else if (country == "Argentina") {
+    else if (strcmp(country, "Argentina") == 0) {
         baseOffset = -3; hasDST = false;
     }
     else {
@@ -108,12 +108,6 @@ void SPA_f() {
     spa.atmos_refract = 0.5667;
     spa.function      = SPA_ZA_RTS;
 
-    printf(
-        "[SPA INPUT] %04f-%02f-%02f %02f:%02f:%02f  tz=%f\n",
-        spa.year, spa.month, spa.day,
-        spa.hour, spa.minute, spa.second,
-        spa.timezone
-    );
 
     int result = spa_calculate(&spa);
 

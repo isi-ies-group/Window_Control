@@ -61,3 +61,4 @@ Release/
 *.bin
 *.map
 .settings/
+*.metadata

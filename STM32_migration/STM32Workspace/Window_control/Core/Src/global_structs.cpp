@@ -1,11 +1,11 @@
 #include "global_structs.h"
-#include <string>
+
 SPAInputs g_SPAInputs;
 AOIInputs g_AOIInputs;
 InterpolInputs g_InterpolInputs;
 
 
-std::string g_country = "Spain";
+char g_country[32] = "Spain";
 float g_x_val = 0.0f;
 float g_z_val = 0.0f;
 bool auto_on = false;

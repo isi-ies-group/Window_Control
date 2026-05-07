@@ -56,10 +56,12 @@ Thumbs.db
 # STM32
 Debug/
 Release/
-*.metadata
+
 *.o
 *.elf
 *.bin
 *.map
 .settings/
-*.ld
+.metadata/
+*.id
+

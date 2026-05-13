@@ -39,6 +39,7 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 #include "event_groups.h"
 
 /* USER CODE BEGIN Includes */
+#include "global_structs.h"
 
 /* USER CODE END Includes */
 
@@ -59,6 +60,7 @@ typedef enum
   LED_GREEN_STATE,
   LED_RED_STATE,
   BUTTON_STATE,
+  DUMMY_STATE,
   ERROR_404_HTML,
   UNKNOWN_RESPONSE
 } HttpServer_response_e;
@@ -166,6 +168,7 @@ static const HttpServer_response_t http_server_responses[] =
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
   {BUTTON_STATE,    "GET /pins_status",                           NULL,                 0U},
+  {DUMMY_STATE,     "GET /dummy_status",                          NULL,                 0U},
 };
 
 /* USER CODE BEGIN PV */
@@ -566,13 +569,14 @@ static void http_process_response(int32_t client, char *recv_buffer)
     (void)xEventGroupWaitBits(pin_handle, EVENT_FLAG_PIN, pdTRUE, pdFALSE, pdMS_TO_TICKS(PIN_TIMEOUT_MS));
     /* Send anyway the pin status update or the last known status if timeouted */
     /* Prepare the HTTP content data */
-    char data[60];
+    char data[96];
     uint32_t green = (pins_info.led_green_state == GPIO_PIN_RESET) ? 0U : 1U;
     uint32_t red = (pins_info.led_red_state == GPIO_PIN_RESET) ? 0U : 1U;
     uint32_t button = (pins_info.btn_state == GPIO_PIN_RESET) ? 0U : 1U;
+    int dummy_value = auto_counter;
     (void)snprintf(data, sizeof(data),
-                   "{\"LedGreenPin\":%" PRIu32 ",\"LedRedPin\":%" PRIu32 ",\"BtnPin\":%" PRIu32 "}",
-                   green, red, button);
+                   "{\"LedGreenPin\":%" PRIu32 ",\"LedRedPin\":%" PRIu32 ",\"BtnPin\":%" PRIu32 ",\"DummyValue\":%d}",
+                   green, red, button, dummy_value);
 
     resp_len = strlen(response_template);
     /* Append the content length and the data to the response */
@@ -581,6 +585,19 @@ static void http_process_response(int32_t client, char *recv_buffer)
                          "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
 
     LogInfo("Pins status :\n%s\n", data);
+    response_data = response_template;
+  }
+  else if (response == DUMMY_STATE)
+  {
+    char data[32];
+    int dummy_value = auto_counter;
+    (void)snprintf(data, sizeof(data), "{\"DummyValue\":%d}", dummy_value);
+
+    resp_len = strlen(response_template);
+    resp_len += snprintf(&response_template[strlen(response_template)],
+                         sizeof(response_template) - strlen(response_template),
+                         "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+
     response_data = response_template;
   }
   else

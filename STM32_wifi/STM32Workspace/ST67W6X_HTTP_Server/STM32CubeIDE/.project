@@ -184,9 +184,19 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/app_freertos.c</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/global_structs.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/global_structs.c</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/main.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/solar_app.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/solar_app.c</locationURI>
 		</link>
 		<link>
 			<name>Application/User/Core/stm32u5xx_hal_msp.c</name>
@@ -202,6 +212,11 @@
 			<name>Application/User/Core/stm32u5xx_it.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/stm32u5xx_it.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/test.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/test.c</locationURI>
 		</link>
 		<link>
 			<name>Application/User/Appli/App/httpserver.c</name>

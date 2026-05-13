@@ -133,6 +133,10 @@
         <!-- <footer></footer> -->
 </body>
 <script>
+    function writeConsole(line) {
+        document.getElementById("console").innerHTML = "> " + line + " <br />" + document.getElementById("console").innerHTML;
+    }
+
     function sendPeriodicGetRequest(val) {
 
         var xhr = new XMLHttpRequest();
@@ -146,8 +150,8 @@
         }
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                document.getElementById("console").innerHTML = "> Board pins status : " + xhr.responseText + " <br />" + document.getElementById("console").innerHTML;
                 const resp = JSON.parse(xhr.responseText);
+                writeConsole("Board pins status : " + xhr.responseText);
 
                 switch_color(resp.BtnPin, "user_btn", "green");
                 switch_name(resp.BtnPin, "user_btn");
@@ -162,6 +166,31 @@
         xhr.send();
     }
     sendPeriodicGetRequest();
+
+    function sendDummyGetRequest() {
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 2000;
+        xhr.open("GET", "/dummy_status", true);
+        xhr.ontimeout = function () {
+            setTimeout(sendDummyGetRequest, 1000);
+        }
+        xhr.onerror = function () {
+            setTimeout(sendDummyGetRequest, 1000);
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const resp = JSON.parse(xhr.responseText);
+                writeConsole("Dummy value : " + resp.DummyValue);
+                setTimeout(sendDummyGetRequest, 1000);
+            }
+            else if (xhr.readyState === 4) {
+                setTimeout(sendDummyGetRequest, 1000);
+            }
+        };
+        xhr.send();
+    }
+    sendDummyGetRequest();
+
     function sendGetRequest(val) {
         var xhr = new XMLHttpRequest();
         var timeout = 6000;
@@ -177,7 +206,7 @@
                 clearTimeout(requestTimeout);
                 if (xhr.status === 200) {
                     if (get_req === '/LedGreen' || get_req === '/LedRed') {
-                        document.getElementById("console").innerHTML = "> LED Toggling <br />" + document.getElementById("console").innerHTML;
+                        writeConsole("LED Toggling");
                     }
                 }
             };

@@ -60,6 +60,7 @@ typedef enum
   LED_GREEN_STATE,
   LED_RED_STATE,
   BUTTON_STATE,
+  AUTO_STATUS_STATE,
   DUMMY_STATE,
   ERROR_404_HTML,
   UNKNOWN_RESPONSE
@@ -144,6 +145,7 @@ EventGroupHandle_t pin_handle;
 
 /** Flag to indicate if the button state has changed */
 extern uint8_t button_changed;
+extern RTC_HandleTypeDef hrtc;
 
 /** Response with OK content */
 static const char response_ok_html[] =
@@ -168,6 +170,7 @@ static const HttpServer_response_t http_server_responses[] =
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
   {BUTTON_STATE,    "GET /pins_status",                           NULL,                 0U},
+  {AUTO_STATUS_STATE, "GET /status",                               NULL,                 0U},
   {DUMMY_STATE,     "GET /dummy_status",                          NULL,                 0U},
 };
 
@@ -212,10 +215,36 @@ static int32_t close_client(int32_t client);
 static void http_process_response(int32_t client, char *recv_buffer);
 
 /* USER CODE BEGIN PFP */
+static void http_get_rtc_datetime(char *date_str, size_t date_size,
+                                  char *time_str, size_t time_size);
 
 /* USER CODE END PFP */
 
 /* Functions Definition ------------------------------------------------------*/
+static void http_get_rtc_datetime(char *date_str, size_t date_size,
+                                  char *time_str, size_t time_size)
+{
+  RTC_TimeTypeDef rtc_time = {0};
+  RTC_DateTypeDef rtc_date = {0};
+
+  if ((HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) ||
+      (HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) != HAL_OK))
+  {
+    (void)snprintf(date_str, date_size, "0000-00-00");
+    (void)snprintf(time_str, time_size, "00:00:00");
+    return;
+  }
+
+  (void)snprintf(date_str, date_size, "20%02" PRIu32 "-%02" PRIu32 "-%02" PRIu32,
+                 (uint32_t)rtc_date.Year,
+                 (uint32_t)rtc_date.Month,
+                 (uint32_t)rtc_date.Date);
+  (void)snprintf(time_str, time_size, "%02" PRIu32 ":%02" PRIu32 ":%02" PRIu32,
+                 (uint32_t)rtc_time.Hours,
+                 (uint32_t)rtc_time.Minutes,
+                 (uint32_t)rtc_time.Seconds);
+}
+
 void http_server_socket(void *arg)
 {
   (void)arg;
@@ -532,14 +561,14 @@ static void http_process_response(int32_t client, char *recv_buffer)
   HttpServer_response_e response = UNKNOWN_RESPONSE;
   const char *response_data = response_error_404_html; /* Request not recognized, return 404 error */
   size_t resp_len = sizeof(response_error_404_html);
-  char response_template[250] =
+  char response_template[640] =
   {
     "HTTP/1.1 200 OK\r\n"
     "Server: U5\r\n"
     "Access-Control-Allow-Origin: * \r\n"
     "Cache-Control: no-cache\r\n"
     "Connection: close\r\n"
-    "Content-Type: text/html; charset=utf-8\r\n"
+    "Content-Type: application/json; charset=utf-8\r\n"
   };
 
   /* USER CODE BEGIN http_process_response_1 */
@@ -585,6 +614,39 @@ static void http_process_response(int32_t client, char *recv_buffer)
                          "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
 
     LogInfo("Pins status :\n%s\n", data);
+    response_data = response_template;
+  }
+  else if (response == AUTO_STATUS_STATE)
+  {
+    char data[384];
+    char date_str[11];
+    char time_str[9];
+    int dummy_value = auto_counter;
+
+    http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
+
+    (void)snprintf(data, sizeof(data),
+                   "{\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
+                   "\"tilt_correction\":%s,\"country\":\"%s\",\"auto_on\":%s,"
+                   "\"dummy\":%d,\"date\":\"%s\",\"time\":\"%s\",\"x\":%.6f,\"z\":%.6f}",
+                   g_SPAInputs.latitude,
+                   g_SPAInputs.longitude,
+                   g_AOIInputs.pan,
+                   g_AOIInputs.tilt,
+                   g_AOIInputs.tilt_correction ? "true" : "false",
+                   g_country,
+                   auto_on ? "true" : "false",
+                   dummy_value,
+                   date_str,
+                   time_str,
+                   (double)g_x_val,
+                   (double)g_z_val);
+
+    resp_len = strlen(response_template);
+    resp_len += snprintf(&response_template[strlen(response_template)],
+                         sizeof(response_template) - strlen(response_template),
+                         "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+
     response_data = response_template;
   }
   else if (response == DUMMY_STATE)

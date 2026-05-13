@@ -110,6 +110,34 @@
             overflow: auto;
             margin-right: calc(var(--background-margin) + 2vw);
         }
+
+        .status-panel {
+            background-color: #f5f8fb;
+            border-left: 4px solid var(--light-blue);
+            font-size: 16px;
+            line-height: 1.5;
+            margin-right: calc(var(--background-margin) + 2vw);
+            padding: 12px 16px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(180px, 1fr));
+            gap: 6px 18px;
+            margin-left: 0;
+        }
+
+        .status-item {
+            margin-left: 0;
+        }
+
+        .status-label {
+            font-weight: bold;
+        }
+
+        .status-value {
+            font-family: monospace;
+        }
     </style>
 </head>
 
@@ -126,6 +154,21 @@
         <div>
             <p class="button" id="user_btn">User Button State</p>
         </div>
+        <h2>Automatic mode status</h2>
+        <div class="status-panel">
+            <div class="status-grid">
+                <div class="status-item"><span class="status-label">Mode:</span> <span class="status-value" id="auto_mode">---</span></div>
+                <div class="status-item"><span class="status-label">Country:</span> <span class="status-value" id="auto_country">---</span></div>
+                <div class="status-item"><span class="status-label">Latitude:</span> <span class="status-value" id="auto_latitude">---</span></div>
+                <div class="status-item"><span class="status-label">Longitude:</span> <span class="status-value" id="auto_longitude">---</span></div>
+                <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="auto_pan">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="auto_tilt">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="auto_tilt_correction">---</span></div>
+                <div class="status-item"><span class="status-label">Dummy:</span> <span class="status-value" id="auto_dummy">---</span></div>
+                <div class="status-item"><span class="status-label">Local date:</span> <span class="status-value" id="auto_date">---</span></div>
+                <div class="status-item"><span class="status-label">Local time:</span> <span class="status-value" id="auto_time">---</span></div>
+            </div>
+        </div>
         <h2>Console</h2>
         <div>
             <p class="console" id="console"></p>
@@ -135,6 +178,18 @@
 <script>
     function writeConsole(line) {
         document.getElementById("console").innerHTML = "> " + line + " <br />" + document.getElementById("console").innerHTML;
+    }
+
+    function setText(id, value) {
+        document.getElementById(id).textContent = value;
+    }
+
+    function formatNumber(value, digits) {
+        var numberValue = Number(value);
+        if (Number.isFinite(numberValue)) {
+            return numberValue.toFixed(digits);
+        }
+        return "---";
     }
 
     function sendPeriodicGetRequest(val) {
@@ -167,29 +222,38 @@
     }
     sendPeriodicGetRequest();
 
-    function sendDummyGetRequest() {
+    function sendStatusGetRequest() {
         var xhr = new XMLHttpRequest();
-        xhr.timeout = 2000;
-        xhr.open("GET", "/dummy_status", true);
+        xhr.timeout = 3000;
+        xhr.open("GET", "/status", true);
         xhr.ontimeout = function () {
-            setTimeout(sendDummyGetRequest, 1000);
+            setTimeout(sendStatusGetRequest, 1000);
         }
         xhr.onerror = function () {
-            setTimeout(sendDummyGetRequest, 1000);
+            setTimeout(sendStatusGetRequest, 1000);
         }
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 const resp = JSON.parse(xhr.responseText);
-                writeConsole("Dummy value : " + resp.DummyValue);
-                setTimeout(sendDummyGetRequest, 1000);
+                setText("auto_mode", resp.auto_on ? "ON" : "OFF");
+                setText("auto_country", resp.country || "---");
+                setText("auto_latitude", formatNumber(resp.latitude, 2));
+                setText("auto_longitude", formatNumber(resp.longitude, 2));
+                setText("auto_pan", formatNumber(resp.pan, 2));
+                setText("auto_tilt", formatNumber(resp.tilt, 2));
+                setText("auto_tilt_correction", resp.tilt_correction ? "Enabled" : "Disabled");
+                setText("auto_dummy", resp.dummy);
+                setText("auto_date", resp.date || "---");
+                setText("auto_time", resp.time || "---");
+                setTimeout(sendStatusGetRequest, 1000);
             }
             else if (xhr.readyState === 4) {
-                setTimeout(sendDummyGetRequest, 1000);
+                setTimeout(sendStatusGetRequest, 1000);
             }
         };
         xhr.send();
     }
-    sendDummyGetRequest();
+    sendStatusGetRequest();
 
     function sendGetRequest(val) {
         var xhr = new XMLHttpRequest();

@@ -224,6 +224,8 @@
                 <div class="status-item"><span class="status-label">Dummy:</span> <span class="status-value" id="auto_dummy">---</span></div>
                 <div class="status-item"><span class="status-label">Local date:</span> <span class="status-value" id="auto_date">---</span></div>
                 <div class="status-item"><span class="status-label">Local time:</span> <span class="status-value" id="auto_time">---</span></div>
+                <div class="status-item"><span class="status-label">X position:</span> <span class="status-value" id="auto_x">---</span></div>
+                <div class="status-item"><span class="status-label">Z position:</span> <span class="status-value" id="auto_z">---</span></div>
             </div>
         </div>
         <h2>Console</h2>
@@ -302,6 +304,8 @@
                 setText("auto_dummy", resp.dummy);
                 setText("auto_date", resp.date || "---");
                 setText("auto_time", resp.time || "---");
+                setText("auto_x", formatNumber(resp.x, 6));
+                setText("auto_z", formatNumber(resp.z, 6));
                 setTimeout(sendStatusGetRequest, 1000);
             }
             else if (xhr.readyState === 4) {

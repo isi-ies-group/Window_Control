@@ -24,8 +24,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "global_structs.h"
+#include "autoMode.h"
 #include "solar_app.h"
-#include "test.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +51,7 @@ static osThreadId_t solarAppTaskHandle;
 static const osThreadAttr_t solarAppTask_attributes = {
   .name = "solarAppTask",
   .priority = (osPriority_t) osPriorityLow,
-  .stack_size = 256 * 4
+  .stack_size = 2048 * 4
 };
 
 /* USER CODE END Variables */
@@ -193,7 +193,11 @@ static void StartSolarAppTask(void *argument)
 
   for (;;)
   {
-    auto_counter = dummy(auto_counter);
+    if (auto_on)
+    {
+      autoMode();
+      auto_counter++;
+    }
     osDelay(pdMS_TO_TICKS(1000U));
   }
 }

@@ -9,7 +9,7 @@ extern "C" {
 
 int dummy(int x);
 void autoModeInputs(float pan, float tilt, bool tilt_correction,
-                    float longitude, float latitude, char country[32]);
+                    float longitude, float latitude, const char *country);
 
 #ifdef __cplusplus
 }

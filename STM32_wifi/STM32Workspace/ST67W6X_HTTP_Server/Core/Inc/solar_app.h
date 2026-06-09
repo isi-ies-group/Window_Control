@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void SolarApp_Start(void);
+void SolarApp_Process(void);
 
 #ifdef __cplusplus
 }

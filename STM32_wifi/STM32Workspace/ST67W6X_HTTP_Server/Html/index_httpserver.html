@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>HTTP Server example with STM32</title>
+    <title>Window Control WiFi</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -28,8 +28,7 @@
             margin-left: calc(var(--background-margin) + 2vw);
         }
 
-        header,
-        footer {
+        header {
             background: var(--dark-blue);
             color: #ffffff;
             margin: 0;
@@ -44,28 +43,6 @@
 
         #header_logo {
             height: 8vh;
-        }
-
-        footer {
-            height: 4vh;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            padding: 1vh;
-        }
-
-        a:link {
-            color: var(--light-blue);
-            text-decoration: none;
-        }
-
-        a:visited {
-            color: var(--pink);
-        }
-
-        a:hover,
-        a:focus {
-            text-decoration: underline;
         }
 
         button {
@@ -85,32 +62,6 @@
             border-radius: 10px;
         }
 
-        .button-on-green {
-            background-color: #49b171;
-            color: black;
-        }
-
-        .button-on-red {
-            background-color: #e3381b;
-            color: black;
-        }
-
-        .button-off {
-            background-color: #d1d1d1;
-            color: black;
-        }
-
-        .console {
-            background-color: black;
-            color: white;
-            font-family: monospace;
-            font-size: 14px;
-            padding: 10px;
-            max-height: 200px;
-            overflow: auto;
-            margin-right: calc(var(--background-margin) + 2vw);
-        }
-		
 		.config-panel {
 			background: white;
 			display: inline-block;
@@ -138,6 +89,24 @@
 			cursor: pointer;
 			font-size: 14px;
 		}
+
+        .auto-btn {
+            background-color: #28a745;
+            font-size: 20px;
+            padding: 15px 40px;
+            margin-top: 25px;
+        }
+
+        .auto-btn.active {
+            background-color: #dc3545 !important;
+        }
+
+        .sync-btn {
+            background-color: #0078D7;
+            font-size: 20px;
+            padding: 15px 40px;
+            margin-top: 25px;
+        }
 		
         .status-panel {
             background-color: #f5f8fb;
@@ -157,6 +126,11 @@
 
         .status-item {
             margin-left: 0;
+        }
+
+        .status-item.wide {
+            grid-column: 1 / -1;
+            word-break: break-all;
         }
 
         .status-label {
@@ -196,51 +170,97 @@
 					<option value="Argentina">Argentina</option>
 				</select><br>
 
-				<button type="button" onclick="location.href='/config_begin'">Begin</button>
 				<input type="submit" value="Submit">
-				<button type="button" onclick="location.href='/end_config'">End</button>
 			</form>
 		</div>
 
-        <h2>LED Control</h2>
-        <div>
-            <button class="button" onclick="sendGetRequest('LedGreen')" id="LedGreen">LED Green</button>
-            <button class="button" onclick="sendGetRequest('LedRed')" id="LedRed">LED Red</button>
-        </div>
-        <h2>User button status</h2>
-        <div>
-            <p class="button" id="user_btn">User Button State</p>
-        </div>
-        <h2>Automatic mode status</h2>
+		<!-- SECTION 2: Ephemeris Input -->
+		<h2>Ephemeris Input</h2>
+		<div class="config-panel">
+			<form action="/eph_submit" method="get">
+				Azimuth: <input type="text" name="azimuth"><br>
+				Elevation: <input type="text" name="elevation"><br>
+				<button type="button" onclick="location.href='/eph_begin'">Begin</button>
+				<input type="submit" value="Submit">
+				<button type="button" onclick="location.href='/end_eph'">End</button>
+			</form>
+		</div>
+
+		<!-- SECTION 3: Manual Mode -->
+		<h2>Manual Mode</h2>
+		<div class="config-panel">
+			<form action="/manual_goto" method="get">
+				X target: <input type="text" name="x"><br>
+				Z target: <input type="text" name="z"><br>
+				<button type="button" onclick="location.href='/manual_begin'">Begin</button>
+				<input type="submit" value="Go to X / Z">
+				<button type="button" onclick="location.href='/end_manual'">End</button>
+			</form>
+		</div>
+
+        <br><br>
+        <button id="syncTimeBtn" class="button sync-btn" onclick="syncTime()">SYNC TIME</button>
+        <button id="autoBtn" class="button auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
+
+        <h2>Test status</h2>
         <div class="status-panel">
             <div class="status-grid">
-                <div class="status-item"><span class="status-label">Mode:</span> <span class="status-value" id="auto_mode">---</span></div>
-                <div class="status-item"><span class="status-label">Country:</span> <span class="status-value" id="auto_country">---</span></div>
-                <div class="status-item"><span class="status-label">Latitude:</span> <span class="status-value" id="auto_latitude">---</span></div>
-                <div class="status-item"><span class="status-label">Longitude:</span> <span class="status-value" id="auto_longitude">---</span></div>
-                <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="auto_pan">---</span></div>
-                <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="auto_tilt">---</span></div>
-                <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="auto_tilt_correction">---</span></div>
-                <div class="status-item"><span class="status-label">Dummy:</span> <span class="status-value" id="auto_dummy">---</span></div>
-                <div class="status-item"><span class="status-label">Local date:</span> <span class="status-value" id="auto_date">---</span></div>
-                <div class="status-item"><span class="status-label">Local time:</span> <span class="status-value" id="auto_time">---</span></div>
-                <div class="status-item"><span class="status-label">X position:</span> <span class="status-value" id="auto_x">---</span></div>
-                <div class="status-item"><span class="status-label">Z position:</span> <span class="status-value" id="auto_z">---</span></div>
+                <div class="status-item"><span class="status-label">FSM:</span> <span class="status-value" id="fsm_state">---</span></div>
+                <div class="status-item"><span class="status-label">Auto on:</span> <span class="status-value" id="auto_on">---</span></div>
+                <div class="status-item"><span class="status-label">Auto counter:</span> <span class="status-value" id="auto_counter">---</span></div>
+                <div class="status-item"><span class="status-label">RTC date:</span> <span class="status-value" id="rtc_date">---</span></div>
+                <div class="status-item"><span class="status-label">RTC time:</span> <span class="status-value" id="rtc_time">---</span></div>
+                <div class="status-item"><span class="status-label">Country:</span> <span class="status-value" id="country">---</span></div>
+                <div class="status-item"><span class="status-label">Latitude:</span> <span class="status-value" id="latitude">---</span></div>
+                <div class="status-item"><span class="status-label">Longitude:</span> <span class="status-value" id="longitude">---</span></div>
+                <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="pan">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="tilt">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="tilt_correction">---</span></div>
+                <div class="status-item"><span class="status-label">X:</span> <span class="status-value" id="x">---</span></div>
+                <div class="status-item"><span class="status-label">Z:</span> <span class="status-value" id="z">---</span></div>
+                <div class="status-item"><span class="status-label">GPS task loops:</span> <span class="status-value" id="gps_task_loop_count">---</span></div>
+                <div class="status-item"><span class="status-label">GPS lines:</span> <span class="status-value" id="gps_line_count">---</span></div>
+                <div class="status-item"><span class="status-label">GPS RMC:</span> <span class="status-value" id="gps_rmc_count">---</span></div>
+                <div class="status-item"><span class="status-label">GPS overflow:</span> <span class="status-value" id="gps_overflow_count">---</span></div>
+                <div class="status-item"><span class="status-label">UTC ready:</span> <span class="status-value" id="gps_utc_ready">---</span></div>
+                <div class="status-item"><span class="status-label">Fix valid:</span> <span class="status-value" id="gps_fix_valid">---</span></div>
+                <div class="status-item"><span class="status-label">Local ready:</span> <span class="status-value" id="gps_local_ready">---</span></div>
+                <div class="status-item"><span class="status-label">Timezone:</span> <span class="status-value" id="gps_timezone_offset_hours">---</span></div>
+                <div class="status-item"><span class="status-label">Sync requested:</span> <span class="status-value" id="gps_time_sync_requested">---</span></div>
+                <div class="status-item"><span class="status-label">RTC synced:</span> <span class="status-value" id="gps_rtc_synced">---</span></div>
+                <div class="status-item"><span class="status-label">Sync count:</span> <span class="status-value" id="gps_rtc_sync_count">---</span></div>
+                <div class="status-item"><span class="status-label">Sync errors:</span> <span class="status-value" id="gps_rtc_sync_error_count">---</span></div>
+                <div class="status-item"><span class="status-label">GPS UTC:</span> <span class="status-value" id="gps_utc">---</span></div>
+                <div class="status-item"><span class="status-label">GPS local:</span> <span class="status-value" id="gps_local">---</span></div>
+                <div class="status-item wide"><span class="status-label">Last NMEA:</span> <span class="status-value" id="gps_last_line">---</span></div>
+                <div class="status-item wide"><span class="status-label">Last RMC:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
             </div>
         </div>
-        <h2>Console</h2>
-        <div>
-            <p class="console" id="console"></p>
-        </div>
-        <!-- <footer></footer> -->
 </body>
 <script>
-    function writeConsole(line) {
-        document.getElementById("console").innerHTML = "> " + line + " <br />" + document.getElementById("console").innerHTML;
+    let autoStatusTimer = null;
+    let autoMode = false;
+    const autoStatusPollMs = 1000;
+
+    function scheduleAutoStatusPoll(delayMs) {
+        if (autoStatusTimer !== null) {
+            return;
+        }
+        autoStatusTimer = setTimeout(function () {
+            autoStatusTimer = null;
+            sendStatusGetRequest();
+        }, delayMs);
     }
 
     function setText(id, value) {
         document.getElementById(id).textContent = value;
+    }
+
+    function setAutoButton(enabled) {
+        autoMode = enabled;
+        const autoBtn = document.getElementById("autoBtn");
+        autoBtn.classList.toggle("active", enabled);
+        autoBtn.innerText = enabled ? "STOP AUTO" : "AUTO MODE";
     }
 
     function formatNumber(value, digits) {
@@ -251,128 +271,96 @@
         return "---";
     }
 
-    function sendPeriodicGetRequest(val) {
-
-        var xhr = new XMLHttpRequest();
-        xhr.timeout = 13000;
-        xhr.open("GET", "/pins_status", true);
-        xhr.ontimeout = function () {
-            setTimeout(sendPeriodicGetRequest, 200);
-        }
-        xhr.onerror = function () {
-            setTimeout(sendPeriodicGetRequest, 200);
-        }
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                const resp = JSON.parse(xhr.responseText);
-                writeConsole("Board pins status : " + xhr.responseText);
-
-                switch_color(resp.BtnPin, "user_btn", "green");
-                switch_name(resp.BtnPin, "user_btn");
-                switch_color(resp.LedGreenPin, "LedGreen", "green");
-                switch_color(resp.LedRedPin, "LedRed", "red");
-                setTimeout(sendPeriodicGetRequest, 200);
-            }
-            else if (xhr.readyState === 4 && xhr.status == 404) {
-                setTimeout(sendPeriodicGetRequest, 200);
-            }
-        };
-        xhr.send();
-    }
-    sendPeriodicGetRequest();
-
     function sendStatusGetRequest() {
         var xhr = new XMLHttpRequest();
         xhr.timeout = 3000;
         xhr.open("GET", "/status", true);
         xhr.ontimeout = function () {
-            setTimeout(sendStatusGetRequest, 1000);
+            scheduleAutoStatusPoll(autoStatusPollMs);
         }
         xhr.onerror = function () {
-            setTimeout(sendStatusGetRequest, 1000);
+            scheduleAutoStatusPoll(autoStatusPollMs);
         }
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 const resp = JSON.parse(xhr.responseText);
-                setText("auto_mode", resp.auto_on ? "ON" : "OFF");
-                setText("auto_country", resp.country || "---");
-                setText("auto_latitude", formatNumber(resp.latitude, 2));
-                setText("auto_longitude", formatNumber(resp.longitude, 2));
-                setText("auto_pan", formatNumber(resp.pan, 2));
-                setText("auto_tilt", formatNumber(resp.tilt, 2));
-                setText("auto_tilt_correction", resp.tilt_correction ? "Enabled" : "Disabled");
-                setText("auto_dummy", resp.dummy);
-                setText("auto_date", resp.date || "---");
-                setText("auto_time", resp.time || "---");
-                setText("auto_x", formatNumber(resp.x, 6));
-                setText("auto_z", formatNumber(resp.z, 6));
-                setTimeout(sendStatusGetRequest, 1000);
+                setAutoButton(resp.auto_on);
+                setText("fsm_state", resp.fsm_state || "---");
+                setText("auto_on", resp.auto_on ? "true" : "false");
+                setText("auto_counter", resp.auto_counter);
+                setText("rtc_date", resp.rtc_date || "---");
+                setText("rtc_time", resp.rtc_time || "---");
+                setText("country", resp.country || "---");
+                setText("latitude", formatNumber(resp.latitude, 2));
+                setText("longitude", formatNumber(resp.longitude, 2));
+                setText("pan", formatNumber(resp.pan, 2));
+                setText("tilt", formatNumber(resp.tilt, 2));
+                setText("tilt_correction", resp.tilt_correction ? "true" : "false");
+                setText("x", formatNumber(resp.x, 6));
+                setText("z", formatNumber(resp.z, 6));
+                setText("gps_task_loop_count", resp.gps_task_loop_count);
+                setText("gps_line_count", resp.gps_line_count);
+                setText("gps_rmc_count", resp.gps_rmc_count);
+                setText("gps_overflow_count", resp.gps_overflow_count);
+                setText("gps_utc_ready", resp.gps_utc_ready);
+                setText("gps_fix_valid", resp.gps_fix_valid);
+                setText("gps_local_ready", resp.gps_local_ready);
+                setText("gps_timezone_offset_hours", resp.gps_timezone_offset_hours);
+                setText("gps_time_sync_requested", resp.gps_time_sync_requested);
+                setText("gps_rtc_synced", resp.gps_rtc_synced);
+                setText("gps_rtc_sync_count", resp.gps_rtc_sync_count);
+                setText("gps_rtc_sync_error_count", resp.gps_rtc_sync_error_count);
+                setText("gps_utc", resp.gps_utc || "---");
+                setText("gps_local", resp.gps_local || "---");
+                setText("gps_last_line", resp.gps_last_line || "---");
+                setText("gps_last_rmc", resp.gps_last_rmc || "---");
+                scheduleAutoStatusPoll(autoStatusPollMs);
             }
             else if (xhr.readyState === 4) {
-                setTimeout(sendStatusGetRequest, 1000);
+                scheduleAutoStatusPoll(autoStatusPollMs);
             }
         };
         xhr.send();
     }
     sendStatusGetRequest();
 
-    function sendGetRequest(val) {
-        var xhr = new XMLHttpRequest();
-        var timeout = 6000;
-        var requestTimeout = setTimeout(function() {
-            xhr.abort();
-            console.error('Request LED timed out after ' + timeout + ' milliseconds');
-        }, timeout);
-
-        var get_req = "/" + val;
-        xhr.open("GET", get_req, true);
+    function toggleAutoMode() {
+        const requestedMode = !autoMode;
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/auto_mode_toggle", true);
+        xhr.ontimeout = function () {
+            console.log("AUTO MODE request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("AUTO MODE request error");
+        }
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                clearTimeout(requestTimeout);
-                if (xhr.status === 200) {
-                    if (get_req === '/LedGreen' || get_req === '/LedRed') {
-                        writeConsole("LED Toggling");
-                    }
-                }
-            };
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                setAutoButton(requestedMode);
+                console.log(requestedMode ? "AUTO MODE enabled" : "AUTO MODE disabled");
+            }
         };
         xhr.send();
     }
-    function switch_color(val, id, color) {
-        switch (val) {
-            case 1:
-                if (color == "green") {
-                    document.getElementById(id).className = "button button-on-green";
-                }
-                else if (color == "red") {
-                    document.getElementById(id).className = "button button-on-red";
-                }
-                break;
-            case 0:
-                document.getElementById(id).className = "button button-off";
-                break;
 
-            default:
-                console.log("value not supported : " + val + ".");
-                break;
+    function syncTime() {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/sync_time", true);
+        xhr.ontimeout = function () {
+            console.log("SYNC TIME request timeout");
         }
-    }
-    function switch_name(val, id) {
-        switch (val) {
-            case 1:
-                document.getElementById(id).innerHTML = "Button ON";
-                break;
-            case 0:
-                document.getElementById(id).innerHTML = "Button OFF";
-                break;
-
-            default:
-                console.log("value not supported : " + val + ".");
-                break;
+        xhr.onerror = function () {
+            console.log("SYNC TIME request error");
         }
-    }
-    function goToPage(val) {
-        window.location.href = "/" + val;
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("SYNC TIME requested");
+                sendStatusGetRequest();
+            }
+        };
+        xhr.send();
     }
 </script>
 

@@ -56,11 +56,19 @@ Thumbs.db
 # STM32
 Debug/
 Release/
+**/Debug/
+**/Release/
+**/Backup/
 
 *.o
 *.elf
 *.bin
 *.map
+*.list
+*.d
+*.su
+*.cyclo
+*.bak
 .settings/
 .metadata/
 *.id

@@ -56,10 +56,10 @@
 
 /* External variables --------------------------------------------------------*/
 extern LPTIM_HandleTypeDef hlptim1;
+extern UART_HandleTypeDef huart1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel1;
 extern DMA_HandleTypeDef handle_GPDMA1_Channel0;
 extern SPI_HandleTypeDef hspi1;
-extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN EV */

@@ -3,7 +3,6 @@
 #include "matrices.h"
 #include "interpolation_func.h"
 #include <cmath>
-#include <stdio.h>
 
 extern float g_x_val;
 extern float g_z_val;
@@ -17,9 +16,6 @@ void interpolation_f(){
 
 	query_points[0] = (float)fabs(g_InterpolInputs.AOIt);
 	query_points[1] = (float)fabs(g_InterpolInputs.AOIl);
-
-    printf("AOIt value to interpolate: %f", g_InterpolInputs.AOIt);
-	printf("AOIl value to interpolate: %f", g_InterpolInputs.AOIl);
 
 	for (int i = 0; i < 2; i++){
 		if (query_points[i] < 0) query_points[i] = 0;
@@ -40,8 +36,4 @@ void interpolation_f(){
 	g_z_val = (interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points));
 
 	
-
-	printf("Interpolated x value: %f", g_x_val);
-	printf("Interpolated z value: %f", g_z_val);
-
 }

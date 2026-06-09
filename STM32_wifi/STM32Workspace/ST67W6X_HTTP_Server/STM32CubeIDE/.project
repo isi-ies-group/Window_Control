@@ -200,6 +200,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/solar_app.c</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/state_machine.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/state_machine.c</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/stm32u5xx_hal_msp.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/stm32u5xx_hal_msp.c</locationURI>
@@ -445,6 +450,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/manual_mode.cpp</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/movement.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/movement.cpp</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/movement_task.cpp</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/movement_task.cpp</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/matrices.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/matrices.cpp</locationURI>
@@ -505,6 +520,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/manual_mode.h</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/movement.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/movement.h</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/movement_task.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/movement_task.h</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/matrices.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/matrices.h</locationURI>
@@ -518,6 +543,11 @@
 			<name>Application/User/Core/spa_func.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/spa_func.h</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/state_machine.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/state_machine.h</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

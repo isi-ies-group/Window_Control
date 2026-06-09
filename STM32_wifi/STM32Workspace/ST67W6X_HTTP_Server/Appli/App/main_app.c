@@ -53,6 +53,7 @@
 #endif /* LOW_POWER_MODE */
 
 /* USER CODE BEGIN Includes */
+#include "solar_app.h"
 
 /* USER CODE END Includes */
 
@@ -113,7 +114,7 @@ static uint8_t quit_msg = 0;
 /** Application information */
 static const APP_Info_t app_info =
 {
-  .name = "ST67W6X Wi-Fi HTTP Server",
+  .name = "Voltalux",
   .version = HOST_APP_VERSION_STR
 };
 
@@ -242,6 +243,7 @@ void main_app(void)
   LogInfo("Net init is done\n");
 
   /* USER CODE BEGIN main_app_3 */
+  SolarApp_Start();
 
   /* USER CODE END main_app_3 */
 

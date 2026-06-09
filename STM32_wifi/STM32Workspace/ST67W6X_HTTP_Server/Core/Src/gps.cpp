@@ -1,19 +1,529 @@
 #include "gps.h"
+#include "cmsis_os2.h"
+#include "global_structs.h"
 #include "main.h"
+#include "spa_func.h"
+#include <string.h>
 
 extern RTC_HandleTypeDef hrtc; //main.c RTC access
+extern UART_HandleTypeDef hlpuart1;
+
+#define GPS_REQUIRE_FIX_FOR_RTC_SYNC 0U
+
+/* Last complete NMEA sentences kept for live expressions/debug. */
+char g_gps_last_line[GPS_NMEA_LINE_MAX];
+char g_gps_last_rmc[GPS_NMEA_LINE_MAX];
+volatile uint32_t g_gps_line_count = 0U;
+volatile uint32_t g_gps_rmc_count = 0U;
+volatile uint32_t g_gps_overflow_count = 0U;
+volatile uint8_t g_gps_line_ready = 0U;
+
+/* UTC date-time extracted from GPS RMC sentences. */
+volatile uint8_t g_gps_utc_ready = 0U;
+volatile uint8_t g_gps_fix_valid = 0U;
+volatile uint16_t g_gps_utc_year = 0U;
+volatile uint8_t g_gps_utc_month = 0U;
+volatile uint8_t g_gps_utc_day = 0U;
+volatile uint8_t g_gps_utc_hour = 0U;
+volatile uint8_t g_gps_utc_minute = 0U;
+volatile uint8_t g_gps_utc_second = 0U;
+
+/* Local date-time after applying the configured country timezone. */
+volatile int8_t g_gps_timezone_offset_hours = 0;
+volatile uint8_t g_gps_local_ready = 0U;
+volatile uint32_t g_gps_local_update_count = 0U;
+volatile uint16_t g_gps_local_year = 0U;
+volatile uint8_t g_gps_local_month = 0U;
+volatile uint8_t g_gps_local_day = 0U;
+volatile uint8_t g_gps_local_hour = 0U;
+volatile uint8_t g_gps_local_minute = 0U;
+volatile uint8_t g_gps_local_second = 0U;
+
+/* Web-triggered RTC synchronization state. */
+volatile uint8_t g_gps_time_sync_requested = 0U;
+volatile uint8_t g_gps_rtc_synced = 0U;
+volatile uint32_t g_gps_task_loop_count = 0U;
+volatile uint32_t g_gps_rtc_sync_count = 0U;
+volatile uint32_t g_gps_rtc_sync_error_count = 0U;
+
+static char gps_line_buffer[GPS_NMEA_LINE_MAX];
+static uint32_t gps_line_index = 0U;
+static uint32_t gps_last_processed_rmc_count = 0U;
+static uint8_t gps_receiving_line = 0U;
+
+typedef struct
+{
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint8_t fix_valid;
+} GPS_UtcDateTime_t;
+
+static bool GPS_IsDigit(char c)
+{
+    return (c >= '0') && (c <= '9');
+}
+
+static uint8_t GPS_Parse2Digits(const char *text)
+{
+    return (uint8_t)(((text[0] - '0') * 10) + (text[1] - '0'));
+}
+
+static int8_t GPS_HexToNibble(char c)
+{
+    if ((c >= '0') && (c <= '9'))
+    {
+        return (int8_t)(c - '0');
+    }
+
+    if ((c >= 'A') && (c <= 'F'))
+    {
+        return (int8_t)(c - 'A' + 10);
+    }
+
+    if ((c >= 'a') && (c <= 'f'))
+    {
+        return (int8_t)(c - 'a' + 10);
+    }
+
+    return -1;
+}
+
+static bool GPS_IsNmeaChecksumValid(const char *line)
+{
+    uint8_t calculated_checksum = 0U;
+    uint8_t expected_checksum;
+    int8_t checksum_high;
+    int8_t checksum_low;
+    const char *checksum_start;
+
+    if ((line == NULL) || (line[0] != '$'))
+    {
+        return false;
+    }
+
+    checksum_start = strchr(line, '*');
+    if ((checksum_start == NULL) || (checksum_start[1] == '\0') || (checksum_start[2] == '\0'))
+    {
+        return false;
+    }
+
+    for (const char *p = line + 1; p < checksum_start; p++)
+    {
+        calculated_checksum ^= (uint8_t)(*p);
+    }
+
+    checksum_high = GPS_HexToNibble(checksum_start[1]);
+    checksum_low = GPS_HexToNibble(checksum_start[2]);
+    if ((checksum_high < 0) || (checksum_low < 0))
+    {
+        return false;
+    }
+
+    expected_checksum = (uint8_t)(((uint8_t)checksum_high << 4) | (uint8_t)checksum_low);
+    return calculated_checksum == expected_checksum;
+}
+
+static bool GPS_ParseRmcUtc(const char *line, GPS_UtcDateTime_t *utc)
+{
+    const char *fields[10] = {0};
+    uint8_t field_index = 0U;
+    const char *p;
+    const char *time_field;
+    const char *status_field;
+    const char *date_field;
+
+    if ((line == NULL) || (utc == NULL))
+    {
+        return false;
+    }
+
+    memset(utc, 0, sizeof(*utc));
+
+    if ((strlen(line) < 7U) ||
+        (line[0] != '$') ||
+        (line[3] != 'R') ||
+        (line[4] != 'M') ||
+        (line[5] != 'C') ||
+        (line[6] != ','))
+    {
+        return false;
+    }
+
+    fields[0] = line;
+
+    for (p = line; (*p != '\0') && (*p != '*'); p++)
+    {
+        if (*p == ',')
+        {
+            field_index++;
+
+            if (field_index < 10U)
+            {
+                fields[field_index] = p + 1;
+            }
+        }
+    }
+
+    time_field = fields[1];
+    status_field = fields[2];
+    date_field = fields[9];
+
+    if ((time_field == NULL) || (status_field == NULL) || (date_field == NULL))
+    {
+        return false;
+    }
+
+    if (!GPS_IsDigit(time_field[0]) || !GPS_IsDigit(time_field[1]) ||
+        !GPS_IsDigit(time_field[2]) || !GPS_IsDigit(time_field[3]) ||
+        !GPS_IsDigit(time_field[4]) || !GPS_IsDigit(time_field[5]))
+    {
+        return false;
+    }
+
+    if (!GPS_IsDigit(date_field[0]) || !GPS_IsDigit(date_field[1]) ||
+        !GPS_IsDigit(date_field[2]) || !GPS_IsDigit(date_field[3]) ||
+        !GPS_IsDigit(date_field[4]) || !GPS_IsDigit(date_field[5]))
+    {
+        return false;
+    }
+
+    utc->hour = GPS_Parse2Digits(&time_field[0]);
+    utc->minute = GPS_Parse2Digits(&time_field[2]);
+    utc->second = GPS_Parse2Digits(&time_field[4]);
+    utc->day = GPS_Parse2Digits(&date_field[0]);
+    utc->month = GPS_Parse2Digits(&date_field[2]);
+    utc->year = (uint16_t)(2000U + GPS_Parse2Digits(&date_field[4]));
+    utc->fix_valid = (status_field[0] == 'A') ? 1U : 0U;
+
+    return true;
+}
+
+static uint8_t GPS_IsLeapYear(uint16_t year)
+{
+    return (uint8_t)(((year % 4U) == 0U) && (((year % 100U) != 0U) || ((year % 400U) == 0U)));
+}
+
+static uint8_t GPS_DaysInMonth(uint16_t year, uint8_t month)
+{
+    static const uint8_t days_by_month[] = {
+        31U, 28U, 31U, 30U, 31U, 30U,
+        31U, 31U, 30U, 31U, 30U, 31U
+    };
+
+    if ((month < 1U) || (month > 12U))
+    {
+        return 31U;
+    }
+
+    if ((month == 2U) && (GPS_IsLeapYear(year) != 0U))
+    {
+        return 29U;
+    }
+
+    return days_by_month[month - 1U];
+}
+
+static void GPS_AddDay(uint16_t *year, uint8_t *month, uint8_t *day)
+{
+    (*day)++;
+
+    if (*day <= GPS_DaysInMonth(*year, *month))
+    {
+        return;
+    }
+
+    *day = 1U;
+    (*month)++;
+
+    if (*month > 12U)
+    {
+        *month = 1U;
+        (*year)++;
+    }
+}
+
+static void GPS_SubtractDay(uint16_t *year, uint8_t *month, uint8_t *day)
+{
+    if (*day > 1U)
+    {
+        (*day)--;
+        return;
+    }
+
+    if (*month > 1U)
+    {
+        (*month)--;
+    }
+    else
+    {
+        *month = 12U;
+        (*year)--;
+    }
+
+    *day = GPS_DaysInMonth(*year, *month);
+}
+
+static void GPS_SaveLine(void)
+{
+    GPS_UtcDateTime_t utc;
+
+    gps_line_buffer[gps_line_index] = '\0';
+    memcpy(g_gps_last_line, gps_line_buffer, gps_line_index + 1U);
+    g_gps_line_count++;
+    g_gps_line_ready = 1U;
+
+    if (!GPS_IsNmeaChecksumValid(gps_line_buffer))
+    {
+        gps_line_index = 0U;
+        return;
+    }
+
+    if (GPS_ParseRmcUtc(gps_line_buffer, &utc))
+    {
+        memcpy(g_gps_last_rmc, gps_line_buffer, gps_line_index + 1U);
+        g_gps_rmc_count++;
+        g_gps_utc_ready = 1U;
+        g_gps_fix_valid = utc.fix_valid;
+        g_gps_utc_year = utc.year;
+        g_gps_utc_month = utc.month;
+        g_gps_utc_day = utc.day;
+        g_gps_utc_hour = utc.hour;
+        g_gps_utc_minute = utc.minute;
+        g_gps_utc_second = utc.second;
+
+        /* Blue LED ON means a GPS time sentence was accepted. */
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+    }
+
+    gps_line_index = 0U;
+}
+
+uint8_t GPS_ProcessUart(void)
+{
+    uint8_t rx;
+
+    /* Poll one UART byte and rebuild complete NMEA lines. */
+    if (HAL_UART_Receive(&hlpuart1, &rx, 1U, 2U) == HAL_OK)
+    {
+        if (rx == '$')
+        {
+            gps_line_index = 0U;
+            gps_line_buffer[gps_line_index] = (char)rx;
+            gps_line_index++;
+            gps_receiving_line = 1U;
+        }
+        else if (gps_receiving_line == 0U)
+        {
+            return 1U;
+        }
+        else if ((rx == '\r') || (rx == '\n'))
+        {
+            if (gps_line_index > 1U)
+            {
+                GPS_SaveLine();
+            }
+            else
+            {
+                gps_line_index = 0U;
+            }
+
+            gps_receiving_line = 0U;
+        }
+        else if ((rx >= 0x20U) && (rx <= 0x7EU))
+        {
+            if (gps_line_index < (GPS_NMEA_LINE_MAX - 1U))
+            {
+                gps_line_buffer[gps_line_index] = (char)rx;
+                gps_line_index++;
+            }
+            else
+            {
+                gps_line_index = 0U;
+                gps_receiving_line = 0U;
+                g_gps_overflow_count++;
+            }
+        }
+        else
+        {
+            gps_line_index = 0U;
+            gps_receiving_line = 0U;
+        }
+
+        return 1U;
+    }
+
+    return 0U;
+}
+
+uint8_t GPS_UpdateLocalTimeFromUtc(void)
+{
+    int16_t local_hour;
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    int timezone_offset;
+
+    if ((g_gps_utc_ready == 0U) || (g_gps_rmc_count == gps_last_processed_rmc_count))
+    {
+        return 0U;
+    }
+
+    year = g_gps_utc_year;
+    month = g_gps_utc_month;
+    day = g_gps_utc_day;
+
+    /* Use the same country/DST rule as the SPA calculation. */
+    timezone_offset = getTimezoneForCountryName(g_country, (int)year, (int)month, (int)day);
+    g_gps_timezone_offset_hours = (int8_t)timezone_offset;
+    local_hour = (int16_t)g_gps_utc_hour + (int16_t)timezone_offset;
+
+    while (local_hour >= 24)
+    {
+        local_hour -= 24;
+        GPS_AddDay(&year, &month, &day);
+    }
+
+    while (local_hour < 0)
+    {
+        local_hour += 24;
+        GPS_SubtractDay(&year, &month, &day);
+    }
+
+    g_gps_local_year = year;
+    g_gps_local_month = month;
+    g_gps_local_day = day;
+    g_gps_local_hour = (uint8_t)local_hour;
+    g_gps_local_minute = g_gps_utc_minute;
+    g_gps_local_second = g_gps_utc_second;
+    g_gps_local_ready = 1U;
+    g_gps_local_update_count++;
+    gps_last_processed_rmc_count = g_gps_rmc_count;
+
+    return 1U;
+}
+
+static uint8_t GPS_SetRtcFromLocalTime(void)
+{
+    struct tm local_time = {0};
+
+    if ((g_gps_local_ready == 0U) || (g_gps_local_year < 2020U))
+    {
+        return 0U;
+    }
+
+    if ((GPS_REQUIRE_FIX_FOR_RTC_SYNC != 0U) && (g_gps_fix_valid == 0U))
+    {
+        return 0U;
+    }
+
+    local_time.tm_year = (int)g_gps_local_year - 1900;
+    local_time.tm_mon = (int)g_gps_local_month - 1;
+    local_time.tm_mday = (int)g_gps_local_day;
+    local_time.tm_hour = (int)g_gps_local_hour;
+    local_time.tm_min = (int)g_gps_local_minute;
+    local_time.tm_sec = (int)g_gps_local_second;
+
+    /* Load the STM32 RTC calendar registers with local GPS time. */
+    RTC_SetFromTM(&local_time);
+    return 1U;
+}
+
+static void GPS_TryPendingRtcSync(void)
+{
+    if (g_gps_time_sync_requested == 0U)
+    {
+        return;
+    }
+
+    if (g_gps_local_ready == 0U)
+    {
+        return;
+    }
+
+    if (GPS_SetRtcFromLocalTime() != 0U)
+    {
+        g_gps_time_sync_requested = 0U;
+        g_gps_rtc_synced = 1U;
+        g_gps_rtc_sync_count++;
+
+        /* Keep blue LED ON after RTC is loaded from GPS time. */
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+    }
+    else
+    {
+        g_gps_rtc_sync_error_count++;
+    }
+}
+
+uint8_t GPS_Task_SyncTimeNow(void)
+{
+    /* HTTP sync button: load RTC immediately when a GPS local time is ready. */
+    g_gps_time_sync_requested = 1U;
+    g_gps_rtc_synced = 0U;
+
+    (void)GPS_UpdateLocalTimeFromUtc();
+
+    if (GPS_SetRtcFromLocalTime() != 0U)
+    {
+        g_gps_time_sync_requested = 0U;
+        g_gps_rtc_synced = 1U;
+        g_gps_rtc_sync_count++;
+
+        /* Blue LED ON means the RTC was loaded from GPS time. */
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+        return 1U;
+    }
+
+    return 0U;
+}
+
+void GPS_Task_RequestTimeSync(void)
+{
+    /* The HTTP button asks the GPS task to load the RTC. */
+    HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+    g_gps_time_sync_requested = 1U;
+    g_gps_rtc_synced = 0U;
+}
+
+void GPS_Task(void *argument)
+{
+    (void)argument;
+
+    for (;;)
+    {
+        g_gps_task_loop_count++;
+
+        if (GPS_ProcessUart() == 0U)
+        {
+            osDelay(1U);
+        }
+
+        if (GPS_UpdateLocalTimeFromUtc() != 0U)
+        {
+            GPS_TryPendingRtcSync();
+        }
+
+        GPS_TryPendingRtcSync();
+    }
+}
 
 void RTC_SetFromTM(struct tm *t)
 {
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef sDate = {0};
 
+    /* RTC_TimeTypeDef maps to the STM32 RTC time register fields. */
     sTime.Hours   = t->tm_hour;
     sTime.Minutes = t->tm_min;
     sTime.Seconds = t->tm_sec;
     sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     sTime.StoreOperation = RTC_STOREOPERATION_RESET;
 
+    /* RTC_DateTypeDef maps to the STM32 RTC date register fields. */
     sDate.WeekDay = RTC_WEEKDAY_MONDAY;
     sDate.Month   = t->tm_mon + 1;
     sDate.Date    = t->tm_mday;

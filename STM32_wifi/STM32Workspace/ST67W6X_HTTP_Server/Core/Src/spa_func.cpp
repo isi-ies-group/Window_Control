@@ -9,30 +9,55 @@
 
 extern AOIInputs g_AOIInputs;
 
+static char normalizeCountryChar(char c) {
+    if ((c >= 'A') && (c <= 'Z')) {
+        return (char)(c + ('a' - 'A'));
+    }
+
+    return c;
+}
+
+static bool countryEqualsIgnoreCase(const char *country, const char *expected) {
+    if ((country == NULL) || (expected == NULL)) {
+        return false;
+    }
+
+    while ((*country != '\0') && (*expected != '\0')) {
+        if (normalizeCountryChar(*country) != normalizeCountryChar(*expected)) {
+            return false;
+        }
+
+        country++;
+        expected++;
+    }
+
+    return (*country == '\0') && (*expected == '\0');
+}
+
 /**
  * Calculate timezone including DST
  * European rules for countries with DST
  */
-int getTimezoneForCountry(const std::string& country, int year, int month, int day) {
+static int getTimezoneForCountryText(const char *country, int year, int month, int day) {
 
     // --- Base offset--
     int baseOffset = 0;
     bool hasDST = false;
 
     // --- Countries definition ---
-    if (country == "Spain") {
+    if (countryEqualsIgnoreCase(country, "Spain")) {
         baseOffset = 1; hasDST = true;
     }
-    else if (country == "Spain_Canary") {
+    else if (countryEqualsIgnoreCase(country, "Spain_Canary")) {
         baseOffset = 0; hasDST = true;
     }
-    else if (country == "UK") {
+    else if (countryEqualsIgnoreCase(country, "UK")) {
         baseOffset = 0; hasDST = true;
     }
-    else if (country == "Poland") {
+    else if (countryEqualsIgnoreCase(country, "Poland")) {
         baseOffset = 1; hasDST = true;
     }
-    else if (country == "Argentina") {
+    else if (countryEqualsIgnoreCase(country, "Argentina")) {
         baseOffset = -3; hasDST = false;
     }
     else {
@@ -74,6 +99,16 @@ int getTimezoneForCountry(const std::string& country, int year, int month, int d
     }
 
     return baseOffset;
+}
+
+int getTimezoneForCountryName(const char *country, int year, int month, int day) {
+    /* C API used by GPS code to reuse the SPA country/DST table. */
+    return getTimezoneForCountryText(country, year, month, day);
+}
+
+int getTimezoneForCountry(const std::string& country, int year, int month, int day) {
+    /* C++ API used by SPA code with std::string inputs. */
+    return getTimezoneForCountryText(country.c_str(), year, month, day);
 }
 
 void SPA_f() {

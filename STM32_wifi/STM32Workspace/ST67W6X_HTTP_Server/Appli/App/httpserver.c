@@ -40,6 +40,8 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 
 /* USER CODE BEGIN Includes */
 #include "global_structs.h"
+#include "gps.h"
+#include "state_machine.h"
 
 /* USER CODE END Includes */
 
@@ -60,8 +62,6 @@ typedef enum
   LED_GREEN_STATE,
   LED_RED_STATE,
   BUTTON_STATE,
-  AUTO_STATUS_STATE,
-  DUMMY_STATE,
   ERROR_404_HTML,
   UNKNOWN_RESPONSE
 } HttpServer_response_e;
@@ -145,7 +145,6 @@ EventGroupHandle_t pin_handle;
 
 /** Flag to indicate if the button state has changed */
 extern uint8_t button_changed;
-extern RTC_HandleTypeDef hrtc;
 
 /** Response with OK content */
 static const char response_ok_html[] =
@@ -166,15 +165,14 @@ static const HttpServer_response_t http_server_responses[] =
 {
   {INDEX_HTML,      "GET / ",                                     response_index_html,  sizeof(response_index_html)},
   {FAVICON_SVG,     "GET /favicon.ico",                           response_favicon_svg, sizeof(response_favicon_svg)},
-  {ST_LOGO_SVG,     "GET /ST_logo_2020_white_no_tagline_rgb.svg", response_st_logo_svg, sizeof(response_st_logo_svg)},
+  {ST_LOGO_SVG,     "GET /IES_logo.svg",                         response_st_logo_svg, sizeof(response_st_logo_svg)},
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
   {BUTTON_STATE,    "GET /pins_status",                           NULL,                 0U},
-  {AUTO_STATUS_STATE, "GET /status",                               NULL,                 0U},
-  {DUMMY_STATE,     "GET /dummy_status",                          NULL,                 0U},
 };
 
 /* USER CODE BEGIN PV */
+extern RTC_HandleTypeDef hrtc;
 
 /* USER CODE END PV */
 
@@ -217,34 +215,17 @@ static void http_process_response(int32_t client, char *recv_buffer);
 /* USER CODE BEGIN PFP */
 static void http_get_rtc_datetime(char *date_str, size_t date_size,
                                   char *time_str, size_t time_size);
+static int32_t http_hex_to_nibble(char c);
+static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len);
+static bool http_get_query_param(const char *request, const char *name,
+                                 char *value, size_t value_size);
+static bool http_apply_config_submit(const char *request);
+static bool http_apply_eph_submit(const char *request);
+static bool http_apply_manual_goto(const char *request);
 
 /* USER CODE END PFP */
 
 /* Functions Definition ------------------------------------------------------*/
-static void http_get_rtc_datetime(char *date_str, size_t date_size,
-                                  char *time_str, size_t time_size)
-{
-  RTC_TimeTypeDef rtc_time = {0};
-  RTC_DateTypeDef rtc_date = {0};
-
-  if ((HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) ||
-      (HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) != HAL_OK))
-  {
-    (void)snprintf(date_str, date_size, "0000-00-00");
-    (void)snprintf(time_str, time_size, "00:00:00");
-    return;
-  }
-
-  (void)snprintf(date_str, date_size, "20%02" PRIu32 "-%02" PRIu32 "-%02" PRIu32,
-                 (uint32_t)rtc_date.Year,
-                 (uint32_t)rtc_date.Month,
-                 (uint32_t)rtc_date.Date);
-  (void)snprintf(time_str, time_size, "%02" PRIu32 ":%02" PRIu32 ":%02" PRIu32,
-                 (uint32_t)rtc_time.Hours,
-                 (uint32_t)rtc_time.Minutes,
-                 (uint32_t)rtc_time.Seconds);
-}
-
 void http_server_socket(void *arg)
 {
   (void)arg;
@@ -354,12 +335,24 @@ void http_server_socket(void *arg)
       (void)snprintf(thread_name, thread_name_len, "HTTP_%08" PRIX32, newconn);
       thread_name[thread_name_len - 1U] = '\0';
 
+      int32_t *client_arg = (int32_t *)pvPortMalloc(sizeof(*client_arg));
+      if (client_arg == NULL)
+      {
+        LogError("Unable to allocate HTTP client argument\n");
+        (void)close_client(newconn);
+        continue;
+      }
+
+      *client_arg = newconn;
+
       LogDebug("\n Creation of temporary thread to process an incoming HTTP request : %" PRIi32 "\n", newconn);
       if (pdPASS != xTaskCreate((TaskFunction_t)http_server_serve_task, thread_name,
                                 HTTP_CHILD_TASK_STACK_SIZE >> 2U,
-                                &newconn, WEBSERVER_CHILD_THREAD_PRIO, NULL))
+                                client_arg, WEBSERVER_CHILD_THREAD_PRIO, NULL))
       {
         LogInfo("%s task creation failed\n", thread_name);
+        vPortFree(client_arg);
+        (void)close_client(newconn);
       }
       /* Delay added to avoid that too many requests are processed in parallel */
       vTaskDelay(pdMS_TO_TICKS(50));
@@ -383,6 +376,276 @@ _err:
 }
 
 /* USER CODE BEGIN FD */
+static int32_t http_hex_to_nibble(char c)
+{
+  if ((c >= '0') && (c <= '9'))
+  {
+    return (int32_t)(c - '0');
+  }
+  if ((c >= 'a') && (c <= 'f'))
+  {
+    return (int32_t)(c - 'a' + 10);
+  }
+  if ((c >= 'A') && (c <= 'F'))
+  {
+    return (int32_t)(c - 'A' + 10);
+  }
+
+  return -1;
+}
+
+static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len)
+{
+  size_t dst_index = 0;
+
+  if ((dst == NULL) || (dst_size == 0U))
+  {
+    return;
+  }
+
+  if (src == NULL)
+  {
+    dst[0] = '\0';
+    return;
+  }
+
+  for (size_t src_index = 0; (src_index < src_len) && (dst_index < (dst_size - 1U)); src_index++)
+  {
+    if (src[src_index] == '+')
+    {
+      dst[dst_index++] = ' ';
+    }
+    else if ((src[src_index] == '%') && ((src_index + 2U) < src_len))
+    {
+      int32_t high = http_hex_to_nibble(src[src_index + 1U]);
+      int32_t low = http_hex_to_nibble(src[src_index + 2U]);
+
+      if ((high >= 0) && (low >= 0))
+      {
+        dst[dst_index++] = (char)((high << 4) | low);
+        src_index += 2U;
+      }
+      else
+      {
+        dst[dst_index++] = src[src_index];
+      }
+    }
+    else
+    {
+      dst[dst_index++] = src[src_index];
+    }
+  }
+
+  dst[dst_index] = '\0';
+}
+
+static bool http_get_query_param(const char *request, const char *name,
+                                 char *value, size_t value_size)
+{
+  const char *query;
+  const char *query_end;
+  const char *cursor;
+  size_t name_len;
+
+  if ((request == NULL) || (name == NULL) || (value == NULL) || (value_size == 0U))
+  {
+    return false;
+  }
+
+  value[0] = '\0';
+  query = strchr(request, '?');
+  if (query == NULL)
+  {
+    return false;
+  }
+
+  query++;
+  query_end = strchr(query, ' ');
+  if (query_end == NULL)
+  {
+    query_end = query + strlen(query);
+  }
+
+  name_len = strlen(name);
+  cursor = query;
+
+  while (cursor < query_end)
+  {
+    const char *param_end = memchr(cursor, '&', (size_t)(query_end - cursor));
+    const char *separator;
+
+    if (param_end == NULL)
+    {
+      param_end = query_end;
+    }
+
+    separator = memchr(cursor, '=', (size_t)(param_end - cursor));
+    if ((separator != NULL) &&
+        ((size_t)(separator - cursor) == name_len) &&
+        (strncmp(cursor, name, name_len) == 0))
+    {
+      http_url_decode(value, value_size, separator + 1, (size_t)(param_end - separator - 1));
+      return true;
+    }
+
+    cursor = param_end + 1;
+  }
+
+  return false;
+}
+
+static bool http_apply_config_submit(const char *request)
+{
+  char value[64];
+  bool valid_request = true;
+  double latitude = 0.0;
+  double longitude = 0.0;
+  double pan = 0.0;
+  double tilt = 0.0;
+  char country[sizeof(g_country)];
+
+  if (http_get_query_param(request, "latitude", value, sizeof(value)))
+  {
+    latitude = strtod(value, NULL);
+  }
+  else
+  {
+    valid_request = false;
+  }
+
+  if (http_get_query_param(request, "longitude", value, sizeof(value)))
+  {
+    longitude = strtod(value, NULL);
+  }
+  else
+  {
+    valid_request = false;
+  }
+
+  if (http_get_query_param(request, "pan", value, sizeof(value)))
+  {
+    pan = strtod(value, NULL);
+  }
+  else
+  {
+    valid_request = false;
+  }
+
+  if (http_get_query_param(request, "tilt", value, sizeof(value)))
+  {
+    tilt = strtod(value, NULL);
+  }
+  else
+  {
+    valid_request = false;
+  }
+
+  if (http_get_query_param(request, "country", country, sizeof(country)) == false)
+  {
+    valid_request = false;
+  }
+
+  if ((valid_request == false) ||
+      (latitude < -90.0) || (latitude > 90.0) ||
+      (longitude < -180.0) || (longitude > 180.0))
+  {
+    return false;
+  }
+
+  g_SPAInputs.latitude = latitude;
+  g_SPAInputs.longitude = longitude;
+  g_AOIInputs.pan = pan;
+  g_AOIInputs.tilt = tilt;
+  g_AOIInputs.tilt_correction = http_get_query_param(request, "tilt_correction", value, sizeof(value));
+  (void)strncpy(g_country, country, sizeof(g_country) - 1U);
+  g_country[sizeof(g_country) - 1U] = '\0';
+
+  return true;
+}
+
+static void http_get_rtc_datetime(char *date_str, size_t date_size,
+                                  char *time_str, size_t time_size)
+{
+  RTC_TimeTypeDef rtc_time = {0};
+  RTC_DateTypeDef rtc_date = {0};
+
+  if ((HAL_RTC_GetTime(&hrtc, &rtc_time, RTC_FORMAT_BIN) != HAL_OK) ||
+      (HAL_RTC_GetDate(&hrtc, &rtc_date, RTC_FORMAT_BIN) != HAL_OK))
+  {
+    (void)snprintf(date_str, date_size, "0000-00-00");
+    (void)snprintf(time_str, time_size, "00:00:00");
+    return;
+  }
+
+  (void)snprintf(date_str, date_size, "20%02" PRIu32 "-%02" PRIu32 "-%02" PRIu32,
+                 (uint32_t)rtc_date.Year,
+                 (uint32_t)rtc_date.Month,
+                 (uint32_t)rtc_date.Date);
+  (void)snprintf(time_str, time_size, "%02" PRIu32 ":%02" PRIu32 ":%02" PRIu32,
+                 (uint32_t)rtc_time.Hours,
+                 (uint32_t)rtc_time.Minutes,
+                 (uint32_t)rtc_time.Seconds);
+}
+
+static bool http_apply_eph_submit(const char *request)
+{
+  char value[64];
+  double azimuth = 0.0;
+  double elevation = 0.0;
+
+  if (http_get_query_param(request, "azimuth", value, sizeof(value)))
+  {
+    azimuth = strtod(value, NULL);
+  }
+  else
+  {
+    return false;
+  }
+
+  if (http_get_query_param(request, "elevation", value, sizeof(value)))
+  {
+    elevation = strtod(value, NULL);
+  }
+  else
+  {
+    return false;
+  }
+
+  g_AOIInputs.azimuth = azimuth;
+  g_AOIInputs.elevation = elevation;
+
+  return fsmPostEvent(submit_eph_input);
+}
+
+static bool http_apply_manual_goto(const char *request)
+{
+  char value[64];
+  double x = 0.0;
+  double z = 0.0;
+
+  if (http_get_query_param(request, "x", value, sizeof(value)))
+  {
+    x = strtod(value, NULL);
+  }
+  else
+  {
+    return false;
+  }
+
+  if (http_get_query_param(request, "z", value, sizeof(value)))
+  {
+    z = strtod(value, NULL);
+  }
+  else
+  {
+    return false;
+  }
+
+  g_x_val = (float)x;
+  g_z_val = (float)z;
+
+  return fsmPostEvent(submit_manual_goto);
+}
 
 /* USER CODE END FD */
 
@@ -390,6 +653,8 @@ _err:
 static void http_server_serve_task(void *arg)
 {
   int32_t client = *((int32_t *)arg);
+  vPortFree(arg);
+
   int32_t bytes_received;
   int32_t recv_total_len = 0;
   bool request_complete = false;
@@ -561,14 +826,14 @@ static void http_process_response(int32_t client, char *recv_buffer)
   HttpServer_response_e response = UNKNOWN_RESPONSE;
   const char *response_data = response_error_404_html; /* Request not recognized, return 404 error */
   size_t resp_len = sizeof(response_error_404_html);
-  char response_template[640] =
+  char response_template[384] =
   {
     "HTTP/1.1 200 OK\r\n"
     "Server: U5\r\n"
     "Access-Control-Allow-Origin: * \r\n"
     "Cache-Control: no-cache\r\n"
     "Connection: close\r\n"
-    "Content-Type: application/json; charset=utf-8\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
   };
 
   /* USER CODE BEGIN http_process_response_1 */
@@ -588,6 +853,330 @@ static void http_process_response(int32_t client, char *recv_buffer)
   }
 
   /* USER CODE BEGIN http_process_response_2 */
+  if (strncmp(recv_buffer, "GET /status", strlen("GET /status")) == 0)
+  {
+    char *data = (char *)pvPortMalloc(2048U);
+    char date_str[11];
+    char time_str[9];
+
+    if (data == NULL)
+    {
+      const char error_data[] = "{\"error\":\"Unable to allocate status buffer\"}";
+
+      resp_len = strlen(response_template);
+      resp_len += snprintf(&response_template[strlen(response_template)],
+                           sizeof(response_template) - strlen(response_template),
+                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(error_data), error_data);
+
+      (void)http_server_write(client, response_template, resp_len);
+      return;
+    }
+
+    http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
+
+    (void)snprintf(data, 2048U,
+                   "{"
+                   "\"fsm_state\":\"%s\","
+                   "\"auto_on\":%s,\"auto_counter\":%d,"
+                   "\"rtc_date\":\"%s\",\"rtc_time\":\"%s\","
+                   "\"country\":\"%s\","
+                   "\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
+                   "\"tilt_correction\":%s,"
+                   "\"x\":%.6f,\"z\":%.6f,"
+                   "\"gps_task_loop_count\":%" PRIu32 ","
+                   "\"gps_line_count\":%" PRIu32 ","
+                   "\"gps_rmc_count\":%" PRIu32 ","
+                   "\"gps_overflow_count\":%" PRIu32 ","
+                   "\"gps_line_ready\":%" PRIu32 ","
+                   "\"gps_utc_ready\":%" PRIu32 ","
+                   "\"gps_fix_valid\":%" PRIu32 ","
+                   "\"gps_local_ready\":%" PRIu32 ","
+                   "\"gps_timezone_offset_hours\":%" PRIi32 ","
+                   "\"gps_time_sync_requested\":%" PRIu32 ","
+                   "\"gps_rtc_synced\":%" PRIu32 ","
+                   "\"gps_rtc_sync_count\":%" PRIu32 ","
+                   "\"gps_rtc_sync_error_count\":%" PRIu32 ","
+                   "\"gps_utc\":\"%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 " %02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "\","
+                   "\"gps_local\":\"%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 " %02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "\","
+                   "\"gps_last_line\":\"%s\","
+                   "\"gps_last_rmc\":\"%s\""
+                   "}",
+                   stateToText(fsmGetState()),
+                   auto_on ? "true" : "false",
+                   auto_counter,
+                   date_str,
+                   time_str,
+                   g_country,
+                   g_SPAInputs.latitude,
+                   g_SPAInputs.longitude,
+                   g_AOIInputs.pan,
+                   g_AOIInputs.tilt,
+                   g_AOIInputs.tilt_correction ? "true" : "false",
+                   (double)g_x_val,
+                   (double)g_z_val,
+                   (uint32_t)g_gps_task_loop_count,
+                   (uint32_t)g_gps_line_count,
+                   (uint32_t)g_gps_rmc_count,
+                   (uint32_t)g_gps_overflow_count,
+                   (uint32_t)g_gps_line_ready,
+                   (uint32_t)g_gps_utc_ready,
+                   (uint32_t)g_gps_fix_valid,
+                   (uint32_t)g_gps_local_ready,
+                   (int32_t)g_gps_timezone_offset_hours,
+                   (uint32_t)g_gps_time_sync_requested,
+                   (uint32_t)g_gps_rtc_synced,
+                   (uint32_t)g_gps_rtc_sync_count,
+                   (uint32_t)g_gps_rtc_sync_error_count,
+                   (uint32_t)g_gps_utc_year,
+                   (uint32_t)g_gps_utc_month,
+                   (uint32_t)g_gps_utc_day,
+                   (uint32_t)g_gps_utc_hour,
+                   (uint32_t)g_gps_utc_minute,
+                   (uint32_t)g_gps_utc_second,
+                   (uint32_t)g_gps_local_year,
+                   (uint32_t)g_gps_local_month,
+                   (uint32_t)g_gps_local_day,
+                   (uint32_t)g_gps_local_hour,
+                   (uint32_t)g_gps_local_minute,
+                   (uint32_t)g_gps_local_second,
+                   g_gps_last_line,
+                   g_gps_last_rmc);
+
+    resp_len = strlen(response_template);
+    resp_len += snprintf(&response_template[strlen(response_template)],
+                         sizeof(response_template) - strlen(response_template),
+                         "Content-Length: %" PRIu32 "\r\n\r\n", (uint32_t)strlen(data));
+
+    (void)http_server_write(client, response_template, resp_len);
+    (void)http_server_write(client, data, strlen(data));
+    vPortFree(data);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /config_submit", strlen("GET /config_submit")) == 0)
+  {
+    bool config_ok = http_apply_config_submit(recv_buffer);
+
+    if (config_ok)
+    {
+      LogInfo("[CONFIG] Data received from web form: latitude=%.2f longitude=%.2f pan=%.2f tilt=%.2f tilt_correction=%s country=%s\n",
+              g_SPAInputs.latitude,
+              g_SPAInputs.longitude,
+              g_AOIInputs.pan,
+              g_AOIInputs.tilt,
+              g_AOIInputs.tilt_correction ? "true" : "false",
+              g_country);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      const char data[] = "{\"error\":\"Missing or invalid configuration parameters\"}";
+
+      resp_len = strlen(response_template);
+      resp_len += snprintf(&response_template[strlen(response_template)],
+                           sizeof(response_template) - strlen(response_template),
+                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /sync_time", strlen("GET /sync_time")) == 0)
+  {
+    char data[80];
+    char date_str[11];
+    char time_str[9];
+    uint8_t synced;
+
+    /* Copy the latest accepted GPS local time into the STM32 RTC. */
+    synced = GPS_Task_SyncTimeNow();
+    http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
+
+    (void)snprintf(data, sizeof(data),
+                   "{\"synced\":%s,\"date\":\"%s\",\"time\":\"%s\"}",
+                   synced ? "true" : "false",
+                   date_str,
+                   time_str);
+
+    resp_len = strlen(response_template);
+    resp_len += snprintf(&response_template[strlen(response_template)],
+                         sizeof(response_template) - strlen(response_template),
+                         "Content-Length: %" PRIu32 "\r\n\r\n%s",
+                         (uint32_t)strlen(data),
+                         data);
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /auto_mode_toggle", strlen("GET /auto_mode_toggle")) == 0)
+  {
+    (void)fsmPostEvent(toggle_auto_mode);
+
+    (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /auto_mode_on", strlen("GET /auto_mode_on")) == 0)
+  {
+    if (fsmGetState() != AUTO_MODE)
+    {
+      (void)fsmPostEvent(toggle_auto_mode);
+    }
+
+    (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /auto_mode_off", strlen("GET /auto_mode_off")) == 0)
+  {
+    if (fsmGetState() == AUTO_MODE)
+    {
+      (void)fsmPostEvent(toggle_auto_mode);
+    }
+
+    (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /eph_begin", strlen("GET /eph_begin")) == 0)
+  {
+    (void)fsmPostEvent(begin_eph_input);
+
+    resp_len = snprintf(response_template, sizeof(response_template),
+                        "HTTP/1.1 303 See Other\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Location: /\r\n"
+                        "Content-Length: 0\r\n\r\n");
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /end_eph", strlen("GET /end_eph")) == 0)
+  {
+    (void)fsmPostEvent(end_eph_input);
+
+    resp_len = snprintf(response_template, sizeof(response_template),
+                        "HTTP/1.1 303 See Other\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Location: /\r\n"
+                        "Content-Length: 0\r\n\r\n");
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /manual_begin", strlen("GET /manual_begin")) == 0)
+  {
+    (void)fsmPostEvent(begin_manual);
+
+    resp_len = snprintf(response_template, sizeof(response_template),
+                        "HTTP/1.1 303 See Other\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Location: /\r\n"
+                        "Content-Length: 0\r\n\r\n");
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /end_manual", strlen("GET /end_manual")) == 0)
+  {
+    (void)fsmPostEvent(end_manual);
+
+    resp_len = snprintf(response_template, sizeof(response_template),
+                        "HTTP/1.1 303 See Other\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Location: /\r\n"
+                        "Content-Length: 0\r\n\r\n");
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /eph_submit", strlen("GET /eph_submit")) == 0)
+  {
+    bool eph_ok = http_apply_eph_submit(recv_buffer);
+
+    if (eph_ok)
+    {
+      LogInfo("[EPH] Data received from web form: azimuth=%.2f elevation=%.2f\n",
+              g_AOIInputs.azimuth,
+              g_AOIInputs.elevation);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      const char data[] = "{\"error\":\"Missing ephemeris parameters\"}";
+
+      resp_len = strlen(response_template);
+      resp_len += snprintf(&response_template[strlen(response_template)],
+                           sizeof(response_template) - strlen(response_template),
+                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /manual_goto", strlen("GET /manual_goto")) == 0)
+  {
+    bool manual_ok = http_apply_manual_goto(recv_buffer);
+
+    if (manual_ok)
+    {
+      LogInfo("[MANUAL] Goto received from web form: x=%.6f z=%.6f\n",
+              (double)g_x_val,
+              (double)g_z_val);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      const char data[] = "{\"error\":\"Missing manual goto parameters\"}";
+
+      resp_len = strlen(response_template);
+      resp_len += snprintf(&response_template[strlen(response_template)],
+                           sizeof(response_template) - strlen(response_template),
+                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
 
   /* USER CODE END http_process_response_2 */
 
@@ -598,14 +1187,13 @@ static void http_process_response(int32_t client, char *recv_buffer)
     (void)xEventGroupWaitBits(pin_handle, EVENT_FLAG_PIN, pdTRUE, pdFALSE, pdMS_TO_TICKS(PIN_TIMEOUT_MS));
     /* Send anyway the pin status update or the last known status if timeouted */
     /* Prepare the HTTP content data */
-    char data[96];
+    char data[60];
     uint32_t green = (pins_info.led_green_state == GPIO_PIN_RESET) ? 0U : 1U;
     uint32_t red = (pins_info.led_red_state == GPIO_PIN_RESET) ? 0U : 1U;
     uint32_t button = (pins_info.btn_state == GPIO_PIN_RESET) ? 0U : 1U;
-    int dummy_value = auto_counter;
     (void)snprintf(data, sizeof(data),
-                   "{\"LedGreenPin\":%" PRIu32 ",\"LedRedPin\":%" PRIu32 ",\"BtnPin\":%" PRIu32 ",\"DummyValue\":%d}",
-                   green, red, button, dummy_value);
+                   "{\"LedGreenPin\":%" PRIu32 ",\"LedRedPin\":%" PRIu32 ",\"BtnPin\":%" PRIu32 "}",
+                   green, red, button);
 
     resp_len = strlen(response_template);
     /* Append the content length and the data to the response */
@@ -614,52 +1202,6 @@ static void http_process_response(int32_t client, char *recv_buffer)
                          "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
 
     LogInfo("Pins status :\n%s\n", data);
-    response_data = response_template;
-  }
-  else if (response == AUTO_STATUS_STATE)
-  {
-    char data[384];
-    char date_str[11];
-    char time_str[9];
-    int dummy_value = auto_counter;
-
-    http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
-
-    (void)snprintf(data, sizeof(data),
-                   "{\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
-                   "\"tilt_correction\":%s,\"country\":\"%s\",\"auto_on\":%s,"
-                   "\"dummy\":%d,\"date\":\"%s\",\"time\":\"%s\",\"x\":%.6f,\"z\":%.6f}",
-                   g_SPAInputs.latitude,
-                   g_SPAInputs.longitude,
-                   g_AOIInputs.pan,
-                   g_AOIInputs.tilt,
-                   g_AOIInputs.tilt_correction ? "true" : "false",
-                   g_country,
-                   auto_on ? "true" : "false",
-                   dummy_value,
-                   date_str,
-                   time_str,
-                   (double)g_x_val,
-                   (double)g_z_val);
-
-    resp_len = strlen(response_template);
-    resp_len += snprintf(&response_template[strlen(response_template)],
-                         sizeof(response_template) - strlen(response_template),
-                         "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
-
-    response_data = response_template;
-  }
-  else if (response == DUMMY_STATE)
-  {
-    char data[32];
-    int dummy_value = auto_counter;
-    (void)snprintf(data, sizeof(data), "{\"DummyValue\":%d}", dummy_value);
-
-    resp_len = strlen(response_template);
-    resp_len += snprintf(&response_template[strlen(response_template)],
-                         sizeof(response_template) - strlen(response_template),
-                         "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
-
     response_data = response_template;
   }
   else

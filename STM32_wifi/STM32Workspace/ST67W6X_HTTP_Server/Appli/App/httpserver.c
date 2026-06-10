@@ -165,7 +165,7 @@ static const HttpServer_response_t http_server_responses[] =
 {
   {INDEX_HTML,      "GET / ",                                     response_index_html,  sizeof(response_index_html)},
   {FAVICON_SVG,     "GET /favicon.ico",                           response_favicon_svg, sizeof(response_favicon_svg)},
-  {ST_LOGO_SVG,     "GET /IES_logo.svg",                         response_st_logo_svg, sizeof(response_st_logo_svg)},
+  {ST_LOGO_SVG,     "GET /ST_logo_2020_white_no_tagline_rgb.svg", response_st_logo_svg, sizeof(response_st_logo_svg)},
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
   {BUTTON_STATE,    "GET /pins_status",                           NULL,                 0U},
@@ -222,6 +222,8 @@ static bool http_get_query_param(const char *request, const char *name,
 static bool http_apply_config_submit(const char *request);
 static bool http_apply_eph_submit(const char *request);
 static bool http_apply_manual_goto(const char *request);
+static void http_send_html_message(int32_t client, const char *title,
+                                   const char *message, bool is_error);
 
 /* USER CODE END PFP */
 
@@ -335,24 +337,12 @@ void http_server_socket(void *arg)
       (void)snprintf(thread_name, thread_name_len, "HTTP_%08" PRIX32, newconn);
       thread_name[thread_name_len - 1U] = '\0';
 
-      int32_t *client_arg = (int32_t *)pvPortMalloc(sizeof(*client_arg));
-      if (client_arg == NULL)
-      {
-        LogError("Unable to allocate HTTP client argument\n");
-        (void)close_client(newconn);
-        continue;
-      }
-
-      *client_arg = newconn;
-
       LogDebug("\n Creation of temporary thread to process an incoming HTTP request : %" PRIi32 "\n", newconn);
       if (pdPASS != xTaskCreate((TaskFunction_t)http_server_serve_task, thread_name,
                                 HTTP_CHILD_TASK_STACK_SIZE >> 2U,
-                                client_arg, WEBSERVER_CHILD_THREAD_PRIO, NULL))
+                                &newconn, WEBSERVER_CHILD_THREAD_PRIO, NULL))
       {
         LogInfo("%s task creation failed\n", thread_name);
-        vPortFree(client_arg);
-        (void)close_client(newconn);
       }
       /* Delay added to avoid that too many requests are processed in parallel */
       vTaskDelay(pdMS_TO_TICKS(50));
@@ -623,6 +613,7 @@ static bool http_apply_manual_goto(const char *request)
   double x = 0.0;
   double z = 0.0;
 
+  /* Both manual targets are required; an empty query field is currently parsed as zero. */
   if (http_get_query_param(request, "x", value, sizeof(value)))
   {
     x = strtod(value, NULL);
@@ -641,10 +632,62 @@ static bool http_apply_manual_goto(const char *request)
     return false;
   }
 
+  /* Store web targets in globals used by the FSM and movement task. */
   g_x_val = (float)x;
   g_z_val = (float)z;
 
   return fsmPostEvent(submit_manual_goto);
+}
+
+static void http_send_html_message(int32_t client, const char *title,
+                                   const char *message, bool is_error)
+{
+  char header[250];
+  char body[768];
+  const char *color = is_error ? "#c00000" : "#008000";
+  const char *status = is_error ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK";
+  int32_t body_len;
+  int32_t header_len;
+
+  body_len = snprintf(body, sizeof(body),
+                      "<!DOCTYPE html>"
+                      "<html><head>"
+                      "<title>Window Control</title>"
+                      "<meta charset=\"UTF-8\">"
+                      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                      "</head>"
+                      "<body style=\"font-family:Arial,sans-serif;color:#03234b;\">"
+                      "<h2 style=\"color:%s;\">%s</h2>"
+                      "<p>%s</p>"
+                      "<p><a href=\"/\">Back to control page</a></p>"
+                      "</body></html>",
+                      color,
+                      title,
+                      message);
+
+  if (body_len < 0)
+  {
+    return;
+  }
+
+  header_len = snprintf(header, sizeof(header),
+                        "%s\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Content-Type: text/html; charset=utf-8\r\n"
+                        "Content-Length: %" PRIu32 "\r\n\r\n",
+                        status,
+                        (uint32_t)strlen(body));
+
+  if (header_len < 0)
+  {
+    return;
+  }
+
+  (void)http_server_write(client, header, (size_t)header_len);
+  (void)http_server_write(client, body, strlen(body));
 }
 
 /* USER CODE END FD */
@@ -653,8 +696,6 @@ static bool http_apply_manual_goto(const char *request)
 static void http_server_serve_task(void *arg)
 {
   int32_t client = *((int32_t *)arg);
-  vPortFree(arg);
-
   int32_t bytes_received;
   int32_t recv_total_len = 0;
   bool request_complete = false;
@@ -826,7 +867,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
   HttpServer_response_e response = UNKNOWN_RESPONSE;
   const char *response_data = response_error_404_html; /* Request not recognized, return 404 error */
   size_t resp_len = sizeof(response_error_404_html);
-  char response_template[384] =
+  char response_template[250] =
   {
     "HTTP/1.1 200 OK\r\n"
     "Server: U5\r\n"
@@ -899,7 +940,8 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"gps_utc\":\"%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 " %02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "\","
                    "\"gps_local\":\"%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 " %02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "\","
                    "\"gps_last_line\":\"%s\","
-                   "\"gps_last_rmc\":\"%s\""
+                   "\"gps_last_rmc\":\"%s\","
+                   "\"gps_nmea_available\":%s"
                    "}",
                    stateToText(fsmGetState()),
                    auto_on ? "true" : "false",
@@ -940,7 +982,8 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    (uint32_t)g_gps_local_minute,
                    (uint32_t)g_gps_local_second,
                    g_gps_last_line,
-                   g_gps_last_rmc);
+                   g_gps_last_rmc,
+                   ((g_gps_line_count > 0U) || (g_gps_line_ready != 0U)) ? "true" : "false");
 
     resp_len = strlen(response_template);
     resp_len += snprintf(&response_template[strlen(response_template)],
@@ -978,12 +1021,11 @@ static void http_process_response(int32_t client, char *recv_buffer)
     }
     else
     {
-      const char data[] = "{\"error\":\"Missing or invalid configuration parameters\"}";
-
-      resp_len = strlen(response_template);
-      resp_len += snprintf(&response_template[strlen(response_template)],
-                           sizeof(response_template) - strlen(response_template),
-                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+      http_send_html_message(client,
+                             "Wrong parameters",
+                             "Fill all configuration fields. Latitude must be between -90 and 90, and longitude must be between -180 and 180.",
+                             true);
+      return;
     }
 
     (void)http_server_write(client, response_template, resp_len);
@@ -996,6 +1038,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
     char date_str[11];
     char time_str[9];
     uint8_t synced;
+
+    if ((fsmGetState() != STDBY) && (fsmGetState() != AUTO_MODE))
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "End manual or ephemeris mode before synchronizing time.",
+                             true);
+      return;
+    }
 
     /* Copy the latest accepted GPS local time into the STM32 RTC. */
     synced = GPS_Task_SyncTimeNow();
@@ -1020,6 +1071,17 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /auto_mode_toggle", strlen("GET /auto_mode_toggle")) == 0)
   {
+    States current_state = fsmGetState();
+
+    if ((current_state != STDBY) && (current_state != AUTO_MODE))
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Auto mode can only be toggled from STDBY or AUTO_MODE. End manual or ephemeris mode first.",
+                             true);
+      return;
+    }
+
     (void)fsmPostEvent(toggle_auto_mode);
 
     (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
@@ -1028,6 +1090,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /auto_mode_on", strlen("GET /auto_mode_on")) == 0)
   {
+    if (fsmGetState() != STDBY)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Auto mode can only start from STDBY.",
+                             true);
+      return;
+    }
+
     if (fsmGetState() != AUTO_MODE)
     {
       (void)fsmPostEvent(toggle_auto_mode);
@@ -1039,6 +1110,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /auto_mode_off", strlen("GET /auto_mode_off")) == 0)
   {
+    if (fsmGetState() != AUTO_MODE)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Auto mode is not active.",
+                             true);
+      return;
+    }
+
     if (fsmGetState() == AUTO_MODE)
     {
       (void)fsmPostEvent(toggle_auto_mode);
@@ -1050,6 +1130,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /eph_begin", strlen("GET /eph_begin")) == 0)
   {
+    if (fsmGetState() == AUTO_MODE)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Auto mode must be stopped before starting ephemeris input.",
+                             true);
+      return;
+    }
+
     (void)fsmPostEvent(begin_eph_input);
 
     resp_len = snprintf(response_template, sizeof(response_template),
@@ -1066,6 +1155,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /end_eph", strlen("GET /end_eph")) == 0)
   {
+    if (fsmGetState() != EPH_INPUT)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Ephemeris mode is not active.",
+                             true);
+      return;
+    }
+
     (void)fsmPostEvent(end_eph_input);
 
     resp_len = snprintf(response_template, sizeof(response_template),
@@ -1082,6 +1180,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /manual_begin", strlen("GET /manual_begin")) == 0)
   {
+    if (fsmGetState() == AUTO_MODE)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Auto mode must be stopped before starting manual mode.",
+                             true);
+      return;
+    }
+
     (void)fsmPostEvent(begin_manual);
 
     resp_len = snprintf(response_template, sizeof(response_template),
@@ -1098,6 +1205,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /end_manual", strlen("GET /end_manual")) == 0)
   {
+    if (fsmGetState() != MANUAL)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Manual mode is not active.",
+                             true);
+      return;
+    }
+
     (void)fsmPostEvent(end_manual);
 
     resp_len = snprintf(response_template, sizeof(response_template),
@@ -1114,6 +1230,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /eph_submit", strlen("GET /eph_submit")) == 0)
   {
+    if (fsmGetState() != EPH_INPUT)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Press Begin in Ephemeris Input before submitting azimuth and elevation.",
+                             true);
+      return;
+    }
+
     bool eph_ok = http_apply_eph_submit(recv_buffer);
 
     if (eph_ok)
@@ -1133,12 +1258,11 @@ static void http_process_response(int32_t client, char *recv_buffer)
     }
     else
     {
-      const char data[] = "{\"error\":\"Missing ephemeris parameters\"}";
-
-      resp_len = strlen(response_template);
-      resp_len += snprintf(&response_template[strlen(response_template)],
-                           sizeof(response_template) - strlen(response_template),
-                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+      http_send_html_message(client,
+                             "Missing parameters",
+                             "Fill azimuth and elevation before submitting ephemeris input.",
+                             true);
+      return;
     }
 
     (void)http_server_write(client, response_template, resp_len);
@@ -1147,6 +1271,15 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
   if (strncmp(recv_buffer, "GET /manual_goto", strlen("GET /manual_goto")) == 0)
   {
+    if (fsmGetState() != MANUAL)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Press Begin in Manual Mode before sending X/Z targets.",
+                             true);
+      return;
+    }
+
     bool manual_ok = http_apply_manual_goto(recv_buffer);
 
     if (manual_ok)
@@ -1166,12 +1299,11 @@ static void http_process_response(int32_t client, char *recv_buffer)
     }
     else
     {
-      const char data[] = "{\"error\":\"Missing manual goto parameters\"}";
-
-      resp_len = strlen(response_template);
-      resp_len += snprintf(&response_template[strlen(response_template)],
-                           sizeof(response_template) - strlen(response_template),
-                           "Content-Length: %" PRIu32 "\r\n\r\n%s", (uint32_t)strlen(data), data);
+      http_send_html_message(client,
+                             "Missing parameters",
+                             "Fill X target and Z target before submitting manual movement.",
+                             true);
+      return;
     }
 
     (void)http_server_write(client, response_template, resp_len);

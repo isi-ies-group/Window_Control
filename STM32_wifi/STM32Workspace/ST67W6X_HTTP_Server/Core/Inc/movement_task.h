@@ -9,8 +9,6 @@ void initMovementTask(void);
 
 void requestMove(void);
 void requestHome(void);
-void requestAntiBacklash(void);
-void requestAdjustZ(void);
 
 #ifdef __cplusplus
 }

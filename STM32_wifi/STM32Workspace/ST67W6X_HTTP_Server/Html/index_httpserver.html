@@ -140,6 +140,13 @@
         .status-value {
             font-family: monospace;
         }
+
+        button:disabled,
+        input:disabled,
+        select:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
     </style>
 </head>
 
@@ -153,15 +160,15 @@
 		<h2>Initial Configuration</h2>
 		<div class="config-panel">
 			<form action="/config_submit" method="get">
-				Latitude: <input type="text" name="latitude"><br>
-				Longitude: <input type="text" name="longitude"><br>
-				Pan: <input type="text" name="pan"><br>
-				Tilt: <input type="text" name="tilt"><br>
+				Latitude: <input class="config-control" type="text" name="latitude"><br>
+				Longitude: <input class="config-control" type="text" name="longitude"><br>
+				Pan: <input class="config-control" type="text" name="pan"><br>
+				Tilt: <input class="config-control" type="text" name="tilt"><br>
 				Tilt correction:
-				<input type="checkbox" name="tilt_correction" value="1"> Enable<br>
+				<input class="config-control" type="checkbox" name="tilt_correction" value="1"> Enable<br>
 
 				Country:
-				<select name="country">
+				<select class="config-control" name="country">
 					<option value="">-- Select --</option>
 					<option value="Spain">Spain</option>
 					<option value="Spain_Canary">Spain (Canary)</option>
@@ -170,7 +177,7 @@
 					<option value="Argentina">Argentina</option>
 				</select><br>
 
-				<input type="submit" value="Submit">
+				<input class="config-control" type="submit" value="Submit">
 			</form>
 		</div>
 
@@ -178,11 +185,11 @@
 		<h2>Ephemeris Input</h2>
 		<div class="config-panel">
 			<form action="/eph_submit" method="get">
-				Azimuth: <input type="text" name="azimuth"><br>
-				Elevation: <input type="text" name="elevation"><br>
-				<button type="button" onclick="location.href='/eph_begin'">Begin</button>
-				<input type="submit" value="Submit">
-				<button type="button" onclick="location.href='/end_eph'">End</button>
+				Azimuth: <input class="eph-control" type="text" name="azimuth"><br>
+				Elevation: <input class="eph-control" type="text" name="elevation"><br>
+				<button id="ephBeginBtn" type="button" onclick="location.href='/eph_begin'">Begin</button>
+				<input class="eph-control" type="submit" value="Submit">
+				<button id="ephEndBtn" class="eph-control" type="button" onclick="location.href='/end_eph'">End</button>
 			</form>
 		</div>
 
@@ -190,11 +197,11 @@
 		<h2>Manual Mode</h2>
 		<div class="config-panel">
 			<form action="/manual_goto" method="get">
-				X target: <input type="text" name="x"><br>
-				Z target: <input type="text" name="z"><br>
-				<button type="button" onclick="location.href='/manual_begin'">Begin</button>
-				<input type="submit" value="Go to X / Z">
-				<button type="button" onclick="location.href='/end_manual'">End</button>
+				X target: <input class="manual-control" type="text" name="x"><br>
+				Z target: <input class="manual-control" type="text" name="z"><br>
+				<button id="manualBeginBtn" type="button" onclick="location.href='/manual_begin'">Begin</button>
+				<input class="manual-control" type="submit" value="Go to X / Z">
+				<button id="manualEndBtn" class="manual-control" type="button" onclick="location.href='/end_manual'">End</button>
 			</form>
 		</div>
 
@@ -218,22 +225,7 @@
                 <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="tilt_correction">---</span></div>
                 <div class="status-item"><span class="status-label">X:</span> <span class="status-value" id="x">---</span></div>
                 <div class="status-item"><span class="status-label">Z:</span> <span class="status-value" id="z">---</span></div>
-                <div class="status-item"><span class="status-label">GPS task loops:</span> <span class="status-value" id="gps_task_loop_count">---</span></div>
-                <div class="status-item"><span class="status-label">GPS lines:</span> <span class="status-value" id="gps_line_count">---</span></div>
-                <div class="status-item"><span class="status-label">GPS RMC:</span> <span class="status-value" id="gps_rmc_count">---</span></div>
-                <div class="status-item"><span class="status-label">GPS overflow:</span> <span class="status-value" id="gps_overflow_count">---</span></div>
-                <div class="status-item"><span class="status-label">UTC ready:</span> <span class="status-value" id="gps_utc_ready">---</span></div>
-                <div class="status-item"><span class="status-label">Fix valid:</span> <span class="status-value" id="gps_fix_valid">---</span></div>
-                <div class="status-item"><span class="status-label">Local ready:</span> <span class="status-value" id="gps_local_ready">---</span></div>
-                <div class="status-item"><span class="status-label">Timezone:</span> <span class="status-value" id="gps_timezone_offset_hours">---</span></div>
-                <div class="status-item"><span class="status-label">Sync requested:</span> <span class="status-value" id="gps_time_sync_requested">---</span></div>
-                <div class="status-item"><span class="status-label">RTC synced:</span> <span class="status-value" id="gps_rtc_synced">---</span></div>
-                <div class="status-item"><span class="status-label">Sync count:</span> <span class="status-value" id="gps_rtc_sync_count">---</span></div>
-                <div class="status-item"><span class="status-label">Sync errors:</span> <span class="status-value" id="gps_rtc_sync_error_count">---</span></div>
-                <div class="status-item"><span class="status-label">GPS UTC:</span> <span class="status-value" id="gps_utc">---</span></div>
-                <div class="status-item"><span class="status-label">GPS local:</span> <span class="status-value" id="gps_local">---</span></div>
-                <div class="status-item wide"><span class="status-label">Last NMEA:</span> <span class="status-value" id="gps_last_line">---</span></div>
-                <div class="status-item wide"><span class="status-label">Last RMC:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
+                <div class="status-item"><span class="status-label">GPS NMEA:</span> <span class="status-value" id="gps_nmea">---</span></div>
             </div>
         </div>
 </body>
@@ -253,7 +245,40 @@
     }
 
     function setText(id, value) {
-        document.getElementById(id).textContent = value;
+        const element = document.getElementById(id);
+        if (element !== null) {
+            element.textContent = value;
+        }
+    }
+
+    function setDisabled(selector, disabled) {
+        document.querySelectorAll(selector).forEach(function (element) {
+            element.disabled = disabled;
+        });
+    }
+
+    function setElementDisabled(id, disabled) {
+        const element = document.getElementById(id);
+        if (element !== null) {
+            element.disabled = disabled;
+        }
+    }
+
+    function setInterfaceForState(state) {
+        const isStandby = state === "STDBY";
+        const isAuto = state === "AUTO_MODE";
+        const isEph = state === "EPH_INPUT";
+        const isManual = state === "MANUAL";
+        const isKnownState = isStandby || isAuto || isEph || isManual;
+
+        setDisabled(".config-control", !isStandby);
+        setDisabled(".eph-control", !isEph);
+        setDisabled(".manual-control", !isManual);
+
+        setElementDisabled("ephBeginBtn", !isKnownState || isAuto || isEph);
+        setElementDisabled("manualBeginBtn", !isKnownState || isAuto || isManual);
+        setElementDisabled("autoBtn", !isKnownState || !(isStandby || isAuto));
+        setElementDisabled("syncTimeBtn", !isKnownState || !(isStandby || isAuto));
     }
 
     function setAutoButton(enabled) {
@@ -285,6 +310,7 @@
             if (xhr.readyState === 4 && xhr.status === 200) {
                 const resp = JSON.parse(xhr.responseText);
                 setAutoButton(resp.auto_on);
+                setInterfaceForState(resp.fsm_state);
                 setText("fsm_state", resp.fsm_state || "---");
                 setText("auto_on", resp.auto_on ? "true" : "false");
                 setText("auto_counter", resp.auto_counter);
@@ -298,22 +324,7 @@
                 setText("tilt_correction", resp.tilt_correction ? "true" : "false");
                 setText("x", formatNumber(resp.x, 6));
                 setText("z", formatNumber(resp.z, 6));
-                setText("gps_task_loop_count", resp.gps_task_loop_count);
-                setText("gps_line_count", resp.gps_line_count);
-                setText("gps_rmc_count", resp.gps_rmc_count);
-                setText("gps_overflow_count", resp.gps_overflow_count);
-                setText("gps_utc_ready", resp.gps_utc_ready);
-                setText("gps_fix_valid", resp.gps_fix_valid);
-                setText("gps_local_ready", resp.gps_local_ready);
-                setText("gps_timezone_offset_hours", resp.gps_timezone_offset_hours);
-                setText("gps_time_sync_requested", resp.gps_time_sync_requested);
-                setText("gps_rtc_synced", resp.gps_rtc_synced);
-                setText("gps_rtc_sync_count", resp.gps_rtc_sync_count);
-                setText("gps_rtc_sync_error_count", resp.gps_rtc_sync_error_count);
-                setText("gps_utc", resp.gps_utc || "---");
-                setText("gps_local", resp.gps_local || "---");
-                setText("gps_last_line", resp.gps_last_line || "---");
-                setText("gps_last_rmc", resp.gps_last_rmc || "---");
+                setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");
                 scheduleAutoStatusPoll(autoStatusPollMs);
             }
             else if (xhr.readyState === 4) {
@@ -322,6 +333,7 @@
         };
         xhr.send();
     }
+    setInterfaceForState("");
     sendStatusGetRequest();
 
     function toggleAutoMode() {

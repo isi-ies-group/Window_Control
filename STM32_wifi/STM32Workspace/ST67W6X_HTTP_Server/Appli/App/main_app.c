@@ -114,7 +114,7 @@ static uint8_t quit_msg = 0;
 /** Application information */
 static const APP_Info_t app_info =
 {
-  .name = "Voltalux",
+  .name = "ST67W6X Wi-Fi HTTP Server",
   .version = HOST_APP_VERSION_STR
 };
 

@@ -8,6 +8,7 @@
 #include "eph_input_mode.h"
 #include "global_structs.h"
 #include "manual_mode.h"
+#include "movement_task.h"
 
 #define FSM_QUEUE_LENGTH      8U
 #define FSM_TASK_STACK_SIZE   4096U
@@ -153,8 +154,9 @@ static void fsmTask(void *argument)
 
       if (event == submit_manual_goto)
       {
-        /* Temporary manual goto: later this should request the movement task. */
+        /* HTTP has already loaded g_x_val/g_z_val; movement_task runs the blocking pulses. */
         manualModeGoto(g_x_val, g_z_val);
+        requestMove();
       }
       else if (event == submit_eph_input)
       {

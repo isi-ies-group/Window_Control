@@ -3,18 +3,32 @@
 #include "autoMode.h"
 #include "gps.h"
 #include "state_machine.h"
-#include "test.h"
+#include "storage.h"
 
 void SolarApp_Start(void)
 {
-  autoModeInputs(180.0f, 90.0f, true, -3.70f, 40.41f, "Spain");
-  setManualTime(2026, 7, 2, 12, 0, 0);
-  auto_on = false;
+  /*
+   * What: start the application-level services that are not owned by the ST WiFi demo.
+   * How: restore persistent globals first, then initialize the FSM with those values.
+   * Why: the FSM must see the recovered state/position/config instead of boot defaults.
+   */
+  (void)Storage_LoadAll();
   initFSM();
+
+  if (!manual_time)
+  {
+    /* GPS-driven time requests are pending until the GPS task accepts a valid RMC. */
+    GPS_Task_RequestTimeSync();
+  }
 }
 
 void SolarApp_Process(void)
 {
+  /*
+   * What: keep the old polling automode hook available for simple tests.
+   * How: calls autoMode() only when auto_on is true.
+   * Why: current production flow uses the FSM task, but this preserves compatibility.
+   */
   if (auto_on)
   {
     autoMode();

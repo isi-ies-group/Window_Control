@@ -9,6 +9,7 @@
 #include "global_structs.h"
 #include "manual_mode.h"
 #include "movement_task.h"
+#include "storage.h"
 
 #define FSM_QUEUE_LENGTH      8U
 #define FSM_TASK_STACK_SIZE   4096U
@@ -27,10 +28,18 @@ static bool stateTransitionIsValid(States currentState, States newState);
 
 void initFSM(void)
 {
-  /* FSM initialization stays inside this module: state, queue and task. */
-  thisSt = STDBY;
-  nextSt = STDBY;
-  auto_on = false;
+  /*
+   * What: initialize the finite-state-machine task.
+   * How: keeps the state loaded from storage if valid, then creates the event queue/task.
+   * Why: boot should resume the saved state, but HTTP must still interact via events.
+   */
+  if (!stateTransitionIsValid(STDBY, thisSt))
+  {
+    thisSt = STDBY;
+  }
+
+  nextSt = thisSt;
+  auto_on = (thisSt == AUTO_MODE);
 
   if (fsmQueue == NULL)
   {
@@ -51,7 +60,11 @@ void initFSM(void)
 
 bool fsmPostEvent(Events event)
 {
-  /* Public entry point for web/server code: HTTP only posts events. */
+  /*
+   * What: publish a web/application event to the FSM.
+   * How: sends the event into the FreeRTOS queue without blocking.
+   * Why: HTTP handlers should request transitions, not execute mode logic directly.
+   */
   if (fsmQueue == NULL)
   {
     return false;
@@ -62,12 +75,21 @@ bool fsmPostEvent(Events event)
 
 States fsmGetState(void)
 {
-  /* Useful for status reporting in the web page. */
+  /*
+   * What: return the current state for status/UI code.
+   * How: reads thisSt, which is updated only by the FSM logic.
+   * Why: the web page needs state visibility to enable/disable controls correctly.
+   */
   return thisSt;
 }
 
 const char *stateToText(States state)
 {
+  /*
+   * What: convert an FSM enum into web-readable text.
+   * How: maps each known state to a stable string.
+   * Why: status JSON and debugging are easier with names instead of numeric values.
+   */
   switch (state)
   {
     case STDBY:
@@ -89,6 +111,11 @@ const char *stateToText(States state)
 
 States fsmProcess(Events event, bool auto_running)
 {
+  /*
+   * What: translate one event into the requested next state.
+   * How: maps begin/end/submit/toggle events and delegates validation to changeState().
+   * Why: transition decisions stay centralized instead of scattered through HTTP code.
+   */
   States requestedState = thisSt;
 
   /* Kept for compatibility with the first FSM version; thisSt is the source of truth now. */
@@ -127,17 +154,34 @@ States fsmProcess(Events event, bool auto_running)
 
 void changeState(States newState)
 {
-  /* Keep auto_on synchronized for existing web status code. */
+  /*
+   * What: apply a validated FSM state transition.
+   * How: updates thisSt/nextSt, mirrors AUTO_MODE into auto_on, and persists changes.
+   * Why: legacy code still reads auto_on while the FSM remains the source of truth.
+   */
   if (stateTransitionIsValid(thisSt, newState))
   {
+    States previousState = thisSt;
+
     nextSt = newState;
     thisSt = nextSt;
     auto_on = (thisSt == AUTO_MODE);
+
+    if (previousState != thisSt)
+    {
+      /* Persist state transitions so the next boot resumes from the same mode. */
+      (void)saveState();
+    }
   }
 }
 
 static void fsmTask(void *argument)
 {
+  /*
+   * What: run the FSM loop as a FreeRTOS task.
+   * How: consumes queued events, launches subroutines, and ticks automode every 5 seconds.
+   * Why: modes must progress without putting blocking logic in main while(1) or HTTP.
+   */
   Events event;
   TickType_t last_auto_tick = xTaskGetTickCount();
 
@@ -196,7 +240,11 @@ static void fsmTask(void *argument)
 
 static bool stateTransitionIsValid(States currentState, States newState)
 {
-  /* For this first integration all declared states are accepted. */
+  /*
+   * What: decide if a requested state is allowed.
+   * How: accepts only the declared application states for this first integration.
+   * Why: gives us one future point to enforce stricter transition rules.
+   */
   (void)currentState;
 
   return (newState == STDBY) ||

@@ -42,6 +42,7 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 #include "global_structs.h"
 #include "gps.h"
 #include "state_machine.h"
+#include "storage.h"
 
 /* USER CODE END Includes */
 
@@ -220,6 +221,7 @@ static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t 
 static bool http_get_query_param(const char *request, const char *name,
                                  char *value, size_t value_size);
 static bool http_apply_config_submit(const char *request);
+static bool http_apply_manual_datetime(const char *request);
 static bool http_apply_eph_submit(const char *request);
 static bool http_apply_manual_goto(const char *request);
 static void http_send_html_message(int32_t client, const char *title,
@@ -432,6 +434,11 @@ static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t 
 static bool http_get_query_param(const char *request, const char *name,
                                  char *value, size_t value_size)
 {
+  /*
+   * What: extract one form/query parameter from an HTTP request.
+   * How: reads after '?' for GET requests or after the blank header line for POST bodies.
+   * Why: config and manual date/time can share the same URL-decoding parser.
+   */
   const char *query;
   const char *query_end;
   const char *cursor;
@@ -444,15 +451,24 @@ static bool http_get_query_param(const char *request, const char *name,
 
   value[0] = '\0';
   query = strchr(request, '?');
-  if (query == NULL)
+  if (query != NULL)
   {
-    return false;
+    query++;
+    query_end = strchr(query, ' ');
+    if (query_end == NULL)
+    {
+      query_end = query + strlen(query);
+    }
   }
-
-  query++;
-  query_end = strchr(query, ' ');
-  if (query_end == NULL)
+  else
   {
+    query = strstr(request, "\r\n\r\n");
+    if (query == NULL)
+    {
+      return false;
+    }
+
+    query += 4U;
     query_end = query + strlen(query);
   }
 
@@ -486,6 +502,11 @@ static bool http_get_query_param(const char *request, const char *name,
 
 static bool http_apply_config_submit(const char *request)
 {
+  /*
+   * What: apply configuration values submitted from the web form.
+   * How: parses latitude/longitude/panel/country fields, validates ranges and saves flash.
+   * Why: this mirrors ESP32 config_submit so the HTML becomes the source of config changes.
+   */
   char value[64];
   bool valid_request = true;
   double latitude = 0.0;
@@ -550,12 +571,63 @@ static bool http_apply_config_submit(const char *request)
   (void)strncpy(g_country, country, sizeof(g_country) - 1U);
   g_country[sizeof(g_country) - 1U] = '\0';
 
+  (void)saveData();
+
   return true;
+}
+
+static bool http_apply_manual_datetime(const char *request)
+{
+  /*
+   * What: apply a manually entered local date/time from the web form.
+   * How: parses YYYY-MM-DD and HH:MM:SS, loads RTC with setManualTime(), then persists it.
+   * Why: manual time must survive reset until the user presses Sync Time and GPS takes over.
+   */
+  char date_value[16];
+  char time_value[16];
+  int year;
+  int month;
+  int day;
+  int hour;
+  int minute;
+  int second;
+
+  /* Date and time are submitted as form fields in local time. */
+  if ((!http_get_query_param(request, "date", date_value, sizeof(date_value))) ||
+      (!http_get_query_param(request, "time", time_value, sizeof(time_value))))
+  {
+    return false;
+  }
+
+  if ((sscanf(date_value, "%d-%d-%d", &year, &month, &day) != 3) ||
+      (sscanf(time_value, "%d:%d:%d", &hour, &minute, &second) != 3))
+  {
+    return false;
+  }
+
+  if ((year < 2000) || (year > 3000) ||
+      (month < 1) || (month > 12) ||
+      (day < 1) || (day > 31) ||
+      (hour < 0) || (hour > 23) ||
+      (minute < 0) || (minute > 59) ||
+      (second < 0) || (second > 59))
+  {
+    return false;
+  }
+
+  setManualTime(year, month, day, hour, minute, second);
+
+  return saveManualTime(year, month, day, hour, minute, second);
 }
 
 static void http_get_rtc_datetime(char *date_str, size_t date_size,
                                   char *time_str, size_t time_size)
 {
+  /*
+   * What: read the current STM32 RTC value for status JSON.
+   * How: gets time before date, as required by STM32 HAL, then formats ISO-like strings.
+   * Why: the web page needs to show whether manual/GPS sync actually changed the clock.
+   */
   RTC_TimeTypeDef rtc_time = {0};
   RTC_DateTypeDef rtc_date = {0};
 
@@ -920,6 +992,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"fsm_state\":\"%s\","
                    "\"auto_on\":%s,\"auto_counter\":%d,"
                    "\"rtc_date\":\"%s\",\"rtc_time\":\"%s\","
+                   "\"manual_time\":%s,"
                    "\"country\":\"%s\","
                    "\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
                    "\"tilt_correction\":%s,"
@@ -948,6 +1021,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    auto_counter,
                    date_str,
                    time_str,
+                   manual_time ? "true" : "false",
                    g_country,
                    g_SPAInputs.latitude,
                    g_SPAInputs.longitude,
@@ -1024,6 +1098,45 @@ static void http_process_response(int32_t client, char *recv_buffer)
       http_send_html_message(client,
                              "Wrong parameters",
                              "Fill all configuration fields. Latitude must be between -90 and 90, and longitude must be between -180 and 180.",
+                             true);
+      return;
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "POST /set_datetime", strlen("POST /set_datetime")) == 0)
+  {
+    bool datetime_ok;
+
+    if (fsmGetState() != STDBY)
+    {
+      http_send_html_message(client,
+                             "Action blocked",
+                             "Manual date and time can only be changed from STDBY.",
+                             true);
+      return;
+    }
+
+    datetime_ok = http_apply_manual_datetime(recv_buffer);
+
+    if (datetime_ok)
+    {
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      http_send_html_message(client,
+                             "Wrong date/time",
+                             "Use date format YYYY-MM-DD and time format HH:MM:SS.",
                              true);
       return;
     }

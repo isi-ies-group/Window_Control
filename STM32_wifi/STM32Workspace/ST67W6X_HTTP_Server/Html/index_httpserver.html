@@ -181,6 +181,16 @@
 			</form>
 		</div>
 
+		<!-- SECTION 2: Manual Date & Time -->
+		<h2>Manual Date &amp; Time</h2>
+		<div class="config-panel">
+			<form action="/set_datetime" method="post">
+				Date (YYYY-MM-DD): <input class="time-control" type="text" name="date" placeholder="2026-01-20"><br>
+				Time (HH:MM:SS): <input class="time-control" type="text" name="time" placeholder="11:44:15"><br>
+				<input class="time-control" type="submit" value="Set Date & Time">
+			</form>
+		</div>
+
 		<!-- SECTION 2: Ephemeris Input -->
 		<h2>Ephemeris Input</h2>
 		<div class="config-panel">
@@ -218,6 +228,7 @@
                 <div class="status-item"><span class="status-label">Auto counter:</span> <span class="status-value" id="auto_counter">---</span></div>
                 <div class="status-item"><span class="status-label">RTC date:</span> <span class="status-value" id="rtc_date">---</span></div>
                 <div class="status-item"><span class="status-label">RTC time:</span> <span class="status-value" id="rtc_time">---</span></div>
+                <div class="status-item"><span class="status-label">Manual time:</span> <span class="status-value" id="manual_time">---</span></div>
                 <div class="status-item"><span class="status-label">Country:</span> <span class="status-value" id="country">---</span></div>
                 <div class="status-item"><span class="status-label">Latitude:</span> <span class="status-value" id="latitude">---</span></div>
                 <div class="status-item"><span class="status-label">Longitude:</span> <span class="status-value" id="longitude">---</span></div>
@@ -273,6 +284,7 @@
         const isKnownState = isStandby || isAuto || isEph || isManual;
 
         setDisabled(".config-control", !isStandby);
+        setDisabled(".time-control", !isStandby);
         setDisabled(".eph-control", !isEph);
         setDisabled(".manual-control", !isManual);
 
@@ -318,6 +330,7 @@
                 setText("auto_counter", resp.auto_counter);
                 setText("rtc_date", resp.rtc_date || "---");
                 setText("rtc_time", resp.rtc_time || "---");
+                setText("manual_time", resp.manual_time ? "true" : "false");
                 setText("country", resp.country || "---");
                 setText("latitude", formatNumber(resp.latitude, 2));
                 setText("longitude", formatNumber(resp.longitude, 2));

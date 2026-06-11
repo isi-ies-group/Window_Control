@@ -69,7 +69,7 @@ static const long DIR_CHANGE_DELAY_US = 10000;
 static const int BACKOFF_STEPS = 30;
 static const long VERTICAL_STEPS_PER_MM = 25;
 static const long HORIZONTAL_STEPS_PER_MM = 20;
-static const long SECOND_TOUCH_EXTRA_MM = 2;
+static const long SECOND_TOUCH_EXTRA_MM = 70;
 static const long MAX_VERTICAL_SECOND_TOUCH_STEPS =
   BACKOFF_STEPS + (VERTICAL_STEPS_PER_MM * SECOND_TOUCH_EXTRA_MM);
 static const long MAX_HORIZONTAL_SECOND_TOUCH_STEPS =
@@ -91,12 +91,11 @@ typedef struct
 } LimitSwitchState;
 
 /*
- * What: EXTI callbacks refresh this cache for debug/UI feedback.
- * How: the ISR only stores the sampled pin level; movement safety reads GPIO live.
- * Why: motor stop decisions must not depend on a stale interrupt snapshot.
+ * What: EXTI callbacks keep the current endstop level for movement decisions.
+ * How: rising edges store 1, falling edges store 0, and phase starts resync from GPIO.
+ * Why: a released endstop must allow movement again without waiting for a polling read.
  */
 static LimitSwitchState limitSwitchState = {0U, 0U, 0U, 0U, 0U, 0U};
-static volatile uint8_t limitSwitchStateReady = 0U;
 
 static void BackoffAll(int steps, long speed_us);
 static void SecondTouchPair(long speed_us);
@@ -155,7 +154,11 @@ static uint8_t read_limit_pin(GPIO_TypeDef *port, uint16_t pin)
   return (read_pin(port, pin) == GPIO_PIN_SET) ? 1U : 0U;
 }
 
-/* Update only the endstop that triggered an EXTI callback. */
+/*
+ * What: update the endstop state touched by an EXTI edge.
+ * How: samples the GPIO level, so rising marks active and falling marks released.
+ * Why: the movement task can stop or re-allow pulses from the latest interrupt state.
+ */
 uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
 {
   switch (gpio_pin)
@@ -188,11 +191,14 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
       return 0U;
   }
 
-  limitSwitchStateReady = 1U;
   return 1U;
 }
 
-/* Resynchronize the cached endstop state by reading all six GPIOs. */
+/*
+ * What: seed the EXTI cache with the real electrical state of all endstops.
+ * How: reads every GPIO directly before a movement phase starts.
+ * Why: if a switch is already pressed before motion begins, no new rising edge will occur.
+ */
 void movementLimitSwitchRefreshAll(void)
 {
   limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
@@ -201,16 +207,15 @@ void movementLimitSwitchRefreshAll(void)
   limitSwitchState.yre = read_limit_pin(YRE_GPIO_Port, YRE_Pin);
   limitSwitchState.zl = read_limit_pin(ZL_GPIO_Port, ZL_Pin);
   limitSwitchState.zr = read_limit_pin(ZR_GPIO_Port, ZR_Pin);
-  limitSwitchStateReady = 1U;
 }
 
-/* Report whether at least one physical endstop input is currently active. */
+/* Report whether at least one cached endstop input is currently active. */
 uint8_t movementAnyLimitSwitchActive(void)
 {
   /*
    * What: report if any endstop is active for debug/LED feedback.
-   * How: reads the physical GPIOs directly instead of trusting the EXTI cache.
-   * Why: movement safety must use the live pin level, not a possibly stale interrupt snapshot.
+   * How: uses the same EXTI-fed state that movement uses.
+   * Why: the LED must reflect the current interrupt state, including falling-edge releases.
    */
   return yli_limit_active() ||
          yle_limit_active() ||
@@ -220,40 +225,40 @@ uint8_t movementAnyLimitSwitchActive(void)
          zr_limit_active();
 }
 
-/* Read the live GPIO for the left/internal vertical endstop. */
+/* Return the EXTI-fed state for the left/internal vertical endstop. */
 static bool yli_limit_active(void)
 {
-  return (read_limit_pin(YLI_GPIO_Port, YLI_Pin) != 0U);
+  return (limitSwitchState.yli != 0U);
 }
 
-/* Read the live GPIO for the left/external vertical endstop. */
+/* Return the EXTI-fed state for the left/external vertical endstop. */
 static bool yle_limit_active(void)
 {
-  return (read_limit_pin(YLE_GPIO_Port, YLE_Pin) != 0U);
+  return (limitSwitchState.yle != 0U);
 }
 
-/* Read the live GPIO for the right/internal vertical endstop. */
+/* Return the EXTI-fed state for the right/internal vertical endstop. */
 static bool yri_limit_active(void)
 {
-  return (read_limit_pin(YRI_GPIO_Port, YRI_Pin) != 0U);
+  return (limitSwitchState.yri != 0U);
 }
 
-/* Read the live GPIO for the right/external vertical endstop. */
+/* Return the EXTI-fed state for the right/external vertical endstop. */
 static bool yre_limit_active(void)
 {
-  return (read_limit_pin(YRE_GPIO_Port, YRE_Pin) != 0U);
+  return (limitSwitchState.yre != 0U);
 }
 
-/* Read the live GPIO for the left horizontal endstop. */
+/* Return the EXTI-fed state for the left horizontal endstop. */
 static bool zl_limit_active(void)
 {
-  return (read_limit_pin(ZL_GPIO_Port, ZL_Pin) != 0U);
+  return (limitSwitchState.zl != 0U);
 }
 
-/* Read the live GPIO for the right horizontal endstop. */
+/* Return the EXTI-fed state for the right horizontal endstop. */
 static bool zr_limit_active(void)
 {
-  return (read_limit_pin(ZR_GPIO_Port, ZR_Pin) != 0U);
+  return (limitSwitchState.zr != 0U);
 }
 
 /* Report whether any vertical-axis endstop is active. */
@@ -408,10 +413,21 @@ void move(float xmm, float zmm)
         break;
       }
 
-      set_vertical_step(GPIO_PIN_RESET);
+      /*
+       * What: generate one manual-move STEP pulse for the four vertical drivers.
+       * How: force STEP1-STEP4 low, wait, then force STEP1-STEP4 high in the same cycle.
+       * Why: explicit per-pin writes make the manual pulse train easier to verify on hardware.
+       */
+      write_pin(STEP1_Port, STEP1_Pin, GPIO_PIN_RESET);
+      write_pin(STEP2_Port, STEP2_Pin, GPIO_PIN_RESET);
+      write_pin(STEP3_Port, STEP3_Pin, GPIO_PIN_RESET);
+      write_pin(STEP4_Port, STEP4_Pin, GPIO_PIN_RESET);
       delay_us((uint32_t)Speed);
 
-      set_vertical_step(GPIO_PIN_SET);
+      write_pin(STEP1_Port, STEP1_Pin, GPIO_PIN_SET);
+      write_pin(STEP2_Port, STEP2_Pin, GPIO_PIN_SET);
+      write_pin(STEP3_Port, STEP3_Pin, GPIO_PIN_SET);
+      write_pin(STEP4_Port, STEP4_Pin, GPIO_PIN_SET);
       delay_us((uint32_t)Speed);
       moved_steps++;
 
@@ -431,7 +447,10 @@ void move(float xmm, float zmm)
       }
     }
 
-    set_vertical_step(GPIO_PIN_RESET);
+    write_pin(STEP1_Port, STEP1_Pin, GPIO_PIN_RESET);
+    write_pin(STEP2_Port, STEP2_Pin, GPIO_PIN_RESET);
+    write_pin(STEP3_Port, STEP3_Pin, GPIO_PIN_RESET);
+    write_pin(STEP4_Port, STEP4_Pin, GPIO_PIN_RESET);
     CurrentStep1 += moving_positive ? moved_steps : -moved_steps;
     if (moved_steps == steps)
     {
@@ -471,10 +490,17 @@ void move(float xmm, float zmm)
         break;
       }
 
-      set_horizontal_step(GPIO_PIN_RESET);
+      /*
+       * What: generate one manual-move STEP pulse for the two horizontal drivers.
+       * How: force STEP5-STEP6 low, wait, then force STEP5-STEP6 high in the same cycle.
+       * Why: keeps the manual X/Z pulse style identical and easy to probe.
+       */
+      write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_RESET);
+      write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_RESET);
       delay_us((uint32_t)Speed);
 
-      set_horizontal_step(GPIO_PIN_SET);
+      write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_SET);
+      write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_SET);
       delay_us((uint32_t)Speed);
       moved_steps++;
 
@@ -494,7 +520,8 @@ void move(float xmm, float zmm)
       }
     }
 
-    set_horizontal_step(GPIO_PIN_RESET);
+    write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_RESET);
+    write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_RESET);
     CurrentStep2 += moving_positive ? moved_steps : -moved_steps;
     if (moved_steps == steps)
     {
@@ -506,10 +533,10 @@ void move(float xmm, float zmm)
 
 /*
  * What: run a complete homing cycle and reset software position to zero.
- * How: first touch drives each motor only until its own endstop is active, backs off,
- *      then performs a slower second touch with the same independent pulse logic.
- * Why: one endstop must stop only its own motor, otherwise other motors can keep pushing
- *      or one side can finish homing while the other side never reaches its reference.
+ * How: first touch stops each whole axis when any endstop on that axis triggers,
+ *      backs off, then second touch homes each motor/patin independently by EXTI state.
+ * Why: the first touch finds the reference area safely, and the second touch avoids
+ *      pushing a switch that has already been reached.
  */
 void GoHomePair(float *posX, float *posZ)
 {
@@ -537,8 +564,8 @@ void GoHomePair(float *posX, float *posZ)
     return;
   }
 
-  xHomingReached = all_vertical_limits_active();
-  zHomingReached = all_horizontal_limits_active();
+  xHomingReached = vertical_limit_active();
+  zHomingReached = horizontal_limit_active();
 
   enable_vertical(true);
   enable_horizontal(true);
@@ -549,17 +576,12 @@ void GoHomePair(float *posX, float *posZ)
   safeSteps = 0;
   while (!xHomingReached && (safeSteps < MAX_X_HOMING_STEPS))
   {
-    bool moveMXLI = !yli_limit_active();
-    bool moveMXLE = !yle_limit_active();
-    bool moveMXRI = !yri_limit_active();
-    bool moveMXRE = !yre_limit_active();
-
     /*
-     * What: home vertical motors pulse-by-pulse and independently.
-     * How: only the motors whose own endstop is still inactive get a STEP rising edge.
-     * Why: one vertical motor must stop when it touches without preventing the others reaching zero.
+     * What: first vertical touch.
+     * How: all vertical motors pulse together until any vertical endstop interrupt is active.
+     * Why: this coarse pass only finds the home area before the precise second touch.
      */
-    if (!moveMXLI && !moveMXLE && !moveMXRI && !moveMXRE)
+    if (vertical_limit_active())
     {
       xHomingReached = true;
       break;
@@ -568,16 +590,13 @@ void GoHomePair(float *posX, float *posZ)
     set_vertical_step(GPIO_PIN_RESET);
     delay_us((uint32_t)HOMING_SPEED_SLOW);
 
-    if (moveMXLI) write_pin(STEP1_Port, STEP1_Pin, GPIO_PIN_SET);
-    if (moveMXLE) write_pin(STEP2_Port, STEP2_Pin, GPIO_PIN_SET);
-    if (moveMXRI) write_pin(STEP3_Port, STEP3_Pin, GPIO_PIN_SET);
-    if (moveMXRE) write_pin(STEP4_Port, STEP4_Pin, GPIO_PIN_SET);
+    set_vertical_step(GPIO_PIN_SET);
 
     delay_us((uint32_t)HOMING_SPEED_SLOW);
 
     safeSteps++;
 
-    if (all_vertical_limits_active())
+    if (vertical_limit_active())
     {
       xHomingReached = true;
     }
@@ -589,19 +608,20 @@ void GoHomePair(float *posX, float *posZ)
   }
 
   set_vertical_step(GPIO_PIN_RESET);
+  if (xHomingReached)
+  {
+    enable_vertical(false);
+  }
 
   safeSteps = 0;
   while (!zHomingReached && (safeSteps < MAX_Z_HOMING_STEPS))
   {
-    bool moveZL = !zl_limit_active();
-    bool moveZR = !zr_limit_active();
-
     /*
-     * What: home each horizontal skate independently.
-     * How: ZL and ZR receive their own STEP pulse only while their own endstop is inactive.
-     * Why: a skate that already touched zero must not keep pushing while the other finishes.
+     * What: first horizontal touch.
+     * How: both horizontal patins pulse together until either horizontal endstop is active.
+     * Why: this coarse pass matches the ESP32 behavior before the precise second touch.
      */
-    if (!moveZL && !moveZR)
+    if (horizontal_limit_active())
     {
       zHomingReached = true;
       break;
@@ -610,14 +630,13 @@ void GoHomePair(float *posX, float *posZ)
     set_horizontal_step(GPIO_PIN_RESET);
     delay_us((uint32_t)HOMING_SPEED_SLOW);
 
-    if (moveZR) write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_SET);
-    if (moveZL) write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_SET);
+    set_horizontal_step(GPIO_PIN_SET);
 
     delay_us((uint32_t)HOMING_SPEED_SLOW);
 
     safeSteps++;
 
-    if (all_horizontal_limits_active())
+    if (horizontal_limit_active())
     {
       zHomingReached = true;
     }
@@ -629,6 +648,10 @@ void GoHomePair(float *posX, float *posZ)
   }
 
   set_horizontal_step(GPIO_PIN_RESET);
+  if (zHomingReached)
+  {
+    enable_horizontal(false);
+  }
 
   if (xHomingReached && zHomingReached)
   {
@@ -663,9 +686,9 @@ void GoHomePair(float *posX, float *posZ)
 static void SecondTouchPair(long speed_us)
 {
   bool verticalDone = false;
-  bool zLeftDone = false;
-  bool zRightDone = false;
   long safeSteps = 0;
+
+  movementLimitSwitchRefreshAll();
 
   set_vertical_dir_negative();
   set_horizontal_dir_negative();
@@ -673,7 +696,6 @@ static void SecondTouchPair(long speed_us)
   delay_us((uint32_t)DIR_CHANGE_DELAY_US);
 
   enable_vertical(true);
-  enable_horizontal(true);
 
   while (!verticalDone && (safeSteps < MAX_VERTICAL_SECOND_TOUCH_STEPS))
   {
@@ -706,18 +728,27 @@ static void SecondTouchPair(long speed_us)
   }
 
   set_vertical_step(GPIO_PIN_RESET);
+  enable_vertical(false);
 
+  enable_horizontal(true);
   safeSteps = 0;
-  while ((!zLeftDone || !zRightDone) && (safeSteps < MAX_HORIZONTAL_SECOND_TOUCH_STEPS))
+  while (!all_horizontal_limits_active() && (safeSteps < MAX_HORIZONTAL_SECOND_TOUCH_STEPS))
   {
     bool moveZL;
     bool moveZR;
 
-    if (zl_limit_active()) zLeftDone = true;
-    if (zr_limit_active()) zRightDone = true;
+    /*
+     * What: second horizontal touch with falling-edge recovery.
+     * How: each patin is pulsed only while its current EXTI state says "not pressed".
+     * Why: if a switch releases or bounces low, the next pulse is allowed again.
+     */
+    moveZL = !zl_limit_active();
+    moveZR = !zr_limit_active();
 
-    moveZL = !zLeftDone;
-    moveZR = !zRightDone;
+    if (!moveZL && !moveZR)
+    {
+      break;
+    }
 
     set_horizontal_step(GPIO_PIN_RESET);
     delay_us((uint32_t)speed_us);
@@ -732,7 +763,6 @@ static void SecondTouchPair(long speed_us)
   set_horizontal_step(GPIO_PIN_RESET);
   set_vertical_step(GPIO_PIN_RESET);
 
-  enable_vertical(false);
   enable_horizontal(false);
 }
 
@@ -745,6 +775,9 @@ static void SecondTouchPair(long speed_us)
  */
 static void BackoffAll(int steps, long speed_us)
 {
+  enable_vertical(true);
+  enable_horizontal(true);
+
   set_vertical_dir_positive();
   set_horizontal_dir_positive();
 
@@ -769,4 +802,8 @@ static void BackoffAll(int steps, long speed_us)
   }
 
   set_horizontal_step(GPIO_PIN_RESET);
+
+  enable_vertical(false);
+  enable_horizontal(false);
+  movementLimitSwitchRefreshAll();
 }

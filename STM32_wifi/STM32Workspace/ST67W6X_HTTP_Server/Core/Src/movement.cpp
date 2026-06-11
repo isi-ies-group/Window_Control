@@ -12,9 +12,13 @@
 #define YLI_GPIO_Port YLY_GPIO_Port
 #endif
 
+/* MXRI direction must come from CubeMX; fail loudly if the GPIO label is lost. */
 #ifndef MXRI_Z_DIR_Pin
-#define MXRI_Z_DIR_Pin MXLE_Y_DIRG7_Pin
-#define MXRI_Z_DIR_GPIO_Port MXLE_Y_DIRG7_GPIO_Port
+#error "MXRI_Z_DIR_Pin is missing. Check the MXRI_Z_DIR GPIO label in the .ioc file."
+#endif
+
+#ifndef MXRI_Z_DIR_GPIO_Port
+#error "MXRI_Z_DIR_GPIO_Port is missing. Check the MXRI_Z_DIR GPIO label in the .ioc file."
 #endif
 
 /* STM32 pin aliases kept close to the original ESP32 movement numbering. */
@@ -86,7 +90,7 @@ typedef struct
   volatile uint8_t zr;
 } LimitSwitchState;
 
-/* EXTI callbacks keep this cache updated; movement reads it without doing ISR work. */
+/* EXTI callbacks refresh this cache; motor control still runs in task context. */
 static LimitSwitchState limitSwitchState = {0U, 0U, 0U, 0U, 0U, 0U};
 static volatile uint8_t limitSwitchStateReady = 0U;
 
@@ -104,6 +108,7 @@ static bool vertical_limit_active(void);
 static bool horizontal_limit_active(void);
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active);
 
+/* Busy-wait for short motor pulse delays using the DWT cycle counter. */
 static void delay_us(uint32_t us)
 {
   uint32_t start = DWT->CYCCNT;
@@ -114,32 +119,38 @@ static void delay_us(uint32_t us)
   }
 }
 
+/* Enable the DWT cycle counter used by delay_us(). */
 static void dwt_delay_init(void)
 {
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
+/* Return the absolute value of a signed long without pulling in extra helpers. */
 static long abs_long(long value)
 {
   return (value < 0) ? -value : value;
 }
 
+/* Small wrapper around HAL_GPIO_WritePin() to keep movement code compact. */
 static void write_pin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state)
 {
   HAL_GPIO_WritePin(port, pin, state);
 }
 
+/* Small wrapper around HAL_GPIO_ReadPin() to keep limit reads consistent. */
 static GPIO_PinState read_pin(GPIO_TypeDef *port, uint16_t pin)
 {
   return HAL_GPIO_ReadPin(port, pin);
 }
 
+/* Convert an active-high endstop GPIO level into a cached boolean value. */
 static uint8_t read_limit_pin(GPIO_TypeDef *port, uint16_t pin)
 {
   return (read_pin(port, pin) == GPIO_PIN_SET) ? 1U : 0U;
 }
 
+/* Update only the endstop that triggered an EXTI callback. */
 uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
 {
   switch (gpio_pin)
@@ -176,6 +187,7 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
   return 1U;
 }
 
+/* Resynchronize the cached endstop state by reading all six GPIOs. */
 void movementLimitSwitchRefreshAll(void)
 {
   limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
@@ -187,6 +199,7 @@ void movementLimitSwitchRefreshAll(void)
   limitSwitchStateReady = 1U;
 }
 
+/* Report whether at least one cached endstop is currently active. */
 uint8_t movementAnyLimitSwitchActive(void)
 {
   ensure_limit_switch_state();
@@ -199,6 +212,7 @@ uint8_t movementAnyLimitSwitchActive(void)
          (limitSwitchState.zr != 0U);
 }
 
+/* Initialize the cache on first use if no EXTI has updated it yet. */
 static void ensure_limit_switch_state(void)
 {
   if (limitSwitchStateReady == 0U)
@@ -207,42 +221,49 @@ static void ensure_limit_switch_state(void)
   }
 }
 
+/* Return the cached state for the left/internal vertical endstop alias. */
 static bool yli_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.yli != 0U);
 }
 
+/* Return the cached state for the left/external vertical endstop. */
 static bool yle_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.yle != 0U);
 }
 
+/* Return the cached state for the right/internal vertical endstop. */
 static bool yri_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.yri != 0U);
 }
 
+/* Return the cached state for the right/external vertical endstop. */
 static bool yre_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.yre != 0U);
 }
 
+/* Return the cached state for the left horizontal endstop. */
 static bool zl_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.zl != 0U);
 }
 
+/* Return the cached state for the right horizontal endstop. */
 static bool zr_limit_active(void)
 {
   ensure_limit_switch_state();
   return (limitSwitchState.zr != 0U);
 }
 
+/* Report whether any vertical-axis endstop is active. */
 static bool vertical_limit_active(void)
 {
   return yri_limit_active() ||
@@ -251,28 +272,33 @@ static bool vertical_limit_active(void)
          yle_limit_active();
 }
 
+/* Report whether any horizontal-axis endstop is active. */
 static bool horizontal_limit_active(void)
 {
   return zl_limit_active() ||
          zr_limit_active();
 }
 
+/* Decide if a movement must stop because its homing-side limit is active. */
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active)
 {
   /* Current limit switches are homing-side limits; allow a positive move to release them. */
   return limit_active && ((!moving_positive) || released_once);
 }
 
+/* Enable or disable all vertical motors through the active-low enable pin. */
 static void enable_vertical(bool enabled)
 {
   write_pin(ENABLE_X_Port, ENABLE_X_Pin, enabled ? ENABLE_ACTIVE : ENABLE_INACTIVE);
 }
 
+/* Enable or disable all horizontal motors through the active-low enable pin. */
 static void enable_horizontal(bool enabled)
 {
   write_pin(ENABLE_Z_Port, ENABLE_Z_Pin, enabled ? ENABLE_ACTIVE : ENABLE_INACTIVE);
 }
 
+/* Set vertical motor directions for movement away from the homing side. */
 static void set_vertical_dir_positive(void)
 {
   write_pin(DIR1_Port, DIR1_Pin, GPIO_PIN_RESET); /* MXLI */
@@ -281,6 +307,7 @@ static void set_vertical_dir_positive(void)
   write_pin(DIR4_Port, DIR4_Pin, GPIO_PIN_RESET); /* MXRE */
 }
 
+/* Set vertical motor directions for movement toward the homing side. */
 static void set_vertical_dir_negative(void)
 {
   write_pin(DIR1_Port, DIR1_Pin, GPIO_PIN_SET); /* MXLI */
@@ -289,18 +316,21 @@ static void set_vertical_dir_negative(void)
   write_pin(DIR4_Port, DIR4_Pin, GPIO_PIN_SET); /* MXRE */
 }
 
+/* Set horizontal motor directions for movement away from the homing side. */
 static void set_horizontal_dir_positive(void)
 {
   write_pin(DIR5_Port, DIR5_Pin, GPIO_PIN_RESET); /* ZR */
   write_pin(DIR6_Port, DIR6_Pin, GPIO_PIN_SET);   /* ZL */
 }
 
+/* Set horizontal motor directions for movement toward the homing side. */
 static void set_horizontal_dir_negative(void)
 {
   write_pin(DIR5_Port, DIR5_Pin, GPIO_PIN_SET);   /* ZR */
   write_pin(DIR6_Port, DIR6_Pin, GPIO_PIN_RESET); /* ZL */
 }
 
+/* Drive all vertical step pins to the same level. */
 static void set_vertical_step(GPIO_PinState state)
 {
   write_pin(STEP1_Port, STEP1_Pin, state);
@@ -309,12 +339,14 @@ static void set_vertical_step(GPIO_PinState state)
   write_pin(STEP4_Port, STEP4_Pin, state);
 }
 
+/* Drive both horizontal step pins to the same level. */
 static void set_horizontal_step(GPIO_PinState state)
 {
   write_pin(STEP5_Port, STEP5_Pin, state);
   write_pin(STEP6_Port, STEP6_Pin, state);
 }
 
+/* Prepare DWT timing, disable drivers and reset software position counters. */
 void init_motors(void)
 {
   dwt_delay_init();
@@ -333,6 +365,7 @@ void init_motors(void)
   CurrentStep2 = 0;
 }
 
+/* Move to absolute X/Z targets while stopping each axis on active endstops. */
 void move(float xmm, float zmm)
 {
   movementLimitSwitchRefreshAll();
@@ -462,6 +495,7 @@ void move(float xmm, float zmm)
   }
 }
 
+/* Run the homing sequence and reset the software position to zero. */
 void GoHomePair(float *posX, float *posZ)
 {
   bool xHomingReached = false;
@@ -570,6 +604,7 @@ void GoHomePair(float *posX, float *posZ)
   }
 }
 
+/* Perform the second homing touch after backoff for a slower final reference. */
 static void SecondTouchPair(long speed_us)
 {
   bool verticalDone = false;
@@ -657,6 +692,7 @@ static void SecondTouchPair(long speed_us)
   enable_horizontal(false);
 }
 
+/* Move all axes away from the endstops before the second homing touch. */
 static void BackoffAll(int steps, long speed_us)
 {
   set_vertical_dir_positive();

@@ -53,6 +53,7 @@
 #endif /* LOW_POWER_MODE */
 
 /* USER CODE BEGIN Includes */
+#include "movement.h"
 #include "solar_app.h"
 
 /* USER CODE END Includes */
@@ -306,6 +307,13 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
     (void)spi_on_txn_data_ready();
   }
   /* USER CODE BEGIN EXTI_Rising_Callback_End */
+  /* Limit-switch EXTI: cache the changed endstop and mirror any-active on the blue LED. */
+  if (movementLimitSwitchUpdateFromExti(GPIO_Pin) != 0U)
+  {
+    HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin,
+                      movementAnyLimitSwitchActive() ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  }
+
   /* USER CODE END EXTI_Rising_Callback_End */
 }
 
@@ -329,6 +337,13 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
     button_changed %= 2U;
   }
   /* USER CODE BEGIN EXTI_Falling_Callback_End */
+  /* Limit-switch EXTI: cache releases too, so stored state follows the real pin level. */
+  if (movementLimitSwitchUpdateFromExti(GPIO_Pin) != 0U)
+  {
+    HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin,
+                      movementAnyLimitSwitchActive() ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  }
+
   /* USER CODE END EXTI_Falling_Callback_End */
 }
 

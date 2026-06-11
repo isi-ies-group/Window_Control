@@ -68,8 +68,10 @@ void Error_Handler(void);
 #define SPI_MOSI_GPIO_Port GPIOA
 #define YLY_Pin GPIO_PIN_1
 #define YLY_GPIO_Port GPIOB
+#define YLY_EXTI_IRQn EXTI1_IRQn
 #define YLE_Pin GPIO_PIN_2
 #define YLE_GPIO_Port GPIOB
+#define YLE_EXTI_IRQn EXTI2_IRQn
 #define Vertical_ENABLE_Pin GPIO_PIN_11
 #define Vertical_ENABLE_GPIO_Port GPIOF
 #define USER_BUTTON_Pin GPIO_PIN_12
@@ -82,10 +84,13 @@ void Error_Handler(void);
 #define CHIP_EN_GPIO_Port GPIOE
 #define SPI_RDY_Pin GPIO_PIN_13
 #define SPI_RDY_GPIO_Port GPIOE
+#define SPI_RDY_EXTI_IRQn EXTI13_IRQn
 #define ZL_Pin GPIO_PIN_14
 #define ZL_GPIO_Port GPIOB
+#define ZL_EXTI_IRQn EXTI14_IRQn
 #define ZR_Pin GPIO_PIN_15
 #define ZR_GPIO_Port GPIOB
+#define ZR_EXTI_IRQn EXTI15_IRQn
 #define MXLE_Y_DIR_Pin GPIO_PIN_10
 #define MXLE_Y_DIR_GPIO_Port GPIOD
 #define ZL_A_STEP_Pin GPIO_PIN_11
@@ -118,8 +123,10 @@ void Error_Handler(void);
 #define MXLI_X_DIR_GPIO_Port GPIOG
 #define YRE_Pin GPIO_PIN_4
 #define YRE_GPIO_Port GPIOB
+#define YRE_EXTI_IRQn EXTI4_IRQn
 #define YRI_Pin GPIO_PIN_5
 #define YRI_GPIO_Port GPIOB
+#define YRI_EXTI_IRQn EXTI5_IRQn
 #define LED_BLUE_Pin GPIO_PIN_7
 #define LED_BLUE_GPIO_Port GPIOB
 #define MXLI_X_STEP_Pin GPIO_PIN_0

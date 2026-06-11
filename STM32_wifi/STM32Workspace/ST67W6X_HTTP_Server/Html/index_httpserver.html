@@ -207,6 +207,7 @@
 
         <br><br>
         <button id="syncTimeBtn" class="button sync-btn" onclick="syncTime()">SYNC TIME</button>
+        <button id="homeBtn" class="button" onclick="home()">HOME</button>
         <button id="autoBtn" class="button auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
 
         <h2>Test status</h2>
@@ -279,6 +280,7 @@
         setElementDisabled("manualBeginBtn", !isKnownState || isAuto || isManual);
         setElementDisabled("autoBtn", !isKnownState || !(isStandby || isAuto));
         setElementDisabled("syncTimeBtn", !isKnownState || !(isStandby || isAuto));
+        setElementDisabled("homeBtn", !isKnownState);
     }
 
     function setAutoButton(enabled) {
@@ -370,6 +372,24 @@
             if (xhr.readyState === 4 && xhr.status === 200) {
                 console.log("SYNC TIME requested");
                 sendStatusGetRequest();
+            }
+        };
+        xhr.send();
+    }
+
+    function home() {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/home", true);
+        xhr.ontimeout = function () {
+            console.log("HOME request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("HOME request error");
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("HOME requested");
             }
         };
         xhr.send();

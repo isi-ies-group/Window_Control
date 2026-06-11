@@ -1310,6 +1310,24 @@ static void http_process_response(int32_t client, char *recv_buffer)
     return;
   }
 
+  if ((strncmp(recv_buffer, "GET /home", strlen("GET /home")) == 0) ||
+      (strncmp(recv_buffer, "GET /manual_home", strlen("GET /manual_home")) == 0))
+  {
+    (void)fsmPostEvent(submit_home);
+
+    resp_len = snprintf(response_template, sizeof(response_template),
+                        "HTTP/1.1 200 OK\r\n"
+                        "Server: U5\r\n"
+                        "Access-Control-Allow-Origin: * \r\n"
+                        "Cache-Control: no-cache\r\n"
+                        "Connection: close\r\n"
+                        "Content-Type: text/plain; charset=utf-8\r\n"
+                        "Content-Length: 2\r\n\r\n"
+                        "OK");
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
   /* USER CODE END http_process_response_2 */
 
   if (response == BUTTON_STATE) /* Prepare a custom response for the button state */

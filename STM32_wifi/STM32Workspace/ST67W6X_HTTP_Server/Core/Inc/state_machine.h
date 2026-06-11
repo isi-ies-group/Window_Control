@@ -22,6 +22,7 @@ typedef enum
   submit_eph_input,
   begin_manual,
   submit_manual_goto,
+  submit_home,
   end_manual,
   toggle_auto_mode,
 } Events;

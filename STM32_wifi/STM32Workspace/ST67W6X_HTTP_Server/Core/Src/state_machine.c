@@ -158,6 +158,11 @@ static void fsmTask(void *argument)
         manualModeGoto(g_x_val, g_z_val);
         requestMove();
       }
+      else if (event == submit_home)
+      {
+        /* Homing is requested by the web layer and executed by the movement task. */
+        requestHome();
+      }
       else if (event == submit_eph_input)
       {
         /* Ephemeris mode calculates AOI and updates g_x_val/g_z_val. */

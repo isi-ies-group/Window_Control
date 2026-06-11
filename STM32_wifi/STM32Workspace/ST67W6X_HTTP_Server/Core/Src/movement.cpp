@@ -76,8 +76,30 @@ static const long Speed = 600;
 static long CurrentStep1 = 0;
 static long CurrentStep2 = 0;
 
+typedef struct
+{
+  volatile uint8_t yli;
+  volatile uint8_t yle;
+  volatile uint8_t yri;
+  volatile uint8_t yre;
+  volatile uint8_t zl;
+  volatile uint8_t zr;
+} LimitSwitchState;
+
+/* EXTI callbacks keep this cache updated; movement reads it without doing ISR work. */
+static LimitSwitchState limitSwitchState = {0U, 0U, 0U, 0U, 0U, 0U};
+static volatile uint8_t limitSwitchStateReady = 0U;
+
 static void BackoffAll(int steps, long speed_us);
 static void SecondTouchPair(long speed_us);
+static void ensure_limit_switch_state(void);
+static uint8_t read_limit_pin(GPIO_TypeDef *port, uint16_t pin);
+static bool yli_limit_active(void);
+static bool yle_limit_active(void);
+static bool yri_limit_active(void);
+static bool yre_limit_active(void);
+static bool zl_limit_active(void);
+static bool zr_limit_active(void);
 static bool vertical_limit_active(void);
 static bool horizontal_limit_active(void);
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active);
@@ -113,18 +135,126 @@ static GPIO_PinState read_pin(GPIO_TypeDef *port, uint16_t pin)
   return HAL_GPIO_ReadPin(port, pin);
 }
 
+static uint8_t read_limit_pin(GPIO_TypeDef *port, uint16_t pin)
+{
+  return (read_pin(port, pin) == GPIO_PIN_SET) ? 1U : 0U;
+}
+
+uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
+{
+  switch (gpio_pin)
+  {
+    case YLI_Pin:
+      limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
+      break;
+
+    case YLE_Pin:
+      limitSwitchState.yle = read_limit_pin(YLE_GPIO_Port, YLE_Pin);
+      break;
+
+    case YRI_Pin:
+      limitSwitchState.yri = read_limit_pin(YRI_GPIO_Port, YRI_Pin);
+      break;
+
+    case YRE_Pin:
+      limitSwitchState.yre = read_limit_pin(YRE_GPIO_Port, YRE_Pin);
+      break;
+
+    case ZL_Pin:
+      limitSwitchState.zl = read_limit_pin(ZL_GPIO_Port, ZL_Pin);
+      break;
+
+    case ZR_Pin:
+      limitSwitchState.zr = read_limit_pin(ZR_GPIO_Port, ZR_Pin);
+      break;
+
+    default:
+      return 0U;
+  }
+
+  limitSwitchStateReady = 1U;
+  return 1U;
+}
+
+void movementLimitSwitchRefreshAll(void)
+{
+  limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
+  limitSwitchState.yle = read_limit_pin(YLE_GPIO_Port, YLE_Pin);
+  limitSwitchState.yri = read_limit_pin(YRI_GPIO_Port, YRI_Pin);
+  limitSwitchState.yre = read_limit_pin(YRE_GPIO_Port, YRE_Pin);
+  limitSwitchState.zl = read_limit_pin(ZL_GPIO_Port, ZL_Pin);
+  limitSwitchState.zr = read_limit_pin(ZR_GPIO_Port, ZR_Pin);
+  limitSwitchStateReady = 1U;
+}
+
+uint8_t movementAnyLimitSwitchActive(void)
+{
+  ensure_limit_switch_state();
+
+  return (limitSwitchState.yli != 0U) ||
+         (limitSwitchState.yle != 0U) ||
+         (limitSwitchState.yri != 0U) ||
+         (limitSwitchState.yre != 0U) ||
+         (limitSwitchState.zl != 0U) ||
+         (limitSwitchState.zr != 0U);
+}
+
+static void ensure_limit_switch_state(void)
+{
+  if (limitSwitchStateReady == 0U)
+  {
+    movementLimitSwitchRefreshAll();
+  }
+}
+
+static bool yli_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.yli != 0U);
+}
+
+static bool yle_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.yle != 0U);
+}
+
+static bool yri_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.yri != 0U);
+}
+
+static bool yre_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.yre != 0U);
+}
+
+static bool zl_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.zl != 0U);
+}
+
+static bool zr_limit_active(void)
+{
+  ensure_limit_switch_state();
+  return (limitSwitchState.zr != 0U);
+}
+
 static bool vertical_limit_active(void)
 {
-  return (read_pin(YRI_GPIO_Port, YRI_Pin) == GPIO_PIN_SET) ||
-         (read_pin(YRE_GPIO_Port, YRE_Pin) == GPIO_PIN_SET) ||
-         (read_pin(YLI_GPIO_Port, YLI_Pin) == GPIO_PIN_SET) ||
-         (read_pin(YLE_GPIO_Port, YLE_Pin) == GPIO_PIN_SET);
+  return yri_limit_active() ||
+         yre_limit_active() ||
+         yli_limit_active() ||
+         yle_limit_active();
 }
 
 static bool horizontal_limit_active(void)
 {
-  return (read_pin(ZL_GPIO_Port, ZL_Pin) == GPIO_PIN_SET) ||
-         (read_pin(ZR_GPIO_Port, ZR_Pin) == GPIO_PIN_SET);
+  return zl_limit_active() ||
+         zr_limit_active();
 }
 
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active)
@@ -188,6 +318,7 @@ static void set_horizontal_step(GPIO_PinState state)
 void init_motors(void)
 {
   dwt_delay_init();
+  movementLimitSwitchRefreshAll();
 
   enable_horizontal(false);
   enable_vertical(false);
@@ -204,6 +335,8 @@ void init_motors(void)
 
 void move(float xmm, float zmm)
 {
+  movementLimitSwitchRefreshAll();
+
   /* Manual X/Z inputs are treated as absolute position targets, not relative moves. */
   long targetStepsX = (long)(xmm * (float)VERTICAL_STEPS_PER_MM);
   long diffX = targetStepsX - CurrentStep1;
@@ -335,12 +468,14 @@ void GoHomePair(float *posX, float *posZ)
   bool zHomingReached = false;
   long safeSteps = 0;
 
-  if ((read_pin(YRI_GPIO_Port, YRI_Pin) == GPIO_PIN_SET) &&
-      (read_pin(YRE_GPIO_Port, YRE_Pin) == GPIO_PIN_SET) &&
-      (read_pin(YLI_GPIO_Port, YLI_Pin) == GPIO_PIN_SET) &&
-      (read_pin(YLE_GPIO_Port, YLE_Pin) == GPIO_PIN_SET) &&
-      (read_pin(ZL_GPIO_Port, ZL_Pin) == GPIO_PIN_SET) &&
-      (read_pin(ZR_GPIO_Port, ZR_Pin) == GPIO_PIN_SET))
+  movementLimitSwitchRefreshAll();
+
+  if (yri_limit_active() &&
+      yre_limit_active() &&
+      yli_limit_active() &&
+      yle_limit_active() &&
+      zl_limit_active() &&
+      zr_limit_active())
   {
     CurrentStep1 = 0;
     CurrentStep2 = 0;
@@ -457,19 +592,19 @@ static void SecondTouchPair(long speed_us)
     bool moveMXRI;
     bool moveMXRE;
 
-    if ((read_pin(YLI_GPIO_Port, YLI_Pin) == GPIO_PIN_SET) &&
-        (read_pin(YLE_GPIO_Port, YLE_Pin) == GPIO_PIN_SET) &&
-        (read_pin(YRI_GPIO_Port, YRI_Pin) == GPIO_PIN_SET) &&
-        (read_pin(YRE_GPIO_Port, YRE_Pin) == GPIO_PIN_SET))
+    if (yli_limit_active() &&
+        yle_limit_active() &&
+        yri_limit_active() &&
+        yre_limit_active())
     {
       verticalDone = true;
       break;
     }
 
-    moveMXLI = (read_pin(YLI_GPIO_Port, YLI_Pin) == GPIO_PIN_RESET);
-    moveMXLE = (read_pin(YLE_GPIO_Port, YLE_Pin) == GPIO_PIN_RESET);
-    moveMXRI = (read_pin(YRI_GPIO_Port, YRI_Pin) == GPIO_PIN_RESET);
-    moveMXRE = (read_pin(YRE_GPIO_Port, YRE_Pin) == GPIO_PIN_RESET);
+    moveMXLI = !yli_limit_active();
+    moveMXLE = !yle_limit_active();
+    moveMXRI = !yri_limit_active();
+    moveMXRE = !yre_limit_active();
 
     set_vertical_step(GPIO_PIN_RESET);
     delay_us((uint32_t)speed_us);
@@ -491,8 +626,8 @@ static void SecondTouchPair(long speed_us)
     bool moveZL;
     bool moveZR;
 
-    if (read_pin(ZL_GPIO_Port, ZL_Pin) == GPIO_PIN_SET) zLeftDone = true;
-    if (read_pin(ZR_GPIO_Port, ZR_Pin) == GPIO_PIN_SET) zRightDone = true;
+    if (zl_limit_active()) zLeftDone = true;
+    if (zr_limit_active()) zRightDone = true;
 
     moveZL = !zLeftDone;
     moveZR = !zRightDone;

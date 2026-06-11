@@ -5,13 +5,17 @@
 #include "spa_func.h"
 #include "matrices.h"
 #include "gps.h"
-//#include "movement_task.h"
-//#include "gps.h"
+#include "movement_task.h"
 
 
 
 
 void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
+    /*
+     * What: copy local calendar time into the SPA input structure.
+     * How: converts struct tm offsets into normal year/month/day/hour fields.
+     * Why: SPA expects explicit local date/time values, not an RTC or epoch object.
+     */
     spa->year   = time_info->tm_year + 1900;
     spa->month  = time_info->tm_mon + 1;
     spa->day    = time_info->tm_mday;
@@ -22,8 +26,13 @@ void updateSPAInputsFromTime(struct tm *time_info, SPAInputs *spa) {
 
 
 void autoMode() {
+    /*
+     * What: run one automatic tracking cycle.
+     * How: reads the same local RTC shown in the web status, calculates SPA/AOI/XZ, then queues movement.
+     * Why: automatic mode must follow the configured local time source without blocking the FSM task.
+     */
+    struct tm time_info = {0};
 
-    struct tm time_info;
     RTC_GetToTM(&time_info);
 
     updateSPAInputsFromTime(&time_info, &g_SPAInputs);
@@ -31,6 +40,7 @@ void autoMode() {
     SPA_f();
     aoicalc_f();
     interpolation_f();
+    requestMove();
 
 }
 

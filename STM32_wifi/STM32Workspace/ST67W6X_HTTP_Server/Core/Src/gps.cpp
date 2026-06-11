@@ -3,6 +3,7 @@
 #include "global_structs.h"
 #include "main.h"
 #include "spa_func.h"
+#include "storage.h"
 #include <string.h>
 
 extern RTC_HandleTypeDef hrtc; //main.c RTC access
@@ -434,6 +435,11 @@ static uint8_t GPS_SetRtcFromLocalTime(void)
 
 static void GPS_TryPendingRtcSync(void)
 {
+    /*
+     * What: complete a deferred GPS-to-RTC synchronization request.
+     * How: waits until local GPS time is ready, writes RTC, clears manual_time in storage.
+     * Why: the web button may arrive before the GPS task has parsed a valid time sentence.
+     */
     if (g_gps_time_sync_requested == 0U)
     {
         return;
@@ -449,6 +455,7 @@ static void GPS_TryPendingRtcSync(void)
         g_gps_time_sync_requested = 0U;
         g_gps_rtc_synced = 1U;
         g_gps_rtc_sync_count++;
+        (void)saveTimeMode(false);
 
         /* Keep blue LED ON after RTC is loaded from GPS time. */
         HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
@@ -461,7 +468,11 @@ static void GPS_TryPendingRtcSync(void)
 
 uint8_t GPS_Task_SyncTimeNow(void)
 {
-    /* HTTP sync button: load RTC immediately when a GPS local time is ready. */
+    /*
+     * What: service the HTTP Sync Time button.
+     * How: requests GPS sync and immediately tries to write RTC if local GPS time is ready.
+     * Why: the user gets an instant success/fail response without waiting for another loop.
+     */
     g_gps_time_sync_requested = 1U;
     g_gps_rtc_synced = 0U;
 
@@ -472,6 +483,7 @@ uint8_t GPS_Task_SyncTimeNow(void)
         g_gps_time_sync_requested = 0U;
         g_gps_rtc_synced = 1U;
         g_gps_rtc_sync_count++;
+        (void)saveTimeMode(false);
 
         /* Blue LED ON means the RTC was loaded from GPS time. */
         HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
@@ -483,7 +495,11 @@ uint8_t GPS_Task_SyncTimeNow(void)
 
 void GPS_Task_RequestTimeSync(void)
 {
-    /* The HTTP button asks the GPS task to load the RTC. */
+    /*
+     * What: ask the GPS task to synchronize RTC as soon as it has valid local time.
+     * How: sets a pending flag and resets the visible synced state.
+     * Why: boot can request GPS time without blocking the WiFi/server startup path.
+     */
     HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
     g_gps_time_sync_requested = 1U;
     g_gps_rtc_synced = 0U;
@@ -491,6 +507,11 @@ void GPS_Task_RequestTimeSync(void)
 
 void GPS_Task(void *argument)
 {
+    /*
+     * What: receive NMEA data, update local time and handle pending RTC sync.
+     * How: drains UART, converts parsed UTC to local time, then tries queued sync requests.
+     * Why: GPS parsing is continuous work and must live outside main while(1)/HTTP handlers.
+     */
     (void)argument;
 
     for (;;)
@@ -513,6 +534,11 @@ void GPS_Task(void *argument)
 
 void RTC_SetFromTM(struct tm *t)
 {
+    /*
+     * What: write a standard tm date/time into STM32 RTC registers.
+     * How: converts tm year/month offsets into HAL RTC binary fields and calls HAL setters.
+     * Why: GPS and manual web time both need one shared RTC loading function.
+     */
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef sDate = {0};
 
@@ -535,17 +561,24 @@ void RTC_SetFromTM(struct tm *t)
     if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK){
     	Error_Handler();
     }
-
-
-
-
-
 }
 
+/*
+ * What: read the STM32 RTC registers into a standard tm structure.
+ * How: gets time and date from HAL, then converts RTC month/year fields to tm offsets.
+ * Why: higher-level time code can work with tm instead of RTC-specific structures.
+ */
 void RTC_GetToTM(struct tm *t)
 {
     RTC_TimeTypeDef sTime;
     RTC_DateTypeDef sDate;
+
+    /*
+     * What: clear fields that RTC does not provide directly.
+     * How: zeroes the whole tm before filling calendar fields from HAL.
+     * Why: later mktime() calls must not see random tm_wday/tm_yday/tm_isdst values.
+     */
+    memset(t, 0, sizeof(*t));
 
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
@@ -559,9 +592,16 @@ void RTC_GetToTM(struct tm *t)
     t->tm_year = sDate.Year + 100; //Year since 1900
 }
 
+/*
+ * What: load a manual local date/time into the RTC.
+ * How: converts web form fields to tm, sets manual_time and calls RTC_SetFromTM().
+ * Why: manual time must be used until GPS Sync Time explicitly restores GPS ownership.
+ */
 void setManualTime(int year, int month, int day, int hour, int min, int sec)
 {
     struct tm t = {0};
+
+    manual_time = true;
 
     t.tm_year = year - 1900;
     t.tm_mon  = month - 1;

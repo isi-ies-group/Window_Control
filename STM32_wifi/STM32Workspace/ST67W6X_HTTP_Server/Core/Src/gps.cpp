@@ -573,6 +573,13 @@ void RTC_GetToTM(struct tm *t)
     RTC_TimeTypeDef sTime;
     RTC_DateTypeDef sDate;
 
+    /*
+     * What: clear fields that RTC does not provide directly.
+     * How: zeroes the whole tm before filling calendar fields from HAL.
+     * Why: later mktime() calls must not see random tm_wday/tm_yday/tm_isdst values.
+     */
+    memset(t, 0, sizeof(*t));
+
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 

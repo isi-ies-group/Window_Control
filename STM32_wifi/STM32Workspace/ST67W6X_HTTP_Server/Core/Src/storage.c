@@ -155,8 +155,27 @@ static bool Storage_ReadRecord(StorageRecord_t *record)
 }
 
 /*
+ * What: load the saved local timestamp into the STM32 RTC.
+ * How: converts the stored calendar fields into struct tm and calls RTC_SetFromTM().
+ * Why: after reset/power loss the clock must resume from the latest persisted local time.
+ */
+static void Storage_ApplyRecordToRtc(const StorageRecord_t *record)
+{
+  struct tm stored_time = {0};
+
+  stored_time.tm_year = record->manual_year - 1900;
+  stored_time.tm_mon = record->manual_month - 1;
+  stored_time.tm_mday = record->manual_day;
+  stored_time.tm_hour = record->manual_hour;
+  stored_time.tm_min = record->manual_minute;
+  stored_time.tm_sec = record->manual_second;
+
+  RTC_SetFromTM(&stored_time);
+}
+
+/*
  * What: publish stored values into the globals used by web, FSM, GPS and movement.
- * How: copies each persisted field to its runtime owner and restores RTC if time is manual.
+ * How: copies each persisted field to its runtime owner and restores RTC from saved local time.
  * Why: after boot, the rest of the firmware can keep using the same globals as before.
  */
 static void Storage_ApplyRecordToGlobals(const StorageRecord_t *record)
@@ -178,15 +197,26 @@ static void Storage_ApplyRecordToGlobals(const StorageRecord_t *record)
   g_x_val = record->x_pos;
   g_z_val = record->z_pos;
 
-  if (manual_time)
-  {
-    setManualTime(record->manual_year,
-                  record->manual_month,
-                  record->manual_day,
-                  record->manual_hour,
-                  record->manual_minute,
-                  record->manual_second);
-  }
+  Storage_ApplyRecordToRtc(record);
+}
+
+/*
+ * What: copy the current RTC calendar into the persistent record cache.
+ * How: reads RTC through RTC_GetToTM() and stores year/month/day/hour/min/sec fields.
+ * Why: periodic saves must keep the reboot fallback clock close to real local time.
+ */
+static void Storage_UpdateCacheFromRtc(void)
+{
+  struct tm rtc_time = {0};
+
+  RTC_GetToTM(&rtc_time);
+
+  storage_cache.manual_year = rtc_time.tm_year + 1900;
+  storage_cache.manual_month = rtc_time.tm_mon + 1;
+  storage_cache.manual_day = rtc_time.tm_mday;
+  storage_cache.manual_hour = rtc_time.tm_hour;
+  storage_cache.manual_minute = rtc_time.tm_min;
+  storage_cache.manual_second = rtc_time.tm_sec;
 }
 
 /*
@@ -342,6 +372,12 @@ bool savePos(void)
  */
 bool saveManualTime(int year, int month, int day, int hour, int minute, int second)
 {
+  if (!storage_cache_valid)
+  {
+    Storage_SetDefaults(&storage_cache);
+    storage_cache_valid = true;
+  }
+
   storage_cache.manual_year = year;
   storage_cache.manual_month = month;
   storage_cache.manual_day = day;
@@ -360,7 +396,31 @@ bool saveManualTime(int year, int month, int day, int hour, int minute, int seco
  */
 bool saveTimeMode(bool is_manual_time)
 {
+  if (!storage_cache_valid)
+  {
+    Storage_SetDefaults(&storage_cache);
+    storage_cache_valid = true;
+  }
+
   manual_time = is_manual_time;
+  Storage_UpdateCacheFromRtc();
+  return Storage_SaveCurrentGlobals();
+}
+
+/*
+ * What: save the current RTC local time without changing config/state/position.
+ * How: reads RTC into the cached timestamp fields and writes the complete flash record.
+ * Why: after reset the firmware should restart from the latest known local clock value.
+ */
+bool saveRtcTime(void)
+{
+  if (!storage_cache_valid)
+  {
+    Storage_SetDefaults(&storage_cache);
+    storage_cache_valid = true;
+  }
+
+  Storage_UpdateCacheFromRtc();
   return Storage_SaveCurrentGlobals();
 }
 

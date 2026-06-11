@@ -15,11 +15,12 @@ void SolarApp_Start(void)
   (void)Storage_LoadAll();
   initFSM();
 
-  if (!manual_time)
-  {
-    /* GPS-driven time requests are pending until the GPS task accepts a valid RMC. */
-    GPS_Task_RequestTimeSync();
-  }
+  /*
+   * What: request GPS time synchronization immediately after boot.
+   * How: the GPS task keeps this request pending until it parses valid date/time NMEA.
+   * Why: restored flash time is only a fallback; valid GPS time must win automatically.
+   */
+  GPS_Task_RequestTimeSync();
 }
 
 void SolarApp_Process(void)

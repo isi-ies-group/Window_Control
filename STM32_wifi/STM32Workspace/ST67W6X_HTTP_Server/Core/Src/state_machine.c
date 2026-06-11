@@ -15,6 +15,7 @@
 #define FSM_TASK_STACK_SIZE   4096U
 #define FSM_TASK_PRIORITY     23U
 #define FSM_AUTO_PERIOD_MS    5000U
+#define STORAGE_TIME_SAVE_PERIOD_MS 10000U
 
 /* Current and next FSM states. Start in standby until persistent memory exists. */
 States thisSt = STDBY;
@@ -181,9 +182,10 @@ static void fsmTask(void *argument)
    * What: run the FSM loop as a FreeRTOS task.
    * How: consumes queued events, launches subroutines, and ticks automode every 5 seconds.
    * Why: modes must progress without putting blocking logic in main while(1) or HTTP.
-   */
+  */
   Events event;
   TickType_t last_auto_tick = xTaskGetTickCount();
+  TickType_t last_time_save_tick = xTaskGetTickCount();
 
   /* FreeRTOS task signature requires this argument, even if we do not use it. */
   (void)argument;
@@ -219,21 +221,32 @@ static void fsmTask(void *argument)
       }
     }
 
+    TickType_t now_tick = xTaskGetTickCount();
+
+    if ((now_tick - last_time_save_tick) >= pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS))
+    {
+      /*
+       * What: periodically persist the local RTC shown in the web status.
+       * How: storage reads RTC and rewrites the single flash-backed app record.
+       * Why: after reset/power loss the clock should not jump back to the default time.
+       */
+      (void)saveRtcTime();
+      last_time_save_tick = now_tick;
+    }
+
     if (thisSt == AUTO_MODE)
     {
-      TickType_t now = xTaskGetTickCount();
-
       /* Automatic mode runs periodically while the FSM remains in AUTO_MODE. */
-      if ((now - last_auto_tick) >= pdMS_TO_TICKS(FSM_AUTO_PERIOD_MS))
+      if ((now_tick - last_auto_tick) >= pdMS_TO_TICKS(FSM_AUTO_PERIOD_MS))
       {
         autoMode();
         auto_counter++;
-        last_auto_tick = now;
+        last_auto_tick = now_tick;
       }
     }
     else
     {
-      last_auto_tick = xTaskGetTickCount();
+      last_auto_tick = now_tick;
     }
   }
 }

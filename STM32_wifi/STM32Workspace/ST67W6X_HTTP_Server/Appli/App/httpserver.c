@@ -217,6 +217,7 @@ static void http_process_response(int32_t client, char *recv_buffer);
 static void http_get_rtc_datetime(char *date_str, size_t date_size,
                                   char *time_str, size_t time_size);
 static int32_t http_hex_to_nibble(char c);
+static size_t http_get_content_length(const char *request);
 static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len);
 static bool http_get_query_param(const char *request, const char *name,
                                  char *value, size_t value_size);
@@ -384,6 +385,30 @@ static int32_t http_hex_to_nibble(char c)
   }
 
   return -1;
+}
+
+static size_t http_get_content_length(const char *request)
+{
+  /*
+   * What: read the HTTP Content-Length header for POST form bodies.
+   * How: searches the received header text and parses the decimal byte count.
+   * Why: POST /set_datetime is not complete at CRLFCRLF; the body must be received too.
+   */
+  const char *header = strstr(request, "Content-Length:");
+
+  if (header == NULL)
+  {
+    return 0U;
+  }
+
+  header += strlen("Content-Length:");
+
+  while ((*header == ' ') || (*header == '\t'))
+  {
+    header++;
+  }
+
+  return (size_t)strtoul(header, NULL, 10);
 }
 
 static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len)
@@ -795,13 +820,22 @@ static void http_server_serve_task(void *arg)
     }
 
     recv_total_len += bytes_received;
+    recv_buffer[recv_total_len] = '\0';
 
-    /* Verify if we have receive the whole request or if we need to do another receive */
-    if (strncmp(&recv_buffer[recv_total_len - 4], "\r\n\r\n", 4) == 0)
+    /* Verify if we have received headers plus the optional POST body. */
+    char *header_end = strstr(recv_buffer, "\r\n\r\n");
+    if (header_end != NULL)
     {
-      /* The full request has been received leaving the reading loop */
-      request_complete = true;
-      break;
+      size_t header_size = (size_t)((header_end + 4) - recv_buffer);
+      size_t content_length = http_get_content_length(recv_buffer);
+      size_t expected_size = header_size + content_length;
+
+      if ((size_t)recv_total_len >= expected_size)
+      {
+        /* The full request has been received leaving the reading loop. */
+        request_complete = true;
+        break;
+      }
     }
 
     recv_buffer_len -= bytes_received;

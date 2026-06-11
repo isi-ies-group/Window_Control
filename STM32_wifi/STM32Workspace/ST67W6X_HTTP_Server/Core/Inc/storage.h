@@ -19,6 +19,7 @@ bool saveState(void);
 bool savePos(void);
 bool saveManualTime(int year, int month, int day, int hour, int minute, int second);
 bool saveTimeMode(bool is_manual_time);
+bool saveRtcTime(void);
 
 /* Reload one group from flash when a caller wants ESP32-like explicit load steps. */
 bool loadData(void);

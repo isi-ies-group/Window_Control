@@ -10,6 +10,7 @@ extern RTC_HandleTypeDef hrtc; //main.c RTC access
 extern UART_HandleTypeDef hlpuart1;
 
 #define GPS_REQUIRE_FIX_FOR_RTC_SYNC 0U
+#define GPS_SYNC_BYTES_PER_SLICE     128U
 
 /* Last complete NMEA sentences kept for live expressions/debug. */
 char g_gps_last_line[GPS_NMEA_LINE_MAX];
@@ -19,7 +20,7 @@ volatile uint32_t g_gps_rmc_count = 0U;
 volatile uint32_t g_gps_overflow_count = 0U;
 volatile uint8_t g_gps_line_ready = 0U;
 
-/* UTC date-time extracted from GPS RMC sentences. */
+/* UTC date-time extracted from GPS NMEA time sentences. */
 volatile uint8_t g_gps_utc_ready = 0U;
 volatile uint8_t g_gps_fix_valid = 0U;
 volatile uint16_t g_gps_utc_year = 0U;
@@ -71,6 +72,14 @@ static bool GPS_IsDigit(char c)
 static uint8_t GPS_Parse2Digits(const char *text)
 {
     return (uint8_t)(((text[0] - '0') * 10) + (text[1] - '0'));
+}
+
+static uint16_t GPS_Parse4Digits(const char *text)
+{
+    return (uint16_t)(((text[0] - '0') * 1000U) +
+                      ((text[1] - '0') * 100U) +
+                      ((text[2] - '0') * 10U) +
+                      (text[3] - '0'));
 }
 
 static int8_t GPS_HexToNibble(char c)
@@ -203,6 +212,120 @@ static bool GPS_ParseRmcUtc(const char *line, GPS_UtcDateTime_t *utc)
     return true;
 }
 
+static bool GPS_ParseZdaUtc(const char *line, GPS_UtcDateTime_t *utc)
+{
+    const char *fields[5] = {0};
+    uint8_t field_index = 0U;
+    const char *p;
+    const char *time_field;
+    const char *day_field;
+    const char *month_field;
+    const char *year_field;
+
+    if ((line == NULL) || (utc == NULL))
+    {
+        return false;
+    }
+
+    memset(utc, 0, sizeof(*utc));
+
+    if ((strlen(line) < 7U) ||
+        (line[0] != '$') ||
+        (line[3] != 'Z') ||
+        (line[4] != 'D') ||
+        (line[5] != 'A') ||
+        (line[6] != ','))
+    {
+        return false;
+    }
+
+    fields[0] = line;
+
+    for (p = line; (*p != '\0') && (*p != '*'); p++)
+    {
+        if (*p == ',')
+        {
+            field_index++;
+
+            if (field_index < 5U)
+            {
+                fields[field_index] = p + 1;
+            }
+        }
+    }
+
+    time_field = fields[1];
+    day_field = fields[2];
+    month_field = fields[3];
+    year_field = fields[4];
+
+    if ((time_field == NULL) || (day_field == NULL) ||
+        (month_field == NULL) || (year_field == NULL))
+    {
+        return false;
+    }
+
+    if (!GPS_IsDigit(time_field[0]) || !GPS_IsDigit(time_field[1]) ||
+        !GPS_IsDigit(time_field[2]) || !GPS_IsDigit(time_field[3]) ||
+        !GPS_IsDigit(time_field[4]) || !GPS_IsDigit(time_field[5]) ||
+        !GPS_IsDigit(day_field[0]) || !GPS_IsDigit(day_field[1]) ||
+        !GPS_IsDigit(month_field[0]) || !GPS_IsDigit(month_field[1]) ||
+        !GPS_IsDigit(year_field[0]) || !GPS_IsDigit(year_field[1]) ||
+        !GPS_IsDigit(year_field[2]) || !GPS_IsDigit(year_field[3]))
+    {
+        return false;
+    }
+
+    /*
+     * What: parse the NMEA ZDA UTC calendar sentence.
+     * How: hhmmss, day, month and year are copied into the common UTC structure.
+     * Why: some GPS modules provide valid time in ZDA even when RMC is delayed/noisy.
+     */
+    utc->hour = GPS_Parse2Digits(&time_field[0]);
+    utc->minute = GPS_Parse2Digits(&time_field[2]);
+    utc->second = GPS_Parse2Digits(&time_field[4]);
+    utc->day = GPS_Parse2Digits(&day_field[0]);
+    utc->month = GPS_Parse2Digits(&month_field[0]);
+    utc->year = GPS_Parse4Digits(&year_field[0]);
+    utc->fix_valid = 1U;
+
+    return true;
+}
+
+static void GPS_ResetRxState(void)
+{
+    /* Reset the partial line so the next '$' starts a clean NMEA frame. */
+    gps_line_index = 0U;
+    gps_receiving_line = 0U;
+}
+
+static void GPS_ClearUartErrorFlags(void)
+{
+    /*
+     * What: recover the GPS UART after overrun/noise/framing errors.
+     * How: clears HAL error flags and discards the partial NMEA line.
+     * Why: one bad byte must not leave the GPS reader permanently stuck.
+     */
+    if (__HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_ORE) != RESET)
+    {
+        __HAL_UART_CLEAR_OREFLAG(&hlpuart1);
+    }
+    if (__HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_FE) != RESET)
+    {
+        __HAL_UART_CLEAR_FEFLAG(&hlpuart1);
+    }
+    if (__HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_NE) != RESET)
+    {
+        __HAL_UART_CLEAR_NEFLAG(&hlpuart1);
+    }
+    if (__HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_PE) != RESET)
+    {
+        __HAL_UART_CLEAR_PEFLAG(&hlpuart1);
+    }
+
+    GPS_ResetRxState();
+}
+
 static uint8_t GPS_IsLeapYear(uint16_t year)
 {
     return (uint8_t)(((year % 4U) == 0U) && (((year % 100U) != 0U) || ((year % 400U) == 0U)));
@@ -275,7 +398,12 @@ static void GPS_SaveLine(void)
     gps_line_buffer[gps_line_index] = '\0';
     memcpy(g_gps_last_line, gps_line_buffer, gps_line_index + 1U);
     g_gps_line_count++;
-    g_gps_line_ready = 1U;
+    /*
+     * What: report whether the last complete NMEA line contains usable date/time.
+     * How: clear it for every new line and set it only after RMC/ZDA parses correctly.
+     * Why: the web page must show YES only for the latest valid time sentence, not for old data.
+     */
+    g_gps_line_ready = 0U;
 
     if (!GPS_IsNmeaChecksumValid(gps_line_buffer))
     {
@@ -283,10 +411,17 @@ static void GPS_SaveLine(void)
         return;
     }
 
-    if (GPS_ParseRmcUtc(gps_line_buffer, &utc))
+    if (GPS_ParseRmcUtc(gps_line_buffer, &utc) ||
+        GPS_ParseZdaUtc(gps_line_buffer, &utc))
     {
+        /*
+         * What: store the latest accepted GPS time sentence.
+         * How: keeps the old rmc names for web/status compatibility.
+         * Why: the rest of the app only needs "new valid GPS time", not the sentence type.
+         */
         memcpy(g_gps_last_rmc, gps_line_buffer, gps_line_index + 1U);
         g_gps_rmc_count++;
+        g_gps_line_ready = 1U;
         g_gps_utc_ready = 1U;
         g_gps_fix_valid = utc.fix_valid;
         g_gps_utc_year = utc.year;
@@ -306,9 +441,11 @@ static void GPS_SaveLine(void)
 uint8_t GPS_ProcessUart(void)
 {
     uint8_t rx;
+    HAL_StatusTypeDef rx_status;
 
     /* Poll one UART byte and rebuild complete NMEA lines. */
-    if (HAL_UART_Receive(&hlpuart1, &rx, 1U, 2U) == HAL_OK)
+    rx_status = HAL_UART_Receive(&hlpuart1, &rx, 1U, 2U);
+    if (rx_status == HAL_OK)
     {
         if (rx == '$')
         {
@@ -343,18 +480,22 @@ uint8_t GPS_ProcessUart(void)
             }
             else
             {
-                gps_line_index = 0U;
-                gps_receiving_line = 0U;
+                GPS_ResetRxState();
                 g_gps_overflow_count++;
             }
         }
         else
         {
-            gps_line_index = 0U;
-            gps_receiving_line = 0U;
+            GPS_ResetRxState();
         }
 
         return 1U;
+    }
+
+    if (rx_status == HAL_ERROR)
+    {
+        GPS_ClearUartErrorFlags();
+        g_gps_overflow_count++;
     }
 
     return 0U;
@@ -450,6 +591,12 @@ static void GPS_TryPendingRtcSync(void)
         return;
     }
 
+    /* Only sync from the latest line if it was a valid GPS date/time sentence. */
+    if (g_gps_line_ready == 0U)
+    {
+        return;
+    }
+
     if (GPS_SetRtcFromLocalTime() != 0U)
     {
         g_gps_time_sync_requested = 0U;
@@ -458,7 +605,7 @@ static void GPS_TryPendingRtcSync(void)
         (void)saveTimeMode(false);
 
         /* Keep blue LED ON after RTC is loaded from GPS time. */
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
     }
     else
     {
@@ -470,37 +617,26 @@ uint8_t GPS_Task_SyncTimeNow(void)
 {
     /*
      * What: service the HTTP Sync Time button.
-     * How: requests GPS sync and immediately tries to write RTC if local GPS time is ready.
-     * Why: the user gets an instant success/fail response without waiting for another loop.
+     * How: raises a latch and immediately tries the last valid local GPS time.
+     * Why: NMEA is parsed continuously, so the button should only request RTC copy.
      */
     g_gps_time_sync_requested = 1U;
     g_gps_rtc_synced = 0U;
 
     (void)GPS_UpdateLocalTimeFromUtc();
+    GPS_TryPendingRtcSync();
 
-    if (GPS_SetRtcFromLocalTime() != 0U)
-    {
-        g_gps_time_sync_requested = 0U;
-        g_gps_rtc_synced = 1U;
-        g_gps_rtc_sync_count++;
-        (void)saveTimeMode(false);
-
-        /* Blue LED ON means the RTC was loaded from GPS time. */
-        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
-        return 1U;
-    }
-
-    return 0U;
+    return g_gps_rtc_synced;
 }
 
 void GPS_Task_RequestTimeSync(void)
 {
     /*
      * What: ask the GPS task to synchronize RTC as soon as it has valid local time.
-     * How: sets a pending flag and resets the visible synced state.
-     * Why: boot can request GPS time without blocking the WiFi/server startup path.
+     * How: sets the same latch used by the web Sync Time button.
+     * Why: boot can request GPS time without blocking WiFi/server startup.
      */
-    HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
     g_gps_time_sync_requested = 1U;
     g_gps_rtc_synced = 0U;
 }
@@ -508,19 +644,29 @@ void GPS_Task_RequestTimeSync(void)
 void GPS_Task(void *argument)
 {
     /*
-     * What: receive NMEA data, update local time and handle pending RTC sync.
-     * How: drains UART, converts parsed UTC to local time, then tries queued sync requests.
-     * Why: GPS parsing is continuous work and must live outside main while(1)/HTTP handlers.
+     * What: continuously parse GPS NMEA and service pending RTC sync requests.
+     * How: reads UART in small slices, updates UTC/local globals, then checks the sync latch.
+     * Why: Sync Time should copy the latest parsed GPS time, not start a separate UART reader.
      */
+    uint32_t bytes_this_slice;
+
     (void)argument;
 
     for (;;)
     {
+        bytes_this_slice = 0U;
         g_gps_task_loop_count++;
 
-        if (GPS_ProcessUart() == 0U)
+        while ((bytes_this_slice < GPS_SYNC_BYTES_PER_SLICE) &&
+               (GPS_ProcessUart() != 0U))
         {
-            osDelay(1U);
+            bytes_this_slice++;
+
+            if (GPS_UpdateLocalTimeFromUtc() != 0U)
+            {
+                GPS_TryPendingRtcSync();
+            }
+
         }
 
         if (GPS_UpdateLocalTimeFromUtc() != 0U)
@@ -529,6 +675,8 @@ void GPS_Task(void *argument)
         }
 
         GPS_TryPendingRtcSync();
+
+        osDelay(1U);
     }
 }
 

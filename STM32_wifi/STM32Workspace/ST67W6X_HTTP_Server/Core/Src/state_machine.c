@@ -212,7 +212,11 @@ static void fsmTask(void *argument)
       else if (event == submit_eph_input)
       {
         /* Ephemeris mode calculates AOI and updates g_x_val/g_z_val. */
-        ephInputMode();
+        if (ephInputMode())
+        {
+          /* movement_task owns the blocking step pulses, so the FSM stays responsive. */
+          requestMove();
+        }
       }
 
       if ((previousState != AUTO_MODE) && (currentState == AUTO_MODE))

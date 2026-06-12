@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "freertos_tickless.h"
 
 #include "autoMode.h"
 #include "eph_input_mode.h"
@@ -239,9 +240,15 @@ static void fsmTask(void *argument)
       /* Automatic mode runs periodically while the FSM remains in AUTO_MODE. */
       if ((now_tick - last_auto_tick) >= pdMS_TO_TICKS(FSM_AUTO_PERIOD_MS))
       {
-        autoMode();
-        auto_counter++;
-        last_auto_tick = now_tick;
+    	  /* What: protect one automatic cycle from low-power entry.
+    	   * How: block tickless while autoMode() reads time, calculates target angles and queues movement.
+    	   * Why: an automode cycle should not be split by Sleep/Stop halfway through its calculation.
+    	   */
+    	  DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
+    	  autoMode();
+    	  EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
+    	  auto_counter++;
+    	  last_auto_tick = now_tick;
       }
     }
     else

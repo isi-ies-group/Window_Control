@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "freertos_tickless.h"
 
 #include "global_structs.h"
 #include "movement.h"
@@ -98,15 +99,27 @@ static void movementTask(void *argument)
       switch (cmd)
       {
         case CMD_MOVE:
+          /* What: protect motor movement from low-power entry.
+           * How: block tickless before move(), then release it when the position has been stored.
+           * Why: STEP pulses must keep deterministic timing while the motors are moving.
+           */
+          DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           /* move() consumes the latest absolute X/Z targets from the global state. */
           move(g_x_val, g_z_val);
           (void)savePos();
+          EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           break;
 
         case CMD_HOME:
+          /* What: protect homing from low-power entry.
+           * How: block tickless during GoHomePair() and release it after saving the home position.
+           * Why: end-stop detection and STEP pulses must not be interrupted by Sleep/Stop.
+           */
+          DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           /* Homing resets both software position globals to the mechanical zero. */
-          GoHomePair(&g_x_val, &g_z_val);
+          GoHomePair();
           (void)savePos();
+          EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           break;
 
         case CMD_NONE:

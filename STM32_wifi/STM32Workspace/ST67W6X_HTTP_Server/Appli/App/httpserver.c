@@ -117,6 +117,9 @@ typedef struct
 /** Timeout for the pin status update in ms */
 #define PIN_TIMEOUT_MS                 9000
 
+/** Period for default-app pin polling in ms */
+#define PIN_POLLING_PERIOD_MS          1000
+
 /** Buffer size for the child task */
 #define HTTP_CHILD_TASK_BUFFER_SIZE    1024U
 
@@ -166,7 +169,7 @@ static const HttpServer_response_t http_server_responses[] =
 {
   {INDEX_HTML,      "GET / ",                                     response_index_html,  sizeof(response_index_html)},
   {FAVICON_SVG,     "GET /favicon.ico",                           response_favicon_svg, sizeof(response_favicon_svg)},
-  {ST_LOGO_SVG,     "GET /ST_logo_2020_white_no_tagline_rgb.svg", response_st_logo_svg, sizeof(response_st_logo_svg)},
+  {ST_LOGO_SVG,     "GET /IES_logo.svg",                          response_st_logo_svg, sizeof(response_st_logo_svg)},
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
   {BUTTON_STATE,    "GET /pins_status",                           NULL,                 0U},
@@ -348,7 +351,12 @@ void http_server_socket(void *arg)
         LogInfo("%s task creation failed\n", thread_name);
       }
       /* Delay added to avoid that too many requests are processed in parallel */
-      vTaskDelay(pdMS_TO_TICKS(50));
+      /*
+       * What: keep the default-app pin cache alive without waking the MCU every 50 ms.
+       * How: poll the unused LED/button status once per second.
+       * Why: the project no longer depends on this console path, and frequent polling hurts tickless sleep.
+       */
+      vTaskDelay(pdMS_TO_TICKS(PIN_POLLING_PERIOD_MS));
     }
   }
 

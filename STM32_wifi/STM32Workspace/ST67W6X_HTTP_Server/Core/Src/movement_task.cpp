@@ -117,7 +117,7 @@ static void movementTask(void *argument)
            */
           DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           /* Homing resets both software position globals to the mechanical zero. */
-          GoHomePair();
+          GoHomePair(&g_x_val, &g_z_val);
           (void)savePos();
           EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           break;

@@ -27,6 +27,8 @@ static TaskHandle_t fsmTaskHandle = NULL;  /* Avoid task replication */
 
 static void fsmTask(void *argument);
 static bool stateTransitionIsValid(States currentState, States newState);
+static TickType_t ticksUntilPeriod(TickType_t now, TickType_t last, TickType_t period);
+static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickType_t last_time_save_tick);
 
 void initFSM(void)
 {
@@ -193,8 +195,15 @@ static void fsmTask(void *argument)
 
   for (;;)
   {
-    /* Wait for web/application events without burning CPU. */
-    if (xQueueReceive(fsmQueue, &event, pdMS_TO_TICKS(100U)) == pdTRUE)
+    TickType_t now_tick = xTaskGetTickCount();
+    TickType_t queue_wait_ticks = fsmWaitTicks(now_tick, last_auto_tick, last_time_save_tick);
+
+    /*
+     * What: sleep the FSM task until the next real deadline or web event.
+     * How: STANDBY/MANUAL/EPH wait mostly for events/storage, AUTO waits for the next 5 s cycle.
+     * Why: periodic 100 ms wakeups were preventing useful tickless sleep while the app was idle.
+     */
+    if (xQueueReceive(fsmQueue, &event, queue_wait_ticks) == pdTRUE)
     {
       States previousState = thisSt;
       States currentState = fsmProcess(event, auto_on);
@@ -226,7 +235,7 @@ static void fsmTask(void *argument)
       }
     }
 
-    TickType_t now_tick = xTaskGetTickCount();
+    now_tick = xTaskGetTickCount();
 
     if ((now_tick - last_time_save_tick) >= pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS))
     {
@@ -260,6 +269,49 @@ static void fsmTask(void *argument)
       last_auto_tick = now_tick;
     }
   }
+}
+
+static TickType_t ticksUntilPeriod(TickType_t now, TickType_t last, TickType_t period)
+{
+  /*
+   * What: compute how long a periodic action can still sleep.
+   * How: returns zero when the period is already due, otherwise the remaining ticks.
+   * Why: tickless needs long blocking windows, but deadlines must still fire on time.
+   */
+  TickType_t elapsed = now - last;
+
+  if (elapsed >= period)
+  {
+    return 0U;
+  }
+
+  return period - elapsed;
+}
+
+static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickType_t last_time_save_tick)
+{
+  /*
+   * What: choose the next timeout for the FSM event queue.
+   * How: always wakes for RTC persistence; AUTO also wakes for its 5 s iteration.
+   * Why: STANDBY, MANUAL and EPH_INPUT should sleep while no submit/movement is pending.
+   */
+  TickType_t wait_ticks = ticksUntilPeriod(now,
+                                           last_time_save_tick,
+                                           pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS));
+
+  if (thisSt == AUTO_MODE)
+  {
+    TickType_t auto_wait_ticks = ticksUntilPeriod(now,
+                                                  last_auto_tick,
+                                                  pdMS_TO_TICKS(FSM_AUTO_PERIOD_MS));
+
+    if (auto_wait_ticks < wait_ticks)
+    {
+      wait_ticks = auto_wait_ticks;
+    }
+  }
+
+  return wait_ticks;
 }
 
 static bool stateTransitionIsValid(States currentState, States newState)

@@ -11,6 +11,8 @@ extern UART_HandleTypeDef hlpuart1;
 
 #define GPS_REQUIRE_FIX_FOR_RTC_SYNC 0U
 #define GPS_SYNC_BYTES_PER_SLICE     128U
+#define GPS_ACTIVE_POLL_DELAY_MS     1U
+#define GPS_IDLE_POLL_DELAY_MS       250U
 
 /* Last complete NMEA sentences kept for live expressions/debug. */
 char g_gps_last_line[GPS_NMEA_LINE_MAX];
@@ -681,6 +683,8 @@ void GPS_Task(void *argument)
 
     for (;;)
     {
+        uint32_t poll_delay_ms;
+
         bytes_this_slice = 0U;
         g_gps_task_loop_count++;
 
@@ -703,7 +707,15 @@ void GPS_Task(void *argument)
 
         GPS_TryPendingRtcSync();
 
-        osDelay(1U);
+        /*
+         * What: poll GPS quickly only while a RTC sync is pending.
+         * How: use 1 ms during sync, then relax to 250 ms once the RTC has been served.
+         * Why: a permanent 1 ms GPS loop prevents FreeRTOS tickless sleep in idle states.
+         */
+        poll_delay_ms = (g_gps_time_sync_requested != 0U) ?
+                        GPS_ACTIVE_POLL_DELAY_MS :
+                        GPS_IDLE_POLL_DELAY_MS;
+        osDelay(poll_delay_ms);
     }
 }
 

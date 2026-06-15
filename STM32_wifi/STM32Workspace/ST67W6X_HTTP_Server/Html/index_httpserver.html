@@ -238,6 +238,7 @@
                 <div class="status-item"><span class="status-label">X:</span> <span class="status-value" id="x">---</span></div>
                 <div class="status-item"><span class="status-label">Z:</span> <span class="status-value" id="z">---</span></div>
                 <div class="status-item"><span class="status-label">Valid NMEA time:</span> <span class="status-value" id="gps_nmea">---</span></div>
+                <div class="status-item wide"><span class="status-label">Last RMC raw:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
             </div>
         </div>
 </body>
@@ -340,6 +341,7 @@
                 setText("x", formatNumber(resp.x, 6));
                 setText("z", formatNumber(resp.z, 6));
                 setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");
+                setText("gps_last_rmc", resp.gps_last_rmc || "---");
                 scheduleAutoStatusPoll(autoStatusPollMs);
             }
             else if (xhr.readyState === 4) {

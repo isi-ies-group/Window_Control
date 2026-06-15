@@ -137,6 +137,22 @@ static bool GPS_IsNmeaChecksumValid(const char *line)
     return calculated_checksum == expected_checksum;
 }
 
+static bool GPS_IsRmcSentence(const char *line)
+{
+    /*
+     * What: identify raw RMC sentences before validating their date/time fields.
+     * How: checks the NMEA sentence type positions and ignores the talker prefix.
+     * Why: the web Last RMC field must show received RMC lines even when GPS has no fix yet.
+     */
+    return ((line != NULL) &&
+            (strlen(line) >= 7U) &&
+            (line[0] == '$') &&
+            (line[3] == 'R') &&
+            (line[4] == 'M') &&
+            (line[5] == 'C') &&
+            (line[6] == ','));
+}
+
 static bool GPS_ParseRmcUtc(const char *line, GPS_UtcDateTime_t *utc)
 {
     const char *fields[10] = {0};
@@ -394,10 +410,23 @@ static void GPS_SubtractDay(uint16_t *year, uint8_t *month, uint8_t *day)
 static void GPS_SaveLine(void)
 {
     GPS_UtcDateTime_t utc;
+    bool is_rmc_sentence;
 
     gps_line_buffer[gps_line_index] = '\0';
     memcpy(g_gps_last_line, gps_line_buffer, gps_line_index + 1U);
     g_gps_line_count++;
+    is_rmc_sentence = GPS_IsRmcSentence(gps_line_buffer);
+
+    if (is_rmc_sentence)
+    {
+        /*
+         * What: keep the latest raw RMC sentence for the web debug panel.
+         * How: copies it before field validation, so empty/no-fix RMC lines are still visible.
+         * Why: this separates "RMC received" from "RMC had usable date/time".
+         */
+        memcpy(g_gps_last_rmc, gps_line_buffer, gps_line_index + 1U);
+    }
+
     /*
      * What: report whether the last complete NMEA line contains usable date/time.
      * How: clear it for every new line and set it only after RMC/ZDA parses correctly.
@@ -416,10 +445,9 @@ static void GPS_SaveLine(void)
     {
         /*
          * What: store the latest accepted GPS time sentence.
-         * How: keeps the old rmc names for web/status compatibility.
+         * How: updates the valid-time counters and keeps raw RMC display separate.
          * Why: the rest of the app only needs "new valid GPS time", not the sentence type.
          */
-        memcpy(g_gps_last_rmc, gps_line_buffer, gps_line_index + 1U);
         g_gps_rmc_count++;
         g_gps_line_ready = 1U;
         g_gps_utc_ready = 1U;
@@ -591,12 +619,11 @@ static void GPS_TryPendingRtcSync(void)
         return;
     }
 
-    /* Only sync from the latest line if it was a valid GPS date/time sentence. */
-    if (g_gps_line_ready == 0U)
-    {
-        return;
-    }
-
+    /*
+     * What: use the last committed GPS local time, not necessarily the latest raw NMEA line.
+     * How: GPS_UpdateLocalTimeFromUtc() commits only parsed RMC/ZDA date-time sentences.
+     * Why: non-time sentences arrive between RMC frames and must not make Sync Time fail.
+     */
     if (GPS_SetRtcFromLocalTime() != 0U)
     {
         g_gps_time_sync_requested = 0U;

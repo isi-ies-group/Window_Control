@@ -1091,7 +1091,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    (uint32_t)g_gps_local_second,
                    g_gps_last_line,
                    g_gps_last_rmc,
-                   ((g_gps_line_count > 0U) || (g_gps_line_ready != 0U)) ? "true" : "false");
+                   (g_gps_line_ready != 0U) ? "true" : "false");
 
     resp_len = strlen(response_template);
     resp_len += snprintf(&response_template[strlen(response_template)],
@@ -1186,16 +1186,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
     char time_str[9];
     uint8_t synced;
 
-    if ((fsmGetState() != STDBY) && (fsmGetState() != AUTO_MODE))
-    {
-      http_send_html_message(client,
-                             "Action blocked",
-                             "End manual or ephemeris mode before synchronizing time.",
-                             true);
-      return;
-    }
-
-    /* Copy the latest accepted GPS local time into the STM32 RTC. */
+    /* Sync Time is state-independent because it only changes RTC ownership/time. */
     synced = GPS_Task_SyncTimeNow();
     http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
 

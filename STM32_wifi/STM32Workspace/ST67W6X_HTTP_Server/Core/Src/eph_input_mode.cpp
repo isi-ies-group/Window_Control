@@ -1,18 +1,24 @@
 #include "eph_input_mode.h"
 #include "aoicalc_func.h"
 #include "interpolation_func.h"
-#include "movement_task.h"
 #include "global_structs.h"
+#include <cmath>
 
-void ephInputMode(void)
+bool ephInputMode(void)
 {
 	/*
-	 * What: run one ephemeris-input movement cycle from web azimuth/elevation.
+	 * What: calculate one ephemeris-input target from web azimuth/elevation.
 	 * How: AOI uses g_AOIInputs.azimuth/elevation, interpolation updates g_x_val/g_z_val,
-	 *      then movement_task receives the non-blocking move request.
-	 * Why: ephemeris mode already receives sun angles, so it must not call SPA.
+	 *      and the result is checked before the FSM asks movement_task to move.
+	 * Why: ephemeris mode already receives sun angles, so it must not call SPA or block HTTP.
 	 */
 	aoicalc_f();
 	interpolation_f();
-	requestMove();
+
+	if ((!std::isfinite(g_x_val)) || (!std::isfinite(g_z_val)))
+	{
+		return false;
+	}
+
+	return true;
 }	

@@ -11,6 +11,7 @@ extern InterpolInputs g_InterpolInputs;
 void interpolation_f(){
 
 	float query_points[2];
+	float z_aux;
 	g_InterpolInputs.matrix_X = matrix_X;
 	g_InterpolInputs.matrix_Z = matrix_Z;
 
@@ -31,9 +32,8 @@ void interpolation_f(){
 	const float* coords[2] = {x_coords, y_coords}; 
 	int n[2] = {N, N};
 
-
+	z_aux = (interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points));
 	g_x_val = (interpolate(coords, n, 	g_InterpolInputs.matrix_X, query_points));
-	g_z_val = (interpolate(coords, n, 	g_InterpolInputs.matrix_Z, query_points));
-
+	g_z_val = fabs(z_aux);
 	
 }

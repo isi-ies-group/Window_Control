@@ -44,7 +44,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-/* GPS task parses NMEA and services web-triggered RTC sync requests. */
+/* GPS task continuously parses NMEA and services pending RTC sync requests. */
 osThreadId_t gpsTaskHandle;
 const osThreadAttr_t gpsTask_attributes = {
   .name = "gpsTask",

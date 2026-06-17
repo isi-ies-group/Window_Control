@@ -350,16 +350,6 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/state_machine.h</locationURI>
 		</link>
 		<link>
-			<name>Application/User/Core/storage.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/storage.c</locationURI>
-		</link>
-		<link>
-			<name>Application/User/Core/storage.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/storage.h</locationURI>
-		</link>
-		<link>
 			<name>Application/User/Core/stm32u5xx_hal_msp.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/stm32u5xx_hal_msp.c</locationURI>
@@ -373,6 +363,16 @@
 			<name>Application/User/Core/stm32u5xx_it.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/stm32u5xx_it.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/storage.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/storage.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/storage.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/storage.h</locationURI>
 		</link>
 		<link>
 			<name>Application/User/Core/test.c</name>

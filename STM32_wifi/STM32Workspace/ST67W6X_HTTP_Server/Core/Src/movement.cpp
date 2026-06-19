@@ -704,6 +704,8 @@ static void SecondTouchPair(long speed_us)
     bool moveMXRI;
     bool moveMXRE;
 
+    movementLimitSwitchRefreshAll();
+
     if (all_vertical_limits_active())
     {
       verticalDone = true;
@@ -732,10 +734,17 @@ static void SecondTouchPair(long speed_us)
 
   enable_horizontal(true);
   safeSteps = 0;
-  while (!all_horizontal_limits_active() && (safeSteps < MAX_HORIZONTAL_SECOND_TOUCH_STEPS))
+  while (safeSteps < MAX_HORIZONTAL_SECOND_TOUCH_STEPS)
   {
     bool moveZL;
     bool moveZR;
+
+    movementLimitSwitchRefreshAll();
+
+    if (all_horizontal_limits_active())
+    {
+      break;
+    }
 
     /*
      * What: second horizontal touch with falling-edge recovery.

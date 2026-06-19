@@ -46,6 +46,12 @@ extern volatile int auto_counter;
 
 extern float g_x_val;
 extern float g_z_val;
+extern float g_x_target;
+extern float g_z_target;
+extern float g_interp_x_val;
+extern float g_interp_z_val;
+extern float g_query_aoit;
+extern float g_query_aoil;
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;
 

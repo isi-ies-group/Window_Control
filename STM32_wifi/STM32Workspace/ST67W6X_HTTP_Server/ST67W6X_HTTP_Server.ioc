@@ -643,7 +643,7 @@ STMicroelectronics.X-CUBE-ST67W61.1.3.0.ApplicationsCcDeviceJjFreertosIiTickless
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.BSP.number=3
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.DEBUGGER_ON=0
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.DeviceJjApplications_Checked=true
-STMicroelectronics.X-CUBE-ST67W61.1.3.0.IPParameters=LOG_LEVEL,W6X_POWER_SAVE_AUTO,W6X_NET_RECV_BUFFER_SIZE,ApplicationsCcDeviceJjFreertosIiTickless,ST67W6XIiNetworkIiDriverCcNetworkJjATDriver,ST67W6XIiNetworkIiDriverCcNetworkJjServiceAPI,ST67W6XIiNetworkIiDriverCcNetworkJjUtilitiesJjLogging,UtilitiesCcUtilityJjLPMJjTinyOoLPM,ApplicationsCcDeviceJjApplication,ST67W6XIiNetworkIiDriverCcNetworkJjST67OoArchitecture,LOW_POWER_MODE,DEBUGGER_ON
+STMicroelectronics.X-CUBE-ST67W61.1.3.0.IPParameters=LOG_LEVEL,W6X_POWER_SAVE_AUTO,W6X_NET_RECV_BUFFER_SIZE,ApplicationsCcDeviceJjFreertosIiTickless,ST67W6XIiNetworkIiDriverCcNetworkJjATDriver,ST67W6XIiNetworkIiDriverCcNetworkJjServiceAPI,ST67W6XIiNetworkIiDriverCcNetworkJjUtilitiesJjLogging,UtilitiesCcUtilityJjLPMJjTinyOoLPM,ApplicationsCcDeviceJjApplication,ST67W6XIiNetworkIiDriverCcNetworkJjST67OoArchitecture,LOW_POWER_MODE,DEBUGGER_ON,W6X_HTTP_CLIENT_THREAD_STACK_SIZE,W6X_WIFI_COUNTRY_CODE
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.LOG_LEVEL=LOG_INFO
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.LOW_POWER_MODE=LOW_POWER_SLEEP_ENABLE
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.NetworkJjST67W6XIiNetworkIiDriver_Checked=true
@@ -653,8 +653,10 @@ STMicroelectronics.X-CUBE-ST67W61.1.3.0.ST67W6XIiNetworkIiDriverCcNetworkJjServi
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.ST67W6XIiNetworkIiDriverCcNetworkJjUtilitiesJjLogging=true
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.UtilitiesCcUtilityJjLPMJjTinyOoLPM=true
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.UtilityJjUtilities_Checked=true
+STMicroelectronics.X-CUBE-ST67W61.1.3.0.W6X_HTTP_CLIENT_THREAD_STACK_SIZE=3072
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.W6X_NET_RECV_BUFFER_SIZE=4608
 STMicroelectronics.X-CUBE-ST67W61.1.3.0.W6X_POWER_SAVE_AUTO=1
+STMicroelectronics.X-CUBE-ST67W61.1.3.0.W6X_WIFI_COUNTRY_CODE=00
 STMicroelectronics.X-CUBE-ST67W61.1.3.00.BSP.STBoard=false
 STMicroelectronics.X-CUBE-ST67W61.1.3.00.BSP.api=Unknown
 STMicroelectronics.X-CUBE-ST67W61.1.3.00.BSP.component=

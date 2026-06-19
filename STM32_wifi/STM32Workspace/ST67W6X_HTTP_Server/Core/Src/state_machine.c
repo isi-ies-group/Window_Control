@@ -210,8 +210,8 @@ static void fsmTask(void *argument)
 
       if (event == submit_manual_goto)
       {
-        /* HTTP has already loaded g_x_val/g_z_val; movement_task runs the blocking pulses. */
-        manualModeGoto(g_x_val, g_z_val);
+        /* HTTP has already loaded g_x_target/g_z_target; movement_task runs the blocking pulses. */
+        manualModeGoto(g_x_target, g_z_target);
         requestMove();
       }
       else if (event == submit_home)
@@ -221,7 +221,7 @@ static void fsmTask(void *argument)
       }
       else if (event == submit_eph_input)
       {
-        /* Ephemeris mode calculates AOI and updates g_x_val/g_z_val. */
+        /* Ephemeris mode calculates AOI and updates g_x_target/g_z_target. */
         if (ephInputMode())
         {
           /* movement_task owns the blocking step pulses, so the FSM stays responsive. */

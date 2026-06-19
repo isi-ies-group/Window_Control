@@ -196,6 +196,8 @@ static void Storage_ApplyRecordToGlobals(const StorageRecord_t *record)
 
   g_x_val = record->x_pos;
   g_z_val = record->z_pos;
+  g_x_target = g_x_val;
+  g_z_target = g_z_val;
 
   Storage_ApplyRecordToRtc(record);
 }

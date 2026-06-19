@@ -392,7 +392,7 @@ static size_t http_get_content_length(const char *request)
   /*
    * What: read the HTTP Content-Length header for POST form bodies.
    * How: searches the received header text and parses the decimal byte count.
-   * Why: POST /set_datetime is not complete at CRLFCRLF; the body must be received too.
+   * Why: POST requests are complete only after headers plus the declared body bytes.
    */
   const char *header = strstr(request, "Content-Length:");
 
@@ -729,9 +729,13 @@ static bool http_apply_manual_goto(const char *request)
     return false;
   }
 
-  /* Store web targets in globals used by the FSM and movement task. */
-  g_x_val = (float)x;
-  g_z_val = (float)z;
+  /*
+   * What: store the manual destination requested by the web form.
+   * How: writes target globals; movement_task copies them to g_x_val/g_z_val only after moving.
+   * Why: status/storage should show the accepted position, not a movement still pending in the queue.
+   */
+  g_x_target = (float)x;
+  g_z_target = (float)z;
 
   return fsmPostEvent(submit_manual_goto);
 }
@@ -993,7 +997,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
   /* USER CODE BEGIN http_process_response_2 */
   if (strncmp(recv_buffer, "GET /status", strlen("GET /status")) == 0)
   {
-    char *data = (char *)pvPortMalloc(2048U);
+    char *data = (char *)pvPortMalloc(3072U);
     char date_str[11];
     char time_str[9];
 
@@ -1012,7 +1016,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
 
     http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
 
-    (void)snprintf(data, 2048U,
+    (void)snprintf(data, 3072U,
                    "{"
                    "\"fsm_state\":\"%s\","
                    "\"auto_on\":%s,\"auto_counter\":%d,"
@@ -1021,6 +1025,11 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"country\":\"%s\","
                    "\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
                    "\"tilt_correction\":%s,"
+                   "\"azimuth\":%.6f,\"elevation\":%.6f,"
+                   "\"aoil\":%.6f,\"aoit\":%.6f,"
+                   "\"query_aoil\":%.6f,\"query_aoit\":%.6f,"
+                   "\"interp_x\":%.6f,\"interp_z\":%.6f,"
+                   "\"x_target\":%.6f,\"z_target\":%.6f,"
                    "\"x\":%.6f,\"z\":%.6f,"
                    "\"gps_task_loop_count\":%" PRIu32 ","
                    "\"gps_line_count\":%" PRIu32 ","
@@ -1053,6 +1062,16 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    g_AOIInputs.pan,
                    g_AOIInputs.tilt,
                    g_AOIInputs.tilt_correction ? "true" : "false",
+                   g_AOIInputs.azimuth,
+                   g_AOIInputs.elevation,
+                   (double)g_InterpolInputs.AOIl,
+                   (double)g_InterpolInputs.AOIt,
+                   (double)g_query_aoil,
+                   (double)g_query_aoit,
+                   (double)g_interp_x_val,
+                   (double)g_interp_z_val,
+                   (double)g_x_target,
+                   (double)g_z_target,
                    (double)g_x_val,
                    (double)g_z_val,
                    (uint32_t)g_gps_task_loop_count,
@@ -1131,7 +1150,8 @@ static void http_process_response(int32_t client, char *recv_buffer)
     return;
   }
 
-  if (strncmp(recv_buffer, "POST /set_datetime", strlen("POST /set_datetime")) == 0)
+  if ((strncmp(recv_buffer, "POST /set_datetime", strlen("POST /set_datetime")) == 0) ||
+      (strncmp(recv_buffer, "GET /set_datetime", strlen("GET /set_datetime")) == 0))
   {
     bool datetime_ok;
 

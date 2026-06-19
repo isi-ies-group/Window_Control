@@ -184,7 +184,7 @@
 		<!-- SECTION 2: Manual Date & Time -->
 		<h2>Manual Date &amp; Time</h2>
 		<div class="config-panel">
-			<form action="/set_datetime" method="post">
+			<form action="/set_datetime" method="get">
 				Date (YYYY-MM-DD): <input class="time-control" type="text" name="date" placeholder="2026-01-20"><br>
 				Time (HH:MM:SS): <input class="time-control" type="text" name="time" placeholder="11:44:15"><br>
 				<input class="time-control" type="submit" value="Set Date & Time">
@@ -235,8 +235,18 @@
                 <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="pan">---</span></div>
                 <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="tilt">---</span></div>
                 <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="tilt_correction">---</span></div>
-                <div class="status-item"><span class="status-label">X:</span> <span class="status-value" id="x">---</span></div>
-                <div class="status-item"><span class="status-label">Z:</span> <span class="status-value" id="z">---</span></div>
+                <div class="status-item"><span class="status-label">Azimuth:</span> <span class="status-value" id="azimuth">---</span></div>
+                <div class="status-item"><span class="status-label">Elevation:</span> <span class="status-value" id="elevation">---</span></div>
+                <div class="status-item"><span class="status-label">AOIl:</span> <span class="status-value" id="aoil">---</span></div>
+                <div class="status-item"><span class="status-label">AOIt:</span> <span class="status-value" id="aoit">---</span></div>
+                <div class="status-item"><span class="status-label">Query AOIl:</span> <span class="status-value" id="query_aoil">---</span></div>
+                <div class="status-item"><span class="status-label">Query AOIt:</span> <span class="status-value" id="query_aoit">---</span></div>
+                <div class="status-item"><span class="status-label">Interp X:</span> <span class="status-value" id="interp_x">---</span></div>
+                <div class="status-item"><span class="status-label">Interp Z:</span> <span class="status-value" id="interp_z">---</span></div>
+                <div class="status-item"><span class="status-label">Target X:</span> <span class="status-value" id="x_target">---</span></div>
+                <div class="status-item"><span class="status-label">Target Z:</span> <span class="status-value" id="z_target">---</span></div>
+                <div class="status-item"><span class="status-label">Accepted X:</span> <span class="status-value" id="x">---</span></div>
+                <div class="status-item"><span class="status-label">Accepted Z:</span> <span class="status-value" id="z">---</span></div>
                 <div class="status-item"><span class="status-label">Valid NMEA time:</span> <span class="status-value" id="gps_nmea">---</span></div>
                 <div class="status-item wide"><span class="status-label">Last RMC raw:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
             </div>
@@ -338,6 +348,16 @@
                 setText("pan", formatNumber(resp.pan, 2));
                 setText("tilt", formatNumber(resp.tilt, 2));
                 setText("tilt_correction", resp.tilt_correction ? "true" : "false");
+                setText("azimuth", formatNumber(resp.azimuth, 6));
+                setText("elevation", formatNumber(resp.elevation, 6));
+                setText("aoil", formatNumber(resp.aoil, 6));
+                setText("aoit", formatNumber(resp.aoit, 6));
+                setText("query_aoil", formatNumber(resp.query_aoil, 6));
+                setText("query_aoit", formatNumber(resp.query_aoit, 6));
+                setText("interp_x", formatNumber(resp.interp_x, 6));
+                setText("interp_z", formatNumber(resp.interp_z, 6));
+                setText("x_target", formatNumber(resp.x_target, 6));
+                setText("z_target", formatNumber(resp.z_target, 6));
                 setText("x", formatNumber(resp.x, 6));
                 setText("z", formatNumber(resp.z, 6));
                 setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");

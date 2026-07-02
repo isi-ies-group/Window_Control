@@ -225,6 +225,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/commonlib.h</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/controled_shutdown.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/controled_shutdown.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/controled_shutdown.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/controled_shutdown.h</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/eph_input_mode.cpp</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/eph_input_mode.cpp</locationURI>
@@ -248,6 +258,16 @@
 			<name>Application/User/Core/gps.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/gps.h</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/hello.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/hello.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/hello.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Inc/hello.h</locationURI>
 		</link>
 		<link>
 			<name>Application/User/Core/interpolation.c</name>

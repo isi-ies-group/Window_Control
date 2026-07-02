@@ -23,6 +23,11 @@ dist/
 
 # Maven
 target/
+# STM32 middleware target configuration folders
+!**/Appli/Target/
+!**/Appli/Target/**
+!**/ST67W6X/Target/
+!**/ST67W6X/Target/**
 dist/
 
 # JetBrains IDE

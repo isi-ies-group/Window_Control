@@ -9,7 +9,7 @@
 #include "movement_task.h"
 
 
-#define AUTOMODE_MIN_MOVE_MM 1.0f
+#define AUTOMODE_MIN_MOVE_MM 0.5f
 
 
 static bool autoModeTargetNeedsMove(float current_x, float current_z,

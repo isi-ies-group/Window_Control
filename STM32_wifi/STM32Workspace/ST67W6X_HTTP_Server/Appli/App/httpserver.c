@@ -39,6 +39,7 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 #include "event_groups.h"
 
 /* USER CODE BEGIN Includes */
+#include "controled_shutdown.h"
 #include "global_structs.h"
 #include "gps.h"
 #include "state_machine.h"
@@ -217,7 +218,6 @@ static void http_process_response(int32_t client, char *recv_buffer);
 static void http_get_rtc_datetime(char *date_str, size_t date_size,
                                   char *time_str, size_t time_size);
 static int32_t http_hex_to_nibble(char c);
-static size_t http_get_content_length(const char *request);
 static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len);
 static bool http_get_query_param(const char *request, const char *name,
                                  char *value, size_t value_size);
@@ -385,30 +385,6 @@ static int32_t http_hex_to_nibble(char c)
   }
 
   return -1;
-}
-
-static size_t http_get_content_length(const char *request)
-{
-  /*
-   * What: read the HTTP Content-Length header for POST form bodies.
-   * How: searches the received header text and parses the decimal byte count.
-   * Why: POST requests are complete only after headers plus the declared body bytes.
-   */
-  const char *header = strstr(request, "Content-Length:");
-
-  if (header == NULL)
-  {
-    return 0U;
-  }
-
-  header += strlen("Content-Length:");
-
-  while ((*header == ' ') || (*header == '\t'))
-  {
-    header++;
-  }
-
-  return (size_t)strtoul(header, NULL, 10);
 }
 
 static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len)
@@ -1215,6 +1191,41 @@ static void http_process_response(int32_t client, char *recv_buffer)
                          data);
 
     (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /shutdown_submit", strlen("GET /shutdown_submit")) == 0)
+  {
+    ControledShutdownStatus_t wifi_off_status;
+
+    wifi_off_status = ControledShutdown_RequestWifiOffTest();
+    if (wifi_off_status == CONTROLED_SHUTDOWN_BUSY)
+    {
+      http_send_html_message(client,
+                             "WiFi off already running",
+                             "The WiFi-off test task is already running. Wait a few seconds before trying again.",
+                             true);
+      return;
+    }
+
+    if (wifi_off_status != CONTROLED_SHUTDOWN_OK)
+    {
+      http_send_html_message(client,
+                             "WiFi off blocked",
+                             "The WiFi-off test task could not be created.",
+                             true);
+      return;
+    }
+
+    /*
+     * What: acknowledge the web command before the WiFi module is deinitialized.
+     * How: the created task waits briefly, then stops SoftAP and deinitializes the ST67.
+     * Why: the STM32U575 must stay alive so current measurement isolates the WiFi module.
+     */
+    http_send_html_message(client,
+                           "WiFi off test armed",
+                           "The STM32U575 stays running. The ST67 WiFi module should stop after this response.",
+                           false);
     return;
   }
 

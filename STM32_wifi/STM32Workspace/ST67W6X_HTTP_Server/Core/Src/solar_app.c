@@ -2,6 +2,7 @@
 #include "global_structs.h"
 #include "autoMode.h"
 #include "gps.h"
+#include "movement_task.h"
 #include "state_machine.h"
 #include "storage.h"
 
@@ -13,6 +14,15 @@ void SolarApp_Start(void)
    * Why: the FSM must see the recovered state/position/config instead of boot defaults.
    */
   (void)Storage_LoadAll();
+
+  /*
+   * What: home the mechanics at every boot before the FSM starts running modes.
+   * How: initializes the movement worker and queues one HOME command immediately.
+   * Why: after reset or shutdown wakeup the stored state is useful, but position must be re-referenced first.
+   */
+  initMovementTask();
+  requestHome();
+
   initFSM();
 
   /*

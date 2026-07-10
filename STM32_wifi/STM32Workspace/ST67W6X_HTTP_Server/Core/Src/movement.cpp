@@ -63,12 +63,19 @@
 
 static const long HOMING_SPEED_FAST = 500;
 static const long HOMING_SPEED_SLOW = 1000;
-static const long MAX_X_HOMING_STEPS = 1500;
-static const long MAX_Z_HOMING_STEPS = 1200;
 static const long DIR_CHANGE_DELAY_US = 10000;
 static const int BACKOFF_STEPS = 30;
 static const long VERTICAL_STEPS_PER_MM = 25;
 static const long HORIZONTAL_STEPS_PER_MM = 20;
+static const long HORIZONTAL_HYSTERESIS_REFERENCE_MM = 75;
+static const long HORIZONTAL_HYSTERESIS_EXTRA_MM = 4;
+static const long FIRST_TOUCH_EXTRA_MM = 30;
+static const long BASE_MAX_X_HOMING_STEPS = 1500;
+static const long BASE_MAX_Z_HOMING_STEPS = 1200;
+static const long MAX_X_HOMING_STEPS =
+  BASE_MAX_X_HOMING_STEPS + (VERTICAL_STEPS_PER_MM * FIRST_TOUCH_EXTRA_MM);
+static const long MAX_Z_HOMING_STEPS =
+  BASE_MAX_Z_HOMING_STEPS + (HORIZONTAL_STEPS_PER_MM * FIRST_TOUCH_EXTRA_MM);
 static const long SECOND_TOUCH_EXTRA_MM = 70;
 static const long MAX_VERTICAL_SECOND_TOUCH_STEPS =
   BACKOFF_STEPS + (VERTICAL_STEPS_PER_MM * SECOND_TOUCH_EXTRA_MM);
@@ -134,6 +141,34 @@ static void dwt_delay_init(void)
 static long abs_long(long value)
 {
   return (value < 0) ? -value : value;
+}
+
+static long horizontal_hysteresis_extra_steps(long logical_steps)
+{
+  const long reference_steps = HORIZONTAL_STEPS_PER_MM * HORIZONTAL_HYSTERESIS_REFERENCE_MM;
+  const long extra_steps_at_reference = HORIZONTAL_STEPS_PER_MM * HORIZONTAL_HYSTERESIS_EXTRA_MM;
+
+  if ((logical_steps <= 0) || (reference_steps <= 0))
+  {
+    return 0;
+  }
+
+  return ((logical_steps * extra_steps_at_reference) + (reference_steps / 2L)) / reference_steps;
+}
+
+float movementClampHorizontalTarget(float zmm)
+{
+  if (zmm < 0.0f)
+  {
+    return 0.0f;
+  }
+
+  if (zmm > MOVEMENT_HORIZONTAL_MAX_MM)
+  {
+    return MOVEMENT_HORIZONTAL_MAX_MM;
+  }
+
+  return zmm;
 }
 
 /* Small wrapper around HAL_GPIO_WritePin() to keep movement code compact. */
@@ -462,13 +497,15 @@ void move(float xmm, float zmm)
   vTaskDelay(pdMS_TO_TICKS(1));
 
   /* The horizontal axis uses the same absolute-target model with its own counter. */
+  zmm = movementClampHorizontalTarget(zmm);
   long targetStepsZ = (long)(zmm * (float)HORIZONTAL_STEPS_PER_MM);
   long diffZ = targetStepsZ - CurrentStep2;
 
   if (diffZ != 0)
   {
     long steps = abs_long(diffZ);
-    long moved_steps = 0;
+    long drive_steps = steps + horizontal_hysteresis_extra_steps(steps);
+    long driven_steps = 0;
     bool moving_positive = (diffZ > 0);
     bool released_once = !horizontal_limit_active();
 
@@ -483,7 +520,7 @@ void move(float xmm, float zmm)
       set_horizontal_dir_negative();
     }
 
-    for (long i = 0; i < steps; i++)
+    for (long i = 0; i < drive_steps; i++)
     {
       if (limit_should_stop_axis(moving_positive, released_once, horizontal_limit_active()))
       {
@@ -502,7 +539,7 @@ void move(float xmm, float zmm)
       write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_SET);
       write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_SET);
       delay_us((uint32_t)Speed);
-      moved_steps++;
+      driven_steps++;
 
       if (!horizontal_limit_active())
       {
@@ -522,10 +559,14 @@ void move(float xmm, float zmm)
 
     write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_RESET);
     write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_RESET);
-    CurrentStep2 += moving_positive ? moved_steps : -moved_steps;
-    if (moved_steps == steps)
+    if (driven_steps == drive_steps)
     {
       CurrentStep2 = targetStepsZ;
+    }
+    else
+    {
+      long logical_steps_done = (driven_steps < steps) ? driven_steps : steps;
+      CurrentStep2 += moving_positive ? logical_steps_done : -logical_steps_done;
     }
     enable_horizontal(false);
   }

@@ -228,6 +228,8 @@ static void Storage_UpdateCacheFromRtc(void)
  */
 static void Storage_UpdateCacheFromGlobals(void)
 {
+  States persistent_state = fsmGetPersistentState();
+
   storage_cache.magic = STORAGE_MAGIC;
   storage_cache.version = STORAGE_VERSION;
   storage_cache.size = sizeof(StorageRecord_t);
@@ -237,9 +239,10 @@ static void Storage_UpdateCacheFromGlobals(void)
   storage_cache.pan = g_AOIInputs.pan;
   storage_cache.tilt = g_AOIInputs.tilt;
   storage_cache.tilt_correction = g_AOIInputs.tilt_correction ? 1U : 0U;
-  storage_cache.auto_mode_on = auto_on ? 1U : 0U;
+
+  storage_cache.auto_mode_on = (persistent_state == AUTO_MODE) ? 1U : 0U;
   storage_cache.manual_time_on = manual_time ? 1U : 0U;
-  storage_cache.fsm_state = (uint32_t)thisSt;
+  storage_cache.fsm_state = (uint32_t)persistent_state;
   storage_cache.x_pos = g_x_val;
   storage_cache.z_pos = g_z_val;
 

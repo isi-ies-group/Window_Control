@@ -153,6 +153,8 @@ void SPA_f() {
     int result = spa_calculate(&spa);
 
     if (result != 0) {
+        g_sunrise_epoch = 0;
+        g_sunset_epoch  = 0;
         return;
     }
 
@@ -168,7 +170,6 @@ void SPA_f() {
 
         struct tm t_now;
         RTC_GetToTM(&t_now);
-        time_t now = mktime(&t_now);
 
        // midnight epoch
         struct tm t_midnight = t_now;
@@ -181,11 +182,12 @@ void SPA_f() {
         time_t sunrise_epoch = midnight + (time_t)(spa.sunrise * 3600.0);
         time_t sunset_epoch  = midnight + (time_t)(spa.sunset  * 3600.0);
 
-       // if sunrise and/or epoch are behind real time, add 24h
-        if (sunrise_epoch <= now) sunrise_epoch += 24 * 3600;
-        if (sunset_epoch  <= now) sunset_epoch  += 24 * 3600;
-
+       // Store today's sunrise and sunset. Auto mode compares them with the current local RTC.
         g_sunrise_epoch = sunrise_epoch;
         g_sunset_epoch  = sunset_epoch;
+    }
+    else {
+        g_sunrise_epoch = 0;
+        g_sunset_epoch  = 0;
     }
 }

@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "task.h"
 #include "freertos_tickless.h"
+#include "gps.h"
 #include "hello.h"
 #include "autoMode.h"
 #include "eph_input_mode.h"
@@ -16,7 +17,17 @@
 #define FSM_TASK_STACK_SIZE   4096U
 #define FSM_TASK_PRIORITY     23U
 #define FSM_AUTO_PERIOD_MS    5000U
+#define FSM_AUTO_HOME_PERIOD_TICKS (pdMS_TO_TICKS(60000U) * 120U)
 #define STORAGE_TIME_SAVE_PERIOD_MS 10000U
+#define FSM_STARTUP_GPS_TIMEOUT_MS  300000U
+#define FSM_STARTUP_HOME_DELAY_MS   5000U
+#define FSM_STARTUP_POLL_MS         100U
+
+typedef enum
+{
+  STARTUP_PHASE_HOME,
+  STARTUP_PHASE_GPS_SYNC,
+} StartupPhase;
 
 /* Current and next FSM states. Start in standby until persistent memory exists. */
 States thisSt = STDBY;
@@ -24,8 +35,18 @@ States nextSt = STDBY;
 
 static QueueHandle_t fsmQueue = NULL;      /* Events queue */
 static TaskHandle_t fsmTaskHandle = NULL;  /* Avoid task replication */
+static States startupReturnState = STDBY;  /* Persisted state to enter after startup checks. */
+static StartupPhase startupPhase = STARTUP_PHASE_HOME;
+static bool startupHomeDelayStarted = false;
+static bool startupHomeRequested = false;
+static bool startupGpsRequested = false;
+static TickType_t startupHomeDelayStartTick = 0U;
+static TickType_t startupGpsStartTick = 0U;
 
 static void fsmTask(void *argument);
+static bool fsmRunStartup(TickType_t now_tick);
+static void fsmFinishStartup(void);
+static bool stateIsPersistent(States state);
 static bool stateTransitionIsValid(States currentState, States newState);
 static TickType_t ticksUntilPeriod(TickType_t now, TickType_t last, TickType_t period);
 static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickType_t last_time_save_tick);
@@ -34,16 +55,25 @@ void initFSM(void)
 {
   /*
    * What: initialize the finite-state-machine task.
-   * How: keeps the state loaded from storage if valid, then creates the event queue/task.
-   * Why: boot should resume the saved state, but HTTP must still interact via events.
+   * How: remembers the persisted state, then starts in a RAM-only STARTUP state.
+   * Why: boot must home and request GPS sync without blocking WiFi/HTTP startup.
    */
-  if (!stateTransitionIsValid(STDBY, thisSt))
+  if (!stateIsPersistent(thisSt))
   {
     thisSt = STDBY;
   }
 
-  nextSt = thisSt;
-  auto_on = (thisSt == AUTO_MODE);
+  startupReturnState = thisSt;
+  startupPhase = STARTUP_PHASE_HOME;
+  startupHomeDelayStarted = false;
+  startupHomeRequested = false;
+  startupGpsRequested = false;
+  startupHomeDelayStartTick = 0U;
+  startupGpsStartTick = 0U;
+
+  thisSt = STARTUP;
+  nextSt = STARTUP;
+  auto_on = false;
 
   if (fsmQueue == NULL)
   {
@@ -87,6 +117,21 @@ States fsmGetState(void)
   return thisSt;
 }
 
+States fsmGetPersistentState(void)
+{
+  /*
+   * What: expose the state that is safe to store in flash.
+   * How: maps transient STARTUP back to the state loaded from flash.
+   * Why: a reboot must never persist STARTUP as the user's operating mode.
+   */
+  if (thisSt == STARTUP)
+  {
+    return startupReturnState;
+  }
+
+  return thisSt;
+}
+
 const char *stateToText(States state)
 {
   /*
@@ -108,6 +153,9 @@ const char *stateToText(States state)
     case EPH_INPUT:
       return "EPH_INPUT";
 
+    case STARTUP:
+      return "STARTUP";
+
     default:
       return "UNKNOWN";
   }
@@ -124,6 +172,11 @@ States fsmProcess(Events event, bool auto_running)
 
   /* Kept for compatibility with the first FSM version; thisSt is the source of truth now. */
   (void)auto_running;
+
+  if (thisSt == STARTUP)
+  {
+    return thisSt;
+  }
 
   switch (event)
   {
@@ -171,7 +224,7 @@ void changeState(States newState)
     thisSt = nextSt;
     auto_on = (thisSt == AUTO_MODE);
 
-    if (previousState != thisSt)
+    if ((previousState != thisSt) && (previousState != STARTUP) && stateIsPersistent(thisSt))
     {
       /* Persist state transitions so the next boot resumes from the same mode. */
       (void)saveState();
@@ -188,6 +241,7 @@ static void fsmTask(void *argument)
   */
   Events event;
   TickType_t last_auto_tick = xTaskGetTickCount();
+  TickType_t last_auto_home_tick = xTaskGetTickCount();
   TickType_t last_time_save_tick = xTaskGetTickCount();
 
   /* FreeRTOS task signature requires this argument, even if we do not use it. */
@@ -208,18 +262,18 @@ static void fsmTask(void *argument)
       States previousState = thisSt;
       States currentState = fsmProcess(event, auto_on);
 
-      if (event == submit_manual_goto)
+      if ((previousState != STARTUP) && (event == submit_manual_goto))
       {
         /* HTTP has already loaded g_x_target/g_z_target; movement_task runs the blocking pulses. */
         manualModeGoto(g_x_target, g_z_target);
         requestMove();
       }
-      else if (event == submit_home)
+      else if ((previousState != STARTUP) && (event == submit_home))
       {
         /* Homing is requested by the web layer and executed by the movement task. */
         requestHome();
       }
-      else if (event == submit_eph_input)
+      else if ((previousState != STARTUP) && (event == submit_eph_input))
       {
         /* Ephemeris mode calculates AOI and updates g_x_target/g_z_target. */
         if (ephInputMode())
@@ -232,12 +286,28 @@ static void fsmTask(void *argument)
       if ((previousState != AUTO_MODE) && (currentState == AUTO_MODE))
       {
         last_auto_tick = xTaskGetTickCount();
+        last_auto_home_tick = last_auto_tick;
       }
     }
 
     now_tick = xTaskGetTickCount();
 
-    if ((now_tick - last_time_save_tick) >= pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS))
+    if (thisSt == STARTUP)
+    {
+      if (fsmRunStartup(now_tick))
+      {
+        now_tick = xTaskGetTickCount();
+        last_auto_tick = now_tick;
+        last_auto_home_tick = now_tick;
+      }
+
+      last_time_save_tick = xTaskGetTickCount();
+    }
+
+    now_tick = xTaskGetTickCount();
+
+    if ((thisSt != STARTUP) &&
+        ((now_tick - last_time_save_tick) >= pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS)))
     {
       /*
        * What: periodically persist the local RTC shown in the web status.
@@ -253,22 +323,125 @@ static void fsmTask(void *argument)
       /* Automatic mode runs periodically while the FSM remains in AUTO_MODE. */
       if ((now_tick - last_auto_tick) >= pdMS_TO_TICKS(FSM_AUTO_PERIOD_MS))
       {
-    	  /* What: protect one automatic cycle from low-power entry.
-    	   * How: block tickless while autoMode() reads time, calculates target angles and queues movement.
-    	   * Why: an automode cycle should not be split by Sleep/Stop halfway through its calculation.
-    	   */
-    	  DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
-    	  autoMode();
-    	  EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
-    	  auto_counter++;
-    	  last_auto_tick = now_tick;
+        bool movement_busy = movementTaskIsBusy();
+
+        if ((now_tick - last_auto_home_tick) >= FSM_AUTO_HOME_PERIOD_TICKS)
+        {
+          if (!movement_busy)
+          {
+            /*
+             * What: periodically re-reference the mechanics while AUTO is active.
+             * How: queues HOME instead of a normal auto target every two hours.
+             * Why: small automatic corrections can accumulate mechanical error over time.
+             */
+            requestHome();
+            last_auto_home_tick = now_tick;
+          }
+        }
+        else if (!movement_busy)
+        {
+          /*
+           * What: protect one automatic cycle from low-power entry.
+           * How: block tickless while autoMode() reads time, calculates target angles and queues movement.
+           * Why: an automode cycle should not be split by Sleep/Stop halfway through its calculation.
+           */
+          DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
+          autoMode();
+          EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_AUTOMODE_ID);
+          auto_counter++;
+        }
+
+        last_auto_tick = now_tick;
       }
     }
     else
     {
       last_auto_tick = now_tick;
+      last_auto_home_tick = now_tick;
     }
   }
+}
+
+static bool fsmRunStartup(TickType_t now_tick)
+{
+  /*
+   * What: run the boot-only startup sequence.
+   * How: waits for power rails, queues HOME, waits until movement is idle, requests GPS sync, then waits for sync or timeout.
+   * Why: mechanics and RTC setup belong to the FSM task, not to blocking code in main_app().
+   */
+  if (thisSt != STARTUP)
+  {
+    return false;
+  }
+
+  switch (startupPhase)
+  {
+    case STARTUP_PHASE_HOME:
+      if (!startupHomeDelayStarted)
+      {
+        startupHomeDelayStarted = true;
+        startupHomeDelayStartTick = now_tick;
+        break;
+      }
+
+      if ((now_tick - startupHomeDelayStartTick) < pdMS_TO_TICKS(FSM_STARTUP_HOME_DELAY_MS))
+      {
+        break;
+      }
+
+      if (!startupHomeRequested)
+      {
+        requestHome();
+        startupHomeRequested = true;
+      }
+      else if (!movementTaskIsBusy())
+      {
+        GPS_Task_RequestTimeSync();
+        startupGpsRequested = true;
+        startupGpsStartTick = now_tick;
+        startupPhase = STARTUP_PHASE_GPS_SYNC;
+      }
+      break;
+
+    case STARTUP_PHASE_GPS_SYNC:
+      if (!startupGpsRequested)
+      {
+        GPS_Task_RequestTimeSync();
+        startupGpsRequested = true;
+        startupGpsStartTick = now_tick;
+      }
+
+      if ((g_gps_rtc_synced != 0U) ||
+          ((now_tick - startupGpsStartTick) >= pdMS_TO_TICKS(FSM_STARTUP_GPS_TIMEOUT_MS)))
+      {
+        fsmFinishStartup();
+        return true;
+      }
+      break;
+
+    default:
+      fsmFinishStartup();
+      return true;
+  }
+
+  return false;
+}
+
+static void fsmFinishStartup(void)
+{
+  /*
+   * What: leave the transient startup state.
+   * How: restores the validated state that was loaded from flash before STARTUP.
+   * Why: after homing/GPS the controller should behave exactly as configured before reboot.
+   */
+  if (!stateIsPersistent(startupReturnState))
+  {
+    startupReturnState = STDBY;
+  }
+
+  thisSt = startupReturnState;
+  nextSt = startupReturnState;
+  auto_on = (thisSt == AUTO_MODE);
 }
 
 static TickType_t ticksUntilPeriod(TickType_t now, TickType_t last, TickType_t period)
@@ -295,9 +468,16 @@ static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickTy
    * How: always wakes for RTC persistence; AUTO also wakes for its 5 s iteration.
    * Why: STANDBY, MANUAL and EPH_INPUT should sleep while no submit/movement is pending.
    */
-  TickType_t wait_ticks = ticksUntilPeriod(now,
-                                           last_time_save_tick,
-                                           pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS));
+  TickType_t wait_ticks;
+
+  if (thisSt == STARTUP)
+  {
+    return pdMS_TO_TICKS(FSM_STARTUP_POLL_MS);
+  }
+
+  wait_ticks = ticksUntilPeriod(now,
+                                last_time_save_tick,
+                                pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS));
 
   if (thisSt == AUTO_MODE)
   {
@@ -314,6 +494,19 @@ static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickTy
   return wait_ticks;
 }
 
+static bool stateIsPersistent(States state)
+{
+  /*
+   * What: identify states that are valid user operating modes.
+   * How: excludes STARTUP, which is only a transient boot phase.
+   * Why: flash must keep the resume target, not the internal startup marker.
+   */
+  return (state == STDBY) ||
+         (state == AUTO_MODE) ||
+         (state == MANUAL) ||
+         (state == EPH_INPUT);
+}
+
 static bool stateTransitionIsValid(States currentState, States newState)
 {
   /*
@@ -323,8 +516,5 @@ static bool stateTransitionIsValid(States currentState, States newState)
    */
   (void)currentState;
 
-  return (newState == STDBY) ||
-         (newState == AUTO_MODE) ||
-         (newState == MANUAL) ||
-         (newState == EPH_INPUT);
+  return stateIsPersistent(newState) || (newState == STARTUP);
 }

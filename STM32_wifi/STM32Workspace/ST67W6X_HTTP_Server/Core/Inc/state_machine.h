@@ -13,6 +13,7 @@ typedef enum
   AUTO_MODE,
   MANUAL,
   EPH_INPUT,
+  STARTUP,
 } States;
 
 typedef enum
@@ -36,6 +37,7 @@ States fsmProcess(Events event, bool auto_running);
 void changeState(States newState);
 bool fsmPostEvent(Events event);
 States fsmGetState(void);
+States fsmGetPersistentState(void);
 
 #ifdef __cplusplus
 }

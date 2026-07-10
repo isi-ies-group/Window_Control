@@ -37,6 +37,7 @@ extern volatile uint8_t g_gps_local_second;
 
 extern volatile uint8_t g_gps_time_sync_requested;
 extern volatile uint8_t g_gps_rtc_synced;
+extern volatile uint8_t g_gps_power_enabled;
 extern volatile uint32_t g_gps_task_loop_count;
 extern volatile uint32_t g_gps_rtc_sync_count;
 extern volatile uint32_t g_gps_rtc_sync_error_count;

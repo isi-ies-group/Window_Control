@@ -119,6 +119,8 @@ void Error_Handler(void);
 #define USART1_TX_GPIO_Port GPIOA
 #define USART1_RX_Pin GPIO_PIN_10
 #define USART1_RX_GPIO_Port GPIOA
+#define GPS_enable_Pin GPIO_PIN_12
+#define GPS_enable_GPIO_Port GPIOG
 #define MXLI_X_DIR_Pin GPIO_PIN_14
 #define MXLI_X_DIR_GPIO_Port GPIOG
 #define YRE_Pin GPIO_PIN_4

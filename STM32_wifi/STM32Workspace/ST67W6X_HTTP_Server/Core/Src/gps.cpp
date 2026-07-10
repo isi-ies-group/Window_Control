@@ -11,6 +11,7 @@ extern UART_HandleTypeDef hlpuart1;
 
 #define GPS_REQUIRE_FIX_FOR_RTC_SYNC 0U
 #define GPS_SYNC_BYTES_PER_SLICE     128U
+#define GPS_POWER_SETTLE_DELAY_MS    1U
 #define GPS_ACTIVE_POLL_DELAY_MS     1U
 #define GPS_IDLE_POLL_DELAY_MS       250U
 
@@ -46,6 +47,7 @@ volatile uint8_t g_gps_local_second = 0U;
 /* Web-triggered RTC synchronization state. */
 volatile uint8_t g_gps_time_sync_requested = 0U;
 volatile uint8_t g_gps_rtc_synced = 0U;
+volatile uint8_t g_gps_power_enabled = 0U;
 volatile uint32_t g_gps_task_loop_count = 0U;
 volatile uint32_t g_gps_rtc_sync_count = 0U;
 volatile uint32_t g_gps_rtc_sync_error_count = 0U;
@@ -54,6 +56,12 @@ static char gps_line_buffer[GPS_NMEA_LINE_MAX];
 static uint32_t gps_line_index = 0U;
 static uint32_t gps_last_processed_rmc_count = 0U;
 static uint8_t gps_receiving_line = 0U;
+
+static void GPS_DelayMs(uint32_t delay_ms);
+static void GPS_PowerOnForSync(void);
+static void GPS_PowerOffAfterSync(void);
+static void GPS_ClearTimeCapture(void);
+static void GPS_BeginTimeSyncRequest(void);
 
 typedef struct
 {
@@ -342,6 +350,70 @@ static void GPS_ClearUartErrorFlags(void)
     }
 
     GPS_ResetRxState();
+}
+
+static void GPS_DelayMs(uint32_t delay_ms)
+{
+    if (delay_ms == 0U)
+    {
+        return;
+    }
+
+    if (osKernelGetState() == osKernelRunning)
+    {
+        osDelay(delay_ms);
+    }
+    else
+    {
+        HAL_Delay(delay_ms);
+    }
+}
+
+static void GPS_PowerOnForSync(void)
+{
+    if (g_gps_power_enabled != 0U)
+    {
+        return;
+    }
+
+    HAL_GPIO_WritePin(GPS_enable_GPIO_Port, GPS_enable_Pin, GPIO_PIN_SET);
+    g_gps_power_enabled = 1U;
+    GPS_ResetRxState();
+    GPS_DelayMs(GPS_POWER_SETTLE_DELAY_MS);
+    GPS_ClearUartErrorFlags();
+}
+
+static void GPS_PowerOffAfterSync(void)
+{
+    HAL_GPIO_WritePin(GPS_enable_GPIO_Port, GPS_enable_Pin, GPIO_PIN_RESET);
+    g_gps_power_enabled = 0U;
+    GPS_ResetRxState();
+}
+
+static void GPS_ClearTimeCapture(void)
+{
+    g_gps_line_ready = 0U;
+    g_gps_utc_ready = 0U;
+    g_gps_fix_valid = 0U;
+    g_gps_local_ready = 0U;
+    gps_last_processed_rmc_count = g_gps_rmc_count;
+}
+
+static void GPS_BeginTimeSyncRequest(void)
+{
+    /*
+     * What: start a fresh GPS-powered RTC sync attempt.
+     * How: clears stale parsed time, enables the GPS switch and lets the rail settle.
+     * Why: pressing Sync Time must prove the GPS can provide a new time sentence.
+     */
+    if (g_gps_time_sync_requested == 0U)
+    {
+        GPS_ClearTimeCapture();
+    }
+
+    g_gps_time_sync_requested = 1U;
+    g_gps_rtc_synced = 0U;
+    GPS_PowerOnForSync();
 }
 
 static uint8_t GPS_IsLeapYear(uint16_t year)
@@ -635,6 +707,7 @@ static void GPS_TryPendingRtcSync(void)
 
         /* Keep blue LED ON after RTC is loaded from GPS time. */
         HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+        GPS_PowerOffAfterSync();
     }
     else
     {
@@ -646,11 +719,10 @@ uint8_t GPS_Task_SyncTimeNow(void)
 {
     /*
      * What: service the HTTP Sync Time button.
-     * How: raises a latch and immediately tries the last valid local GPS time.
-     * Why: NMEA is parsed continuously, so the button should only request RTC copy.
+     * How: powers the GPS, raises a latch and waits for a fresh valid local GPS time.
+     * Why: the button should test the GPS path instead of reusing stale parsed data.
      */
-    g_gps_time_sync_requested = 1U;
-    g_gps_rtc_synced = 0U;
+    GPS_BeginTimeSyncRequest();
 
     (void)GPS_UpdateLocalTimeFromUtc();
     GPS_TryPendingRtcSync();
@@ -666,16 +738,15 @@ void GPS_Task_RequestTimeSync(void)
      * Why: boot can request GPS time without blocking WiFi/server startup.
      */
     HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-    g_gps_time_sync_requested = 1U;
-    g_gps_rtc_synced = 0U;
+    GPS_BeginTimeSyncRequest();
 }
 
 void GPS_Task(void *argument)
 {
     /*
-     * What: continuously parse GPS NMEA and service pending RTC sync requests.
-     * How: reads UART in small slices, updates UTC/local globals, then checks the sync latch.
-     * Why: Sync Time should copy the latest parsed GPS time, not start a separate UART reader.
+     * What: parse GPS NMEA only while an RTC sync request is pending.
+     * How: enables the GPS switch, reads UART in small slices and turns power off after sync.
+     * Why: the receiver should consume power only while getting a fresh time sentence.
      */
     uint32_t bytes_this_slice;
 
@@ -687,6 +758,17 @@ void GPS_Task(void *argument)
 
         bytes_this_slice = 0U;
         g_gps_task_loop_count++;
+
+        if ((g_gps_time_sync_requested != 0U) && (g_gps_power_enabled == 0U))
+        {
+            GPS_PowerOnForSync();
+        }
+
+        if (g_gps_power_enabled == 0U)
+        {
+            osDelay(GPS_IDLE_POLL_DELAY_MS);
+            continue;
+        }
 
         while ((bytes_this_slice < GPS_SYNC_BYTES_PER_SLICE) &&
                (GPS_ProcessUart() != 0U))

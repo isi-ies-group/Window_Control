@@ -73,9 +73,10 @@ void requestMove(void)
 {
   /*
    * What: request one absolute X/Z movement.
-   * How: captures g_x_target/g_z_target into the queue message.
+   * How: clamps the physical Z range, then captures g_x_target/g_z_target into the queue message.
    * Why: later target changes must not alter a movement command that was already accepted.
    */
+  g_z_target = movementClampHorizontalTarget(g_z_target);
   movementPostCommand(CMD_MOVE, g_x_target, g_z_target);
 }
 
@@ -87,6 +88,17 @@ void requestHome(void)
    * Why: homing can take time and must not block WiFi request processing.
    */
   movementPostCommand(CMD_HOME, 0.0f, 0.0f);
+}
+
+bool movementTaskIsBusy(void)
+{
+  /*
+   * What: report whether movement or homing is active/pending.
+   * How: checks the active execution flag and the movement queue depth.
+   * Why: startup sequencing must wait for HOME to finish before requesting GPS sync.
+   */
+  return (movementCommandActive != false) ||
+         ((movementQueue != NULL) && (uxQueueMessagesWaiting(movementQueue) != 0U));
 }
 
 static void movementTask(void *argument)
@@ -187,6 +199,11 @@ static void movementPostCommand(MoveCmd cmd, float x_target, float z_target)
        * Why: queued stale moves were able to execute after long homing or slow movements.
        */
       return;
+    }
+
+    if (cmd == CMD_MOVE)
+    {
+      z_target = movementClampHorizontalTarget(z_target);
     }
 
     msg.cmd = cmd;

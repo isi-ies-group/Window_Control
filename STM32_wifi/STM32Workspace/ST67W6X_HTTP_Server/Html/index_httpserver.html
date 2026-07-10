@@ -29,20 +29,28 @@
         }
 
         header {
+            align-items: center;
             background: var(--dark-blue);
+            box-sizing: border-box;
             color: #ffffff;
-            margin: 0;
-        }
-
-        header {
+            display: flex;
             height: 8vh;
-            white-space: nowrap;
-            overflow-x: auto;
+            min-height: 84px;
+            margin: 0;
+            overflow-x: hidden;
             overflow-y: hidden;
+            padding: 10px calc(var(--background-margin) + 2vw);
+            white-space: nowrap;
         }
 
         #header_logo {
-            height: 8vh;
+            background: #ffffff;
+            box-sizing: border-box;
+            height: 64px;
+            max-width: 220px;
+            object-fit: contain;
+            padding: 6px 10px;
+            width: auto;
         }
 
         button {
@@ -208,7 +216,7 @@
 		<div class="config-panel">
 			<form action="/manual_goto" method="get">
 				X target: <input class="manual-control" type="text" name="x"><br>
-				Z target: <input class="manual-control" type="text" name="z"><br>
+				Z target: <input class="manual-control" type="number" name="z" min="0" max="72" step="0.01"><br>
 				<button id="manualBeginBtn" type="button" onclick="location.href='/manual_begin'">Begin</button>
 				<input class="manual-control" type="submit" value="Go to X / Z">
 				<button id="manualEndBtn" class="manual-control" type="button" onclick="location.href='/end_manual'">End</button>
@@ -262,8 +270,12 @@
 </body>
 <script>
     let autoStatusTimer = null;
+    let statusRequestInFlight = false;
+    let statusPollFailureCount = 0;
     let autoMode = false;
-    const autoStatusPollMs = 1000;
+    const autoStatusPollMs = 2000;
+    const autoStatusBackoffMaxMs = 15000;
+    const autoStatusHiddenPollMs = 15000;
 
     function scheduleAutoStatusPoll(delayMs) {
         if (autoStatusTimer !== null) {
@@ -273,6 +285,25 @@
             autoStatusTimer = null;
             sendStatusGetRequest();
         }, delayMs);
+    }
+
+    function finishStatusPoll(success) {
+        if (!statusRequestInFlight) {
+            return;
+        }
+
+        statusRequestInFlight = false;
+
+        if (success) {
+            statusPollFailureCount = 0;
+            scheduleAutoStatusPoll(document.hidden ? autoStatusHiddenPollMs : autoStatusPollMs);
+            return;
+        }
+
+        statusPollFailureCount = Math.min(statusPollFailureCount + 1, 4);
+        const retryDelay = Math.min(autoStatusPollMs * Math.pow(2, statusPollFailureCount),
+                                    autoStatusBackoffMaxMs);
+        scheduleAutoStatusPoll(document.hidden ? autoStatusHiddenPollMs : retryDelay);
     }
 
     function setText(id, value) {
@@ -330,56 +361,73 @@
     }
 
     function sendStatusGetRequest() {
+        if (statusRequestInFlight) {
+            return;
+        }
+
+        statusRequestInFlight = true;
+
         var xhr = new XMLHttpRequest();
         xhr.timeout = 3000;
         xhr.open("GET", "/status", true);
         xhr.ontimeout = function () {
-            scheduleAutoStatusPoll(autoStatusPollMs);
+            finishStatusPoll(false);
         }
         xhr.onerror = function () {
-            scheduleAutoStatusPoll(autoStatusPollMs);
+            finishStatusPoll(false);
         }
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                const resp = JSON.parse(xhr.responseText);
-                setAutoButton(resp.auto_on);
-                setInterfaceForState(resp.fsm_state);
-                setText("fsm_state", resp.fsm_state || "---");
-                setText("auto_on", resp.auto_on ? "true" : "false");
-                setText("auto_counter", resp.auto_counter);
-                setText("rtc_date", resp.rtc_date || "---");
-                setText("rtc_time", resp.rtc_time || "---");
-                setText("manual_time", resp.manual_time ? "true" : "false");
-                setText("country", resp.country || "---");
-                setText("latitude", formatNumber(resp.latitude, 2));
-                setText("longitude", formatNumber(resp.longitude, 2));
-                setText("pan", formatNumber(resp.pan, 2));
-                setText("tilt", formatNumber(resp.tilt, 2));
-                setText("tilt_correction", resp.tilt_correction ? "true" : "false");
-                setText("azimuth", formatNumber(resp.azimuth, 6));
-                setText("elevation", formatNumber(resp.elevation, 6));
-                setText("aoil", formatNumber(resp.aoil, 6));
-                setText("aoit", formatNumber(resp.aoit, 6));
-                setText("query_aoil", formatNumber(resp.query_aoil, 6));
-                setText("query_aoit", formatNumber(resp.query_aoit, 6));
-                setText("interp_x", formatNumber(resp.interp_x, 6));
-                setText("interp_z", formatNumber(resp.interp_z, 6));
-                setText("x_target", formatNumber(resp.x_target, 6));
-                setText("z_target", formatNumber(resp.z_target, 6));
-                setText("x", formatNumber(resp.x, 6));
-                setText("z", formatNumber(resp.z, 6));
-                setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");
-                setText("gps_last_rmc", resp.gps_last_rmc || "---");
-                scheduleAutoStatusPoll(autoStatusPollMs);
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    setAutoButton(resp.auto_on);
+                    setInterfaceForState(resp.fsm_state);
+                    setText("fsm_state", resp.fsm_state || "---");
+                    setText("auto_on", resp.auto_on ? "true" : "false");
+                    setText("auto_counter", resp.auto_counter);
+                    setText("rtc_date", resp.rtc_date || "---");
+                    setText("rtc_time", resp.rtc_time || "---");
+                    setText("manual_time", resp.manual_time ? "true" : "false");
+                    setText("country", resp.country || "---");
+                    setText("latitude", formatNumber(resp.latitude, 2));
+                    setText("longitude", formatNumber(resp.longitude, 2));
+                    setText("pan", formatNumber(resp.pan, 2));
+                    setText("tilt", formatNumber(resp.tilt, 2));
+                    setText("tilt_correction", resp.tilt_correction ? "true" : "false");
+                    setText("azimuth", formatNumber(resp.azimuth, 6));
+                    setText("elevation", formatNumber(resp.elevation, 6));
+                    setText("aoil", formatNumber(resp.aoil, 6));
+                    setText("aoit", formatNumber(resp.aoit, 6));
+                    setText("query_aoil", formatNumber(resp.query_aoil, 6));
+                    setText("query_aoit", formatNumber(resp.query_aoit, 6));
+                    setText("interp_x", formatNumber(resp.interp_x, 6));
+                    setText("interp_z", formatNumber(resp.interp_z, 6));
+                    setText("x_target", formatNumber(resp.x_target, 6));
+                    setText("z_target", formatNumber(resp.z_target, 6));
+                    setText("x", formatNumber(resp.x, 6));
+                    setText("z", formatNumber(resp.z, 6));
+                    setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");
+                    setText("gps_last_rmc", resp.gps_last_rmc || "---");
+                    finishStatusPoll(true);
+                }
+                catch (e) {
+                    finishStatusPoll(false);
+                }
             }
             else if (xhr.readyState === 4) {
-                scheduleAutoStatusPoll(autoStatusPollMs);
+                finishStatusPoll(false);
             }
         };
         xhr.send();
     }
     setInterfaceForState("");
     sendStatusGetRequest();
+
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden && autoStatusTimer === null && !statusRequestInFlight) {
+            sendStatusGetRequest();
+        }
+    });
 
     function toggleAutoMode() {
         const requestedMode = !autoMode;

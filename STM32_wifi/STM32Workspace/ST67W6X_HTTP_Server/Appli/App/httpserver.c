@@ -39,6 +39,8 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 #include "event_groups.h"
 
 /* USER CODE BEGIN Includes */
+#include "task.h"
+
 #include "controled_shutdown.h"
 #include "global_structs.h"
 #include "gps.h"
@@ -125,6 +127,8 @@ typedef struct
 #define MAX_BYTES_TO_SEND              4096U
 
 /* USER CODE BEGIN PD */
+/** Maximum simultaneous HTTP client tasks. Keep below the ST67 network connection limit. */
+#define HTTP_MAX_ACTIVE_CLIENTS        3U
 
 /* USER CODE END PD */
 
@@ -167,6 +171,7 @@ static const HttpServer_response_t http_server_responses[] =
 {
   {INDEX_HTML,      "GET / ",                                     response_index_html,  sizeof(response_index_html)},
   {FAVICON_SVG,     "GET /favicon.ico",                           response_favicon_svg, sizeof(response_favicon_svg)},
+  {ST_LOGO_SVG,     "GET /IES_logo.svg",                          response_st_logo_svg, sizeof(response_st_logo_svg)},
   {ST_LOGO_SVG,     "GET /ST_logo_2020_white_no_tagline_rgb.svg", response_st_logo_svg, sizeof(response_st_logo_svg)},
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
@@ -175,6 +180,8 @@ static const HttpServer_response_t http_server_responses[] =
 
 /* USER CODE BEGIN PV */
 extern RTC_HandleTypeDef hrtc;
+static volatile uint32_t http_active_clients = 0U;
+static volatile uint32_t http_tracked_clients_mask = 0U;
 
 /* USER CODE END PV */
 
@@ -227,6 +234,10 @@ static bool http_apply_eph_submit(const char *request);
 static bool http_apply_manual_goto(const char *request);
 static void http_send_html_message(int32_t client, const char *title,
                                    const char *message, bool is_error);
+static bool http_accept_client_or_reject(int32_t client);
+static void http_configure_client_socket(int32_t client);
+static void http_release_client_slot(int32_t client);
+static void http_reject_busy_client(int32_t client);
 
 /* USER CODE END PFP */
 
@@ -767,6 +778,84 @@ static void http_send_html_message(int32_t client, const char *title,
   (void)http_server_write(client, body, strlen(body));
 }
 
+static bool http_accept_client_or_reject(int32_t client)
+{
+  bool accepted = false;
+  uint32_t client_bit;
+
+  if ((client < 0) || (client >= 32))
+  {
+    return false;
+  }
+
+  client_bit = (1UL << (uint32_t)client);
+
+  http_configure_client_socket(client);
+
+  taskENTER_CRITICAL();
+  if (http_active_clients < HTTP_MAX_ACTIVE_CLIENTS)
+  {
+    http_active_clients++;
+    http_tracked_clients_mask |= client_bit;
+    accepted = true;
+  }
+  taskEXIT_CRITICAL();
+
+  if (!accepted)
+  {
+    http_reject_busy_client(client);
+  }
+
+  return accepted;
+}
+
+static void http_configure_client_socket(int32_t client)
+{
+  int32_t timeout = (int32_t)pdMS_TO_TICKS(SOCKET_TIMEOUT_MS);
+
+  (void)W6X_Net_Setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeout, sizeof(timeout));
+  (void)W6X_Net_Setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (void *)&timeout, sizeof(timeout));
+}
+
+static void http_release_client_slot(int32_t client)
+{
+  uint32_t client_bit;
+
+  if ((client < 0) || (client >= 32))
+  {
+    return;
+  }
+
+  client_bit = (1UL << (uint32_t)client);
+
+  taskENTER_CRITICAL();
+  if ((http_tracked_clients_mask & client_bit) != 0U)
+  {
+    http_tracked_clients_mask &= ~client_bit;
+    if (http_active_clients > 0U)
+    {
+      http_active_clients--;
+    }
+  }
+  taskEXIT_CRITICAL();
+}
+
+static void http_reject_busy_client(int32_t client)
+{
+  static const char busy_response[] =
+    "HTTP/1.1 503 Service Unavailable\r\n"
+    "Server: U5\r\n"
+    "Access-Control-Allow-Origin: * \r\n"
+    "Cache-Control: no-cache\r\n"
+    "Connection: close\r\n"
+    "Retry-After: 2\r\n"
+    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Length: 4\r\n\r\n"
+    "BUSY";
+
+  (void)http_server_write(client, busy_response, sizeof(busy_response) - 1U);
+}
+
 /* USER CODE END FD */
 
 /* Private Functions Definition ----------------------------------------------*/
@@ -779,6 +868,7 @@ static void http_server_serve_task(void *arg)
   /* Allocate considering the biggest buffer the client can send */
   ssize_t recv_buffer_len = HTTP_CHILD_TASK_BUFFER_SIZE;
   char *recv_buffer = (char *)pvPortMalloc(recv_buffer_len + 1);
+
   if (recv_buffer == NULL)
   {
     LogError("Unable to allocate recv buffer\n");
@@ -786,6 +876,10 @@ static void http_server_serve_task(void *arg)
   }
 
   /* USER CODE BEGIN http_server_serve_task_1 */
+  if (!http_accept_client_or_reject(client))
+  {
+    goto _close;
+  }
 
   /* USER CODE END http_server_serve_task_1 */
 
@@ -802,7 +896,8 @@ static void http_server_serve_task(void *arg)
     recv_total_len += bytes_received;
 
     /* Verify if we have receive the whole request or if we need to do another receive */
-    if (strncmp(&recv_buffer[recv_total_len - 4], "\r\n\r\n", 4) == 0)
+    if ((recv_total_len >= 4) &&
+        (strncmp(&recv_buffer[recv_total_len - 4], "\r\n\r\n", 4) == 0))
     {
       /* The full request has been received leaving the reading loop */
       request_complete = true;
@@ -906,7 +1001,7 @@ static int32_t http_server_write(int32_t client, const char *buffer, size_t buff
   do /* Send the data. Can be done in multiple steps. */
   {
     bytes_sent = W6X_Net_Send(client, (void *)buffer, buffer_size, 0);
-    if (bytes_sent < 0)
+    if (bytes_sent <= 0)
     {
       LogError("[%" PRIi32 "] *****> SEND ERROR <*****\n", client);
       return 1;
@@ -925,6 +1020,7 @@ static int32_t http_server_write(int32_t client, const char *buffer, size_t buff
 static int32_t close_client(int32_t client)
 {
   /* USER CODE BEGIN close_client_1 */
+  http_release_client_slot(client);
 
   /* USER CODE END close_client_1 */
 
@@ -1008,6 +1104,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"x_target\":%.6f,\"z_target\":%.6f,"
                    "\"x\":%.6f,\"z\":%.6f,"
                    "\"gps_task_loop_count\":%" PRIu32 ","
+                   "\"gps_power_enabled\":%" PRIu32 ","
                    "\"gps_line_count\":%" PRIu32 ","
                    "\"gps_rmc_count\":%" PRIu32 ","
                    "\"gps_overflow_count\":%" PRIu32 ","
@@ -1051,6 +1148,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    (double)g_x_val,
                    (double)g_z_val,
                    (uint32_t)g_gps_task_loop_count,
+                   (uint32_t)g_gps_power_enabled,
                    (uint32_t)g_gps_line_count,
                    (uint32_t)g_gps_rmc_count,
                    (uint32_t)g_gps_overflow_count,

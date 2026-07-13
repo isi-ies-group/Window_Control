@@ -1,0 +1,306 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<rect width="1920" height="1080" fill="#FFFFFF"/>
+<text x="44" y="58" font-family="Aptos, Arial, sans-serif" font-size="36" font-weight="700" fill="#10243F">Solar Tracking Validation Cases</text>
+<text x="44" y="92" font-family="Aptos, Arial, sans-serif" font-size="22" fill="#58657A">Input test cases with interpolated, STM theoretical and measured X/Z outputs</text>
+<rect x="44" y="120" width="655" height="48" rx="10" fill="#10243F"/>
+<text x="371.5" y="151" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="22" font-weight="700" fill="white">Test case inputs</text>
+<rect x="699" y="120" width="190" height="48" rx="10" fill="#2364AA"/>
+<text x="794" y="151" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="22" font-weight="700" fill="white">Interpolation</text>
+<rect x="889" y="120" width="190" height="48" rx="10" fill="#2F9FD0"/>
+<text x="984" y="151" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="22" font-weight="700" fill="white">STM theoretical</text>
+<rect x="1079" y="120" width="180" height="48" rx="10" fill="#2E7D5B"/>
+<text x="1169" y="151" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="22" font-weight="700" fill="white">Measured</text>
+<rect x="1259" y="120" width="355" height="48" rx="10" fill="#C76D22"/>
+<text x="1436.5" y="151" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="22" font-weight="700" fill="white">Notes</text>
+<rect x="44" y="172" width="70" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="79" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Case</text>
+<rect x="114" y="172" width="105" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="166.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Latitude</text>
+<rect x="219" y="172" width="115" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="276.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Longitude</text>
+<rect x="334" y="172" width="225" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="446.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Time</text>
+<rect x="559" y="172" width="70" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="594" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Tilt</text>
+<rect x="629" y="172" width="70" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="664" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Pan</text>
+<rect x="699" y="172" width="95" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="746.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">X interp</text>
+<rect x="794" y="172" width="95" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="841.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Z interp</text>
+<rect x="889" y="172" width="95" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="936.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">X STM</text>
+<text x="936.5" y="216" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">th</text>
+<rect x="984" y="172" width="95" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="1031.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Z STM</text>
+<text x="1031.5" y="216" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">th</text>
+<rect x="1079" y="172" width="90" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="1124" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">X real</text>
+<rect x="1169" y="172" width="90" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="1214" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Z real</text>
+<rect x="1259" y="172" width="355" height="56" fill="#EAF0F6" stroke="#CED8E3"/>
+<text x="1436.5" y="196" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" font-weight="700" fill="#142033">Notes</text>
+<rect x="44" y="228" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="79" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">1</text>
+<rect x="114" y="228" width="105" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="166.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="228" width="115" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="276.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="228" width="225" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="446.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-09 12:17 +02:00</text>
+<rect x="559" y="228" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="594" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">0</text>
+<rect x="629" y="228" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="664" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="228" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="746.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15.5</text>
+<rect x="794" y="228" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="841.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">58.9</text>
+<rect x="889" y="228" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="936.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15.5</text>
+<rect x="984" y="228" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1031.5" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">58.9</text>
+<rect x="1079" y="228" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1124" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15.0</text>
+<rect x="1169" y="228" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1214" y="266" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">59.0</text>
+<rect x="1259" y="228" width="355" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1269" y="252" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="290" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="79" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">2</text>
+<rect x="114" y="290" width="105" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="166.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="290" width="115" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="276.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="290" width="225" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="446.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-09 13:29 +02:00</text>
+<rect x="559" y="290" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="594" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">0</text>
+<rect x="629" y="290" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="664" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="290" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="746.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">22.3</text>
+<rect x="794" y="290" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="841.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">72.0</text>
+<rect x="889" y="290" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="936.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">22.3</text>
+<rect x="984" y="290" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1031.5" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">72.0</text>
+<rect x="1079" y="290" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1124" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">22.0</text>
+<rect x="1169" y="290" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1214" y="328" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">72.0</text>
+<rect x="1259" y="290" width="355" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1269" y="314" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="352" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="79" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">3</text>
+<rect x="114" y="352" width="105" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="166.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="352" width="115" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="276.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="352" width="225" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="446.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-09 14:18 +02:00</text>
+<rect x="559" y="352" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="594" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">0</text>
+<rect x="629" y="352" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="664" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="352" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="746.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">23.9</text>
+<rect x="794" y="352" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="841.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">74.8</text>
+<rect x="889" y="352" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="936.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">23.9</text>
+<rect x="984" y="352" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1031.5" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">74.8</text>
+<rect x="1079" y="352" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1124" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">24.0</text>
+<rect x="1169" y="352" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1214" y="390" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">73.0</text>
+<rect x="1259" y="352" width="355" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1269" y="376" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">Z mechanical limit around 73</text>
+<text x="1269" y="398" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">mm</text>
+<rect x="44" y="414" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="79" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4</text>
+<rect x="114" y="414" width="105" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="166.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="414" width="115" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="276.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="414" width="225" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="446.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-09 15:46 +02:00</text>
+<rect x="559" y="414" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="594" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">0</text>
+<rect x="629" y="414" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="664" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="414" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="746.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">19.9</text>
+<rect x="794" y="414" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="841.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">67.2</text>
+<rect x="889" y="414" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="936.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">19.9</text>
+<rect x="984" y="414" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1031.5" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">67.2</text>
+<rect x="1079" y="414" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1124" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">20.0</text>
+<rect x="1169" y="414" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1214" y="452" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">67.0</text>
+<rect x="1259" y="414" width="355" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1269" y="438" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="476" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="79" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">5</text>
+<rect x="114" y="476" width="105" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="166.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">51.51</text>
+<rect x="219" y="476" width="115" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="276.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-0.13</text>
+<rect x="334" y="476" width="225" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="446.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 08:04 +01:00</text>
+<rect x="559" y="476" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="594" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15</text>
+<rect x="629" y="476" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="664" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="476" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="746.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4.2</text>
+<rect x="794" y="476" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="841.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">29.0</text>
+<rect x="889" y="476" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="936.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4.2</text>
+<rect x="984" y="476" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1031.5" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">29.1</text>
+<rect x="1079" y="476" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1124" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4.0</text>
+<rect x="1169" y="476" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1214" y="514" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">29.0</text>
+<rect x="1259" y="476" width="355" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1269" y="500" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="538" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="79" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">6</text>
+<rect x="114" y="538" width="105" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="166.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">51.51</text>
+<rect x="219" y="538" width="115" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="276.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-0.13</text>
+<rect x="334" y="538" width="225" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="446.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 09:46 +01:00</text>
+<rect x="559" y="538" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="594" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15</text>
+<rect x="629" y="538" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="664" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="538" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="746.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4.9</text>
+<rect x="794" y="538" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="841.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">31.6</text>
+<rect x="889" y="538" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="936.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">4.9</text>
+<rect x="984" y="538" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1031.5" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">31.6</text>
+<rect x="1079" y="538" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1124" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">5.0</text>
+<rect x="1169" y="538" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1214" y="576" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">32.0</text>
+<rect x="1259" y="538" width="355" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1269" y="562" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="600" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="79" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">7</text>
+<rect x="114" y="600" width="105" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="166.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">51.51</text>
+<rect x="219" y="600" width="115" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="276.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-0.13</text>
+<rect x="334" y="600" width="225" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="446.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 09:54 +01:00</text>
+<rect x="559" y="600" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="594" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">15</text>
+<rect x="629" y="600" width="70" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="664" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">180</text>
+<rect x="699" y="600" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="746.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">39.2</text>
+<rect x="794" y="600" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="841.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">21.9</text>
+<rect x="889" y="600" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="936.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">39.2</text>
+<rect x="984" y="600" width="95" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1031.5" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">21.9</text>
+<rect x="1079" y="600" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1124" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">39.0</text>
+<rect x="1169" y="600" width="90" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1214" y="638" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">22.0</text>
+<rect x="1259" y="600" width="355" height="62" fill="#FFFFFF" stroke="#CED8E3"/>
+<text x="1269" y="624" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="662" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="79" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">8</text>
+<rect x="114" y="662" width="105" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="166.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="662" width="115" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="276.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="662" width="225" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="446.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 12:46 +02:00</text>
+<rect x="559" y="662" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="594" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">90</text>
+<rect x="629" y="662" width="70" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="664" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">160</text>
+<rect x="699" y="662" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="746.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">33.2</text>
+<rect x="794" y="662" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="841.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">16.2</text>
+<rect x="889" y="662" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="936.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">33.2</text>
+<rect x="984" y="662" width="95" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1031.5" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">16.2</text>
+<rect x="1079" y="662" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1124" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">33.0</text>
+<rect x="1169" y="662" width="90" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1214" y="700" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">16.0</text>
+<rect x="1259" y="662" width="355" height="62" fill="#F5F8FB" stroke="#CED8E3"/>
+<text x="1269" y="686" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">O</text>
+<rect x="44" y="724" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="79" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">9</text>
+<rect x="114" y="724" width="105" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="166.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="724" width="115" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="276.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="724" width="225" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="446.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 14:12 +02:00</text>
+<rect x="559" y="724" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="594" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">90</text>
+<rect x="629" y="724" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="664" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">160</text>
+<rect x="699" y="724" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="746.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">46.2</text>
+<rect x="794" y="724" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="841.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">26.5</text>
+<rect x="889" y="724" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="936.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">46.2</text>
+<rect x="984" y="724" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1031.5" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">26.4</text>
+<rect x="1079" y="724" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1124" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">46.0</text>
+<rect x="1169" y="724" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1214" y="762" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">26.0</text>
+<rect x="1259" y="724" width="355" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1269" y="748" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">Lower-left belt/slider lost</text>
+<text x="1269" y="770" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">steps</text>
+<rect x="44" y="786" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="79" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">10</text>
+<rect x="114" y="786" width="105" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="166.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">40.43</text>
+<rect x="219" y="786" width="115" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="276.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-3.73</text>
+<rect x="334" y="786" width="225" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="446.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="16" fill="#142033">2026-07-10 16:05 +02:00</text>
+<rect x="559" y="786" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="594" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">90</text>
+<rect x="629" y="786" width="70" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="664" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">160</text>
+<rect x="699" y="786" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="746.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="794" y="786" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="841.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="889" y="786" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="936.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="984" y="786" width="95" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1031.5" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="1079" y="786" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1124" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="1169" y="786" width="90" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1214" y="824" text-anchor="middle" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#142033">-</text>
+<rect x="1259" y="786" width="355" height="62" fill="#FFF4E6" stroke="#CED8E3"/>
+<text x="1269" y="810" font-family="Aptos, Arial, sans-serif" font-size="17" fill="#142033">N</text>
+<text x="44" y="890" font-family="Aptos, Arial, sans-serif" font-size="18" fill="#58657A">Note: case 10 has no matching result row in the results CSV.</text>
+</svg>

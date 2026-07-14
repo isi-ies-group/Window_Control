@@ -3,6 +3,7 @@
 #include "main.h"
 #include <string>
 #include <stdio.h>
+#include <string.h>
 
 extern RTC_TimeTypeDef sTime;
 extern RTC_DateTypeDef sDate;
@@ -19,6 +20,8 @@ void autoModeInputs(float pan, float tilt, bool tilt_correction, float longitude
     g_AOIInputs.pan = pan;
     g_AOIInputs.tilt = tilt;
     g_AOIInputs.tilt_correction = tilt_correction;
-    g_country = country;
+    /* g_country is a fixed C buffer in the migrated application layer. */
+    strncpy(g_country, country.c_str(), sizeof(g_country) - 1U);
+    g_country[sizeof(g_country) - 1U] = '\0';
 
 }

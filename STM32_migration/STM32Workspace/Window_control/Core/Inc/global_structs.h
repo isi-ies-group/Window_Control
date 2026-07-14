@@ -1,54 +1,58 @@
-#ifndef global_structs_h
-#define global_structs_h
+#ifndef GLOBAL_STRUCTS_H
+#define GLOBAL_STRUCTS_H
+
+#include <stdbool.h>
+#include <time.h>
 
 #include "global_def.h"
-#include <string.h>
-#include <string>
-#include <time.h>
-typedef struct {
-    int year;
-    int month;
-    int day;
-    int hour;
-    int minute;
-    int second;
-    double longitude;
-    double latitude;
+
+typedef struct
+{
+  int year;
+  int month;
+  int day;
+  int hour;
+  int minute;
+  int second;
+  double longitude;
+  double latitude;
 } SPAInputs;
 
-typedef struct {
-    double pan;
-    double azimuth;
-    double elevation;
-    double tilt;
-    bool tilt_correction;
+typedef struct
+{
+  double pan;
+  double azimuth;
+  double elevation;
+  double tilt;
+  bool tilt_correction;
 } AOIInputs;
 
-typedef struct {
-    float AOIt;
-    float AOIl;
-    const float (*matrix_X)[MATRIX_SIZE];
-    const float (*matrix_Z)[MATRIX_SIZE];
+typedef struct
+{
+  float AOIt;
+  float AOIl;
+  const float (*matrix_X)[MATRIX_SIZE];
+  const float (*matrix_Z)[MATRIX_SIZE];
 } InterpolInputs;
-
-
-
 
 extern SPAInputs g_SPAInputs;
 extern AOIInputs g_AOIInputs;
 extern InterpolInputs g_InterpolInputs;
 
-extern int auto_counter;
-extern std::string g_country;
+extern char g_country[32];
+extern bool auto_on;
+extern bool manual_time;
+extern volatile int auto_counter;
 
 extern float g_x_val;
 extern float g_z_val;
-extern bool auto_on;
-extern bool manual_time;
-
+extern float g_x_target;
+extern float g_z_target;
+extern float g_interp_x_val;
+extern float g_interp_z_val;
+extern float g_query_aoit;
+extern float g_query_aoil;
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;
-//extern bool g_auto_mode_on;
-//extern bool use_simulated_time;
 
-#endif
+#endif /* GLOBAL_STRUCTS_H */

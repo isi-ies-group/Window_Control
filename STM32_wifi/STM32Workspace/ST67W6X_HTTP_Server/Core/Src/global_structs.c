@@ -19,3 +19,7 @@ float g_query_aoit = 0.0f;
 float g_query_aoil = 0.0f;
 time_t g_sunrise_epoch = 0;
 time_t g_sunset_epoch = 0;
+float g_movement_hysteresis_gain = MOVEMENT_HYSTERESIS_DEFAULT_GAIN;
+float g_movement_hysteresis_offset_mm = MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM;
+float g_vertical_movement_hysteresis_gain = VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_GAIN;
+float g_vertical_movement_hysteresis_offset_mm = VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM;

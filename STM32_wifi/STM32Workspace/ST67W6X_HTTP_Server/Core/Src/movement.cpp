@@ -6,6 +6,7 @@
 #include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "global_structs.h"
 
 #ifndef YLI_Pin
 #define YLI_Pin YLY_Pin
@@ -67,8 +68,6 @@ static const long DIR_CHANGE_DELAY_US = 10000;
 static const int BACKOFF_STEPS = 30;
 static const long VERTICAL_STEPS_PER_MM = 25;
 static const long HORIZONTAL_STEPS_PER_MM = 20;
-static const long HORIZONTAL_HYSTERESIS_REFERENCE_MM = 75;
-static const long HORIZONTAL_HYSTERESIS_EXTRA_MM = 4;
 static const long FIRST_TOUCH_EXTRA_MM = 30;
 static const long BASE_MAX_X_HOMING_STEPS = 1500;
 static const long BASE_MAX_Z_HOMING_STEPS = 1200;
@@ -83,7 +82,7 @@ static const long MAX_HORIZONTAL_SECOND_TOUCH_STEPS =
   BACKOFF_STEPS + (HORIZONTAL_STEPS_PER_MM * SECOND_TOUCH_EXTRA_MM);
 static const long Speed = 600;
 
-/* Software position counters; they are only reliable after a valid homing cycle. */
+/* Compensated motor-step counters; logical position stays in g_x_val/g_z_val. */
 static long CurrentStep1 = 0;
 static long CurrentStep2 = 0;
 
@@ -143,17 +142,69 @@ static long abs_long(long value)
   return (value < 0) ? -value : value;
 }
 
-static long horizontal_hysteresis_extra_steps(long logical_steps)
+static long movement_compensated_target_steps(float logical_mm,
+                                              long steps_per_mm,
+                                              float gain,
+                                              float offset_mm,
+                                              float default_gain,
+                                              float default_offset_mm)
 {
-  const long reference_steps = HORIZONTAL_STEPS_PER_MM * HORIZONTAL_HYSTERESIS_REFERENCE_MM;
-  const long extra_steps_at_reference = HORIZONTAL_STEPS_PER_MM * HORIZONTAL_HYSTERESIS_EXTRA_MM;
+  float compensated_mm;
+  float compensated_steps;
 
-  if ((logical_steps <= 0) || (reference_steps <= 0))
+  if (steps_per_mm <= 0)
   {
     return 0;
   }
 
-  return ((logical_steps * extra_steps_at_reference) + (reference_steps / 2L)) / reference_steps;
+  if (logical_mm != logical_mm)
+  {
+    logical_mm = 0.0f;
+  }
+
+  if (gain != gain)
+  {
+    gain = default_gain;
+  }
+
+  if (offset_mm != offset_mm)
+  {
+    offset_mm = default_offset_mm;
+  }
+
+  /*
+   * What: convert a logical target into the compensated motor coordinate.
+   * How: applies compensation once to the absolute target: motor_mm = target*(1+gain) - offset.
+   * Why: offset/gain must not be added to every small movement or automatic mode will accumulate error.
+   */
+  compensated_mm = (logical_mm * (1.0f + gain)) - offset_mm;
+  if (compensated_mm <= 0.0f)
+  {
+    return 0;
+  }
+
+  compensated_steps = compensated_mm * (float)steps_per_mm;
+  return (long)(compensated_steps + 0.5f);
+}
+
+static long horizontal_compensated_target_steps(float logical_mm)
+{
+  return movement_compensated_target_steps(logical_mm,
+                                           HORIZONTAL_STEPS_PER_MM,
+                                           g_movement_hysteresis_gain,
+                                           g_movement_hysteresis_offset_mm,
+                                           MOVEMENT_HYSTERESIS_DEFAULT_GAIN,
+                                           MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM);
+}
+
+static long vertical_compensated_target_steps(float logical_mm)
+{
+  return movement_compensated_target_steps(logical_mm,
+                                           VERTICAL_STEPS_PER_MM,
+                                           g_vertical_movement_hysteresis_gain,
+                                           g_vertical_movement_hysteresis_offset_mm,
+                                           VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_GAIN,
+                                           VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM);
 }
 
 float movementClampHorizontalTarget(float zmm)
@@ -419,8 +470,8 @@ void move(float xmm, float zmm)
 {
   movementLimitSwitchRefreshAll();
 
-  /* Manual X/Z inputs are treated as absolute position targets, not relative moves. */
-  long targetStepsX = (long)(xmm * (float)VERTICAL_STEPS_PER_MM);
+  /* Manual X/Z inputs are logical absolute targets; motor counters use compensated targets. */
+  long targetStepsX = vertical_compensated_target_steps(xmm);
   long diffX = targetStepsX - CurrentStep1;
 
   if (diffX != 0)
@@ -498,13 +549,12 @@ void move(float xmm, float zmm)
 
   /* The horizontal axis uses the same absolute-target model with its own counter. */
   zmm = movementClampHorizontalTarget(zmm);
-  long targetStepsZ = (long)(zmm * (float)HORIZONTAL_STEPS_PER_MM);
+  long targetStepsZ = horizontal_compensated_target_steps(zmm);
   long diffZ = targetStepsZ - CurrentStep2;
 
   if (diffZ != 0)
   {
     long steps = abs_long(diffZ);
-    long drive_steps = steps + horizontal_hysteresis_extra_steps(steps);
     long driven_steps = 0;
     bool moving_positive = (diffZ > 0);
     bool released_once = !horizontal_limit_active();
@@ -520,7 +570,7 @@ void move(float xmm, float zmm)
       set_horizontal_dir_negative();
     }
 
-    for (long i = 0; i < drive_steps; i++)
+    for (long i = 0; i < steps; i++)
     {
       if (limit_should_stop_axis(moving_positive, released_once, horizontal_limit_active()))
       {
@@ -559,14 +609,13 @@ void move(float xmm, float zmm)
 
     write_pin(STEP5_Port, STEP5_Pin, GPIO_PIN_RESET);
     write_pin(STEP6_Port, STEP6_Pin, GPIO_PIN_RESET);
-    if (driven_steps == drive_steps)
+    if (driven_steps == steps)
     {
       CurrentStep2 = targetStepsZ;
     }
     else
     {
-      long logical_steps_done = (driven_steps < steps) ? driven_steps : steps;
-      CurrentStep2 += moving_positive ? logical_steps_done : -logical_steps_done;
+      CurrentStep2 += moving_positive ? driven_steps : -driven_steps;
     }
     enable_horizontal(false);
   }

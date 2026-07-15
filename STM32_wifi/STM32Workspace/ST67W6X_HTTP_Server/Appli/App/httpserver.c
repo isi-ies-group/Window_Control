@@ -129,6 +129,10 @@ typedef struct
 /* USER CODE BEGIN PD */
 /** Maximum simultaneous HTTP client tasks. Keep below the ST67 network connection limit. */
 #define HTTP_MAX_ACTIVE_CLIENTS        3U
+#define HTTP_MOVEMENT_GAIN_MIN         (-1.0)
+#define HTTP_MOVEMENT_GAIN_MAX         1.0
+#define HTTP_MOVEMENT_OFFSET_MIN_MM    (-50.0)
+#define HTTP_MOVEMENT_OFFSET_MAX_MM    50.0
 
 /* USER CODE END PD */
 
@@ -228,7 +232,12 @@ static int32_t http_hex_to_nibble(char c);
 static void http_url_decode(char *dst, size_t dst_size, const char *src, size_t src_len);
 static bool http_get_query_param(const char *request, const char *name,
                                  char *value, size_t value_size);
+static bool http_get_query_double(const char *request, const char *name, double *value);
 static bool http_apply_config_submit(const char *request);
+static bool http_apply_movement_gain_submit(const char *request);
+static bool http_apply_movement_offset_submit(const char *request);
+static bool http_apply_vertical_movement_gain_submit(const char *request);
+static bool http_apply_vertical_movement_offset_submit(const char *request);
 static bool http_apply_manual_datetime(const char *request);
 static bool http_apply_eph_submit(const char *request);
 static bool http_apply_manual_goto(const char *request);
@@ -512,6 +521,28 @@ static bool http_get_query_param(const char *request, const char *name,
   return false;
 }
 
+static bool http_get_query_double(const char *request, const char *name, double *value)
+{
+  char text[64];
+  char *endptr = NULL;
+  double parsed;
+
+  if ((value == NULL) || (!http_get_query_param(request, name, text, sizeof(text))))
+  {
+    return false;
+  }
+
+  parsed = strtod(text, &endptr);
+  if ((endptr == text) || (endptr == NULL) || (*endptr != '\0') ||
+      (parsed != parsed))
+  {
+    return false;
+  }
+
+  *value = parsed;
+  return true;
+}
+
 static bool http_apply_config_submit(const char *request)
 {
   /*
@@ -586,6 +617,86 @@ static bool http_apply_config_submit(const char *request)
   (void)saveData();
 
   return true;
+}
+
+static bool http_apply_movement_gain_submit(const char *request)
+{
+  /*
+   * What: apply the horizontal hysteresis gain submitted from the web page.
+   * How: validates a finite numeric value, publishes it to the movement global and persists flash.
+   * Why: mechanical calibration must be tunable without rebuilding firmware.
+   */
+  double gain = 0.0;
+
+  if ((!http_get_query_double(request, "gain", &gain)) ||
+      (gain < HTTP_MOVEMENT_GAIN_MIN) ||
+      (gain > HTTP_MOVEMENT_GAIN_MAX))
+  {
+    return false;
+  }
+
+  g_movement_hysteresis_gain = (float)gain;
+  return saveMovementConfig();
+}
+
+static bool http_apply_movement_offset_submit(const char *request)
+{
+  /*
+   * What: apply the horizontal hysteresis offset submitted from the web page.
+   * How: validates a finite millimetre value, publishes it to the movement global and persists flash.
+   * Why: linear calibration may need a small intercept adjustment after regression.
+   */
+  double offset_mm = 0.0;
+
+  if ((!http_get_query_double(request, "offset", &offset_mm)) ||
+      (offset_mm < HTTP_MOVEMENT_OFFSET_MIN_MM) ||
+      (offset_mm > HTTP_MOVEMENT_OFFSET_MAX_MM))
+  {
+    return false;
+  }
+
+  g_movement_hysteresis_offset_mm = (float)offset_mm;
+  return saveMovementConfig();
+}
+
+static bool http_apply_vertical_movement_gain_submit(const char *request)
+{
+  /*
+   * What: apply the vertical hysteresis gain submitted from the web page.
+   * How: validates a finite numeric value, publishes it to the movement global and persists flash.
+   * Why: vertical mechanical calibration must be tunable without rebuilding firmware.
+   */
+  double gain = 0.0;
+
+  if ((!http_get_query_double(request, "gain", &gain)) ||
+      (gain < HTTP_MOVEMENT_GAIN_MIN) ||
+      (gain > HTTP_MOVEMENT_GAIN_MAX))
+  {
+    return false;
+  }
+
+  g_vertical_movement_hysteresis_gain = (float)gain;
+  return saveMovementConfig();
+}
+
+static bool http_apply_vertical_movement_offset_submit(const char *request)
+{
+  /*
+   * What: apply the vertical hysteresis offset submitted from the web page.
+   * How: validates a finite millimetre value, publishes it to the movement global and persists flash.
+   * Why: vertical linear calibration may need a small intercept adjustment after testing.
+   */
+  double offset_mm = 0.0;
+
+  if ((!http_get_query_double(request, "offset", &offset_mm)) ||
+      (offset_mm < HTTP_MOVEMENT_OFFSET_MIN_MM) ||
+      (offset_mm > HTTP_MOVEMENT_OFFSET_MAX_MM))
+  {
+    return false;
+  }
+
+  g_vertical_movement_hysteresis_offset_mm = (float)offset_mm;
+  return saveMovementConfig();
 }
 
 static bool http_apply_manual_datetime(const char *request)
@@ -1097,6 +1208,8 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"country\":\"%s\","
                    "\"latitude\":%.2f,\"longitude\":%.2f,\"pan\":%.2f,\"tilt\":%.2f,"
                    "\"tilt_correction\":%s,"
+                   "\"movement_gain\":%.6f,\"movement_offset\":%.6f,"
+                   "\"vertical_movement_gain\":%.6f,\"vertical_movement_offset\":%.6f,"
                    "\"azimuth\":%.6f,\"elevation\":%.6f,"
                    "\"aoil\":%.6f,\"aoit\":%.6f,"
                    "\"query_aoil\":%.6f,\"query_aoit\":%.6f,"
@@ -1135,6 +1248,10 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    g_AOIInputs.pan,
                    g_AOIInputs.tilt,
                    g_AOIInputs.tilt_correction ? "true" : "false",
+                   (double)g_movement_hysteresis_gain,
+                   (double)g_movement_hysteresis_offset_mm,
+                   (double)g_vertical_movement_hysteresis_gain,
+                   (double)g_vertical_movement_hysteresis_offset_mm,
                    g_AOIInputs.azimuth,
                    g_AOIInputs.elevation,
                    (double)g_InterpolInputs.AOIl,
@@ -1216,6 +1333,130 @@ static void http_process_response(int32_t client, char *recv_buffer)
       http_send_html_message(client,
                              "Wrong parameters",
                              "Fill all configuration fields. Latitude must be between -90 and 90, and longitude must be between -180 and 180.",
+                             true);
+      return;
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /movement_gain_submit", strlen("GET /movement_gain_submit")) == 0)
+  {
+    bool gain_ok = http_apply_movement_gain_submit(recv_buffer);
+
+    if (gain_ok)
+    {
+      LogInfo("[MOVEMENT CONFIG] Horizontal hysteresis gain=%.6f\n",
+              (double)g_movement_hysteresis_gain);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      http_send_html_message(client,
+                             "Wrong movement gain",
+                             "Fill a numeric movement gain between -1 and 1.",
+                             true);
+      return;
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /movement_offset_submit", strlen("GET /movement_offset_submit")) == 0)
+  {
+    bool offset_ok = http_apply_movement_offset_submit(recv_buffer);
+
+    if (offset_ok)
+    {
+      LogInfo("[MOVEMENT CONFIG] Horizontal hysteresis offset=%.3f mm\n",
+              (double)g_movement_hysteresis_offset_mm);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      http_send_html_message(client,
+                             "Wrong movement offset",
+                             "Fill a numeric movement offset between -50 mm and 50 mm.",
+                             true);
+      return;
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /vertical_movement_gain_submit", strlen("GET /vertical_movement_gain_submit")) == 0)
+  {
+    bool gain_ok = http_apply_vertical_movement_gain_submit(recv_buffer);
+
+    if (gain_ok)
+    {
+      LogInfo("[MOVEMENT CONFIG] Vertical hysteresis gain=%.6f\n",
+              (double)g_vertical_movement_hysteresis_gain);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      http_send_html_message(client,
+                             "Wrong vertical movement gain",
+                             "Fill a numeric vertical movement gain between -1 and 1.",
+                             true);
+      return;
+    }
+
+    (void)http_server_write(client, response_template, resp_len);
+    return;
+  }
+
+  if (strncmp(recv_buffer, "GET /vertical_movement_offset_submit", strlen("GET /vertical_movement_offset_submit")) == 0)
+  {
+    bool offset_ok = http_apply_vertical_movement_offset_submit(recv_buffer);
+
+    if (offset_ok)
+    {
+      LogInfo("[MOVEMENT CONFIG] Vertical hysteresis offset=%.3f mm\n",
+              (double)g_vertical_movement_hysteresis_offset_mm);
+
+      resp_len = snprintf(response_template, sizeof(response_template),
+                          "HTTP/1.1 303 See Other\r\n"
+                          "Server: U5\r\n"
+                          "Access-Control-Allow-Origin: * \r\n"
+                          "Cache-Control: no-cache\r\n"
+                          "Connection: close\r\n"
+                          "Location: /\r\n"
+                          "Content-Length: 0\r\n\r\n");
+    }
+    else
+    {
+      http_send_html_message(client,
+                             "Wrong vertical movement offset",
+                             "Fill a numeric vertical movement offset between -50 mm and 50 mm.",
                              true);
       return;
     }

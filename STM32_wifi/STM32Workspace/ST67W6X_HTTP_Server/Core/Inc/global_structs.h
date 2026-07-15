@@ -6,6 +6,11 @@
 
 #include "global_def.h"
 
+#define MOVEMENT_HYSTERESIS_DEFAULT_GAIN       (4.0f / 75.0f)
+#define MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM  0.0f
+#define VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_GAIN       0.0f
+#define VERTICAL_MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM  0.0f
+
 typedef struct
 {
   int year;
@@ -54,5 +59,9 @@ extern float g_query_aoit;
 extern float g_query_aoil;
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;
+extern float g_movement_hysteresis_gain;
+extern float g_movement_hysteresis_offset_mm;
+extern float g_vertical_movement_hysteresis_gain;
+extern float g_vertical_movement_hysteresis_offset_mm;
 
 #endif /* GLOBAL_STRUCTS_H */

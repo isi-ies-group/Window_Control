@@ -189,6 +189,27 @@
 			</form>
 		</div>
 
+		<!-- SECTION 2: Movement Calibration -->
+		<h2>Movement Calibration</h2>
+		<div class="config-panel">
+			<form action="/movement_gain_submit" method="get">
+				Horizontal gain: <input class="movement-config-control" type="text" name="gain" placeholder="0.053333"><br>
+				<input class="movement-config-control" type="submit" value="Save Gain">
+			</form>
+			<form action="/movement_offset_submit" method="get">
+				Horizontal offset (mm): <input class="movement-config-control" type="text" name="offset" placeholder="0.000"><br>
+				<input class="movement-config-control" type="submit" value="Save Offset">
+			</form>
+			<form action="/vertical_movement_gain_submit" method="get">
+				Vertical gain: <input class="movement-config-control" type="text" name="gain" placeholder="0.000000"><br>
+				<input class="movement-config-control" type="submit" value="Save Vertical Gain">
+			</form>
+			<form action="/vertical_movement_offset_submit" method="get">
+				Vertical offset (mm): <input class="movement-config-control" type="text" name="offset" placeholder="0.000"><br>
+				<input class="movement-config-control" type="submit" value="Save Vertical Offset">
+			</form>
+		</div>
+
 		<!-- SECTION 2: Manual Date & Time -->
 		<h2>Manual Date &amp; Time</h2>
 		<div class="config-panel">
@@ -251,6 +272,10 @@
                 <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="pan">---</span></div>
                 <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="tilt">---</span></div>
                 <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="tilt_correction">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal gain:</span> <span class="status-value" id="movement_gain">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal offset:</span> <span class="status-value" id="movement_offset">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical gain:</span> <span class="status-value" id="vertical_movement_gain">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical offset:</span> <span class="status-value" id="vertical_movement_offset">---</span></div>
                 <div class="status-item"><span class="status-label">Azimuth:</span> <span class="status-value" id="azimuth">---</span></div>
                 <div class="status-item"><span class="status-label">Elevation:</span> <span class="status-value" id="elevation">---</span></div>
                 <div class="status-item"><span class="status-label">AOIl:</span> <span class="status-value" id="aoil">---</span></div>
@@ -334,6 +359,7 @@
         const isKnownState = isStandby || isAuto || isEph || isManual;
 
         setDisabled(".config-control", !isStandby);
+        setDisabled(".movement-config-control", !isStandby);
         setDisabled(".time-control", !isStandby);
         setDisabled(".eph-control", !isEph);
         setDisabled(".manual-control", !isManual);
@@ -394,6 +420,10 @@
                     setText("pan", formatNumber(resp.pan, 2));
                     setText("tilt", formatNumber(resp.tilt, 2));
                     setText("tilt_correction", resp.tilt_correction ? "true" : "false");
+                    setText("movement_gain", formatNumber(resp.movement_gain, 6));
+                    setText("movement_offset", formatNumber(resp.movement_offset, 3));
+                    setText("vertical_movement_gain", formatNumber(resp.vertical_movement_gain, 6));
+                    setText("vertical_movement_offset", formatNumber(resp.vertical_movement_offset, 3));
                     setText("azimuth", formatNumber(resp.azimuth, 6));
                     setText("elevation", formatNumber(resp.elevation, 6));
                     setText("aoil", formatNumber(resp.aoil, 6));

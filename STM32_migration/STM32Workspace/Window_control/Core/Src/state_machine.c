@@ -12,6 +12,7 @@
 #include "manual_mode.h"
 #include "movement_task.h"
 #include "storage.h"
+#include "test.h"
 
 #define FSM_QUEUE_LENGTH      8U
 #define FSM_TASK_STACK_SIZE   4096U
@@ -40,6 +41,7 @@ static StartupPhase startupPhase = STARTUP_PHASE_HOME;
 static bool startupHomeDelayStarted = false;
 static bool startupHomeRequested = false;
 static bool startupGpsRequested = false;
+static bool startupTestParametersApplied = false;
 static TickType_t startupHomeDelayStartTick = 0U;
 static TickType_t startupGpsStartTick = 0U;
 
@@ -68,6 +70,7 @@ void initFSM(void)
   startupHomeDelayStarted = false;
   startupHomeRequested = false;
   startupGpsRequested = false;
+  startupTestParametersApplied = false;
   startupHomeDelayStartTick = 0U;
   startupGpsStartTick = 0U;
 
@@ -390,6 +393,12 @@ static bool fsmRunStartup(TickType_t now_tick)
   if (thisSt != STARTUP)
   {
     return false;
+  }
+
+  if (!startupTestParametersApplied)
+  {
+    Test_ApplyStartupParameters();
+    startupTestParametersApplied = true;
   }
 
   switch (startupPhase)

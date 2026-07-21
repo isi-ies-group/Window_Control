@@ -2,6 +2,7 @@
 #define GLOBAL_STRUCTS_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
 
 #include "global_def.h"
@@ -43,6 +44,10 @@ extern char g_country[32];
 extern bool auto_on;
 extern bool manual_time;
 extern volatile int auto_counter;
+extern volatile uint32_t g_user_button_irq_count;
+extern volatile uint32_t g_user_button_last_tick_ms;
+extern volatile uint32_t g_user_button_event_posted;
+extern volatile uint32_t g_user_button_level;
 
 extern float g_x_val;
 extern float g_z_val;

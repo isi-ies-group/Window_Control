@@ -8,6 +8,10 @@ char g_country[32] = "Spain";
 bool auto_on = false;
 bool manual_time = false;
 volatile int auto_counter = 0;
+volatile uint32_t g_user_button_irq_count = 0U;
+volatile uint32_t g_user_button_last_tick_ms = 0U;
+volatile uint32_t g_user_button_event_posted = 0U;
+volatile uint32_t g_user_button_level = 0U;
 
 float g_x_val = 0.0f;
 float g_z_val = 0.0f;

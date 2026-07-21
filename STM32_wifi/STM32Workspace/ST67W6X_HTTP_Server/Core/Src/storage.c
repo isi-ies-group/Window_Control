@@ -10,7 +10,8 @@
 #include "stm32u5xx_hal_flash_ex.h"
 
 #define STORAGE_MAGIC              0x57435631UL /* "WCV1": Window Control Variables v1. */
-#define STORAGE_VERSION            1UL
+#define STORAGE_VERSION            2UL
+#define STORAGE_LEGACY_VERSION     1UL
 #define STORAGE_FLASH_ADDRESS      (FLASH_BASE + FLASH_SIZE - FLASH_PAGE_SIZE)
 #define STORAGE_FLASH_BANK         FLASH_BANK_2
 #define STORAGE_FLASH_PAGE         (FLASH_PAGE_NB - 1U)
@@ -45,6 +46,38 @@ typedef struct
   int32_t manual_second;
 
   char country[STORAGE_COUNTRY_MAX];
+} StorageRecordV1_t;
+
+typedef struct
+{
+  uint32_t magic;
+  uint32_t version;
+  uint32_t size;
+  uint32_t crc;
+
+  double latitude;
+  double longitude;
+  double pan;
+  double tilt;
+
+  uint32_t tilt_correction;
+  uint32_t auto_mode_on;
+  uint32_t manual_time_on;
+  uint32_t fsm_state;
+
+  float x_pos;
+  float z_pos;
+  float movement_hysteresis_gain;
+  float movement_hysteresis_offset_mm;
+
+  int32_t manual_year;
+  int32_t manual_month;
+  int32_t manual_day;
+  int32_t manual_hour;
+  int32_t manual_minute;
+  int32_t manual_second;
+
+  char country[STORAGE_COUNTRY_MAX];
 } StorageRecord_t;
 
 static StorageRecord_t storage_cache;
@@ -57,15 +90,17 @@ static volatile bool storage_save_in_progress = false;
  * How: walks every byte except the crc field itself with a small FNV-style hash.
  * Why: lets boot ignore erased/corrupted flash instead of loading unsafe globals.
  */
-static uint32_t Storage_CalculateCrc(const StorageRecord_t *record)
+static uint32_t Storage_CalculateCrcBytes(const void *record,
+                                          size_t record_size,
+                                          size_t crc_offset,
+                                          size_t crc_size)
 {
   uint32_t crc = 2166136261UL;
   const uint8_t *bytes = (const uint8_t *)record;
 
-  for (size_t i = 0U; i < sizeof(StorageRecord_t); i++)
+  for (size_t i = 0U; i < record_size; i++)
   {
-    if ((i >= offsetof(StorageRecord_t, crc)) &&
-        (i < (offsetof(StorageRecord_t, crc) + sizeof(record->crc))))
+    if ((i >= crc_offset) && (i < (crc_offset + crc_size)))
     {
       continue;
     }
@@ -75,6 +110,22 @@ static uint32_t Storage_CalculateCrc(const StorageRecord_t *record)
   }
 
   return crc;
+}
+
+static uint32_t Storage_CalculateCrcV1(const StorageRecordV1_t *record)
+{
+  return Storage_CalculateCrcBytes(record,
+                                   sizeof(StorageRecordV1_t),
+                                   offsetof(StorageRecordV1_t, crc),
+                                   sizeof(record->crc));
+}
+
+static uint32_t Storage_CalculateCrc(const StorageRecord_t *record)
+{
+  return Storage_CalculateCrcBytes(record,
+                                   sizeof(StorageRecord_t),
+                                   offsetof(StorageRecord_t, crc),
+                                   sizeof(record->crc));
 }
 
 /*
@@ -99,6 +150,8 @@ static void Storage_SetDefaults(StorageRecord_t *record)
   record->fsm_state = (uint32_t)STDBY;
   record->x_pos = 0.0f;
   record->z_pos = 0.0f;
+  record->movement_hysteresis_gain = MOVEMENT_HYSTERESIS_DEFAULT_GAIN;
+  record->movement_hysteresis_offset_mm = MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM;
   record->manual_year = 2026;
   record->manual_month = 1;
   record->manual_day = 1;
@@ -106,6 +159,68 @@ static void Storage_SetDefaults(StorageRecord_t *record)
   record->manual_minute = 0;
   record->manual_second = 0;
   (void)strncpy(record->country, "Spain", sizeof(record->country) - 1U);
+  record->crc = Storage_CalculateCrc(record);
+}
+
+static bool Storage_IsMovementConfigValid(float gain, float offset_mm)
+{
+  return (gain == gain) &&
+         (offset_mm == offset_mm) &&
+         (gain >= -1.0f) &&
+         (gain <= 1.0f) &&
+         (offset_mm >= -50.0f) &&
+         (offset_mm <= 50.0f);
+}
+
+static bool Storage_IsLegacyRecordValid(const StorageRecordV1_t *record)
+{
+  if ((record->magic != STORAGE_MAGIC) ||
+      (record->version != STORAGE_LEGACY_VERSION) ||
+      (record->size != sizeof(StorageRecordV1_t)) ||
+      (record->fsm_state > (uint32_t)EPH_INPUT) ||
+      (record->manual_year < 2000) ||
+      (record->manual_year > 3000) ||
+      (record->manual_month < 1) ||
+      (record->manual_month > 12) ||
+      (record->manual_day < 1) ||
+      (record->manual_day > 31) ||
+      (record->manual_hour < 0) ||
+      (record->manual_hour > 23) ||
+      (record->manual_minute < 0) ||
+      (record->manual_minute > 59) ||
+      (record->manual_second < 0) ||
+      (record->manual_second > 59) ||
+      (record->country[0] == '\0'))
+  {
+    return false;
+  }
+
+  return (record->crc == Storage_CalculateCrcV1(record));
+}
+
+static void Storage_MigrateLegacyRecord(const StorageRecordV1_t *legacy,
+                                        StorageRecord_t *record)
+{
+  Storage_SetDefaults(record);
+
+  record->latitude = legacy->latitude;
+  record->longitude = legacy->longitude;
+  record->pan = legacy->pan;
+  record->tilt = legacy->tilt;
+  record->tilt_correction = legacy->tilt_correction;
+  record->auto_mode_on = legacy->auto_mode_on;
+  record->manual_time_on = legacy->manual_time_on;
+  record->fsm_state = legacy->fsm_state;
+  record->x_pos = legacy->x_pos;
+  record->z_pos = legacy->z_pos;
+  record->manual_year = legacy->manual_year;
+  record->manual_month = legacy->manual_month;
+  record->manual_day = legacy->manual_day;
+  record->manual_hour = legacy->manual_hour;
+  record->manual_minute = legacy->manual_minute;
+  record->manual_second = legacy->manual_second;
+  (void)strncpy(record->country, legacy->country, sizeof(record->country) - 1U);
+  record->country[sizeof(record->country) - 1U] = '\0';
   record->crc = Storage_CalculateCrc(record);
 }
 
@@ -132,6 +247,8 @@ static bool Storage_IsRecordValid(const StorageRecord_t *record)
       (record->manual_minute > 59) ||
       (record->manual_second < 0) ||
       (record->manual_second > 59) ||
+      (!Storage_IsMovementConfigValid(record->movement_hysteresis_gain,
+                                      record->movement_hysteresis_offset_mm)) ||
       (record->country[0] == '\0'))
   {
     return false;
@@ -148,10 +265,23 @@ static bool Storage_IsRecordValid(const StorageRecord_t *record)
 static bool Storage_ReadRecord(StorageRecord_t *record)
 {
   const StorageRecord_t *flash_record = (const StorageRecord_t *)STORAGE_FLASH_ADDRESS;
+  const StorageRecordV1_t *flash_legacy_record = (const StorageRecordV1_t *)STORAGE_FLASH_ADDRESS;
+  StorageRecordV1_t legacy_record;
 
   (void)memcpy(record, flash_record, sizeof(*record));
+  if (Storage_IsRecordValid(record))
+  {
+    return true;
+  }
 
-  return Storage_IsRecordValid(record);
+  (void)memcpy(&legacy_record, flash_legacy_record, sizeof(legacy_record));
+  if (Storage_IsLegacyRecordValid(&legacy_record))
+  {
+    Storage_MigrateLegacyRecord(&legacy_record, record);
+    return true;
+  }
+
+  return false;
 }
 
 /*
@@ -198,6 +328,8 @@ static void Storage_ApplyRecordToGlobals(const StorageRecord_t *record)
   g_z_val = record->z_pos;
   g_x_target = g_x_val;
   g_z_target = g_z_val;
+  g_movement_hysteresis_gain = record->movement_hysteresis_gain;
+  g_movement_hysteresis_offset_mm = record->movement_hysteresis_offset_mm;
 
   Storage_ApplyRecordToRtc(record);
 }
@@ -245,6 +377,8 @@ static void Storage_UpdateCacheFromGlobals(void)
   storage_cache.fsm_state = (uint32_t)persistent_state;
   storage_cache.x_pos = g_x_val;
   storage_cache.z_pos = g_z_val;
+  storage_cache.movement_hysteresis_gain = g_movement_hysteresis_gain;
+  storage_cache.movement_hysteresis_offset_mm = g_movement_hysteresis_offset_mm;
 
   (void)strncpy(storage_cache.country, g_country, sizeof(storage_cache.country) - 1U);
   storage_cache.country[sizeof(storage_cache.country) - 1U] = '\0';
@@ -366,6 +500,16 @@ bool saveState(void)
  * Why: after power loss the firmware can restart with the last known mechanism position.
  */
 bool savePos(void)
+{
+  return Storage_SaveCurrentGlobals();
+}
+
+/*
+ * What: save horizontal movement calibration values.
+ * How: stores the current gain/offset globals inside the same flash-backed record.
+ * Why: calibration changes from the web page must survive reset and power loss.
+ */
+bool saveMovementConfig(void)
 {
   return Storage_SaveCurrentGlobals();
 }

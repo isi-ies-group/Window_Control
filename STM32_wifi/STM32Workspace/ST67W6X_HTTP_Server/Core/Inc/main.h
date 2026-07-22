@@ -58,6 +58,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define YLYB_Pin GPIO_PIN_6
+#define YLYB_GPIO_Port GPIOE
+#define YLYB_EXTI_IRQn EXTI6_IRQn
 #define Horizontal_ENABLE_Pin GPIO_PIN_3
 #define Horizontal_ENABLE_GPIO_Port GPIOA
 #define SPI_CLK_Pin GPIO_PIN_5
@@ -76,6 +79,12 @@ void Error_Handler(void);
 #define Vertical_ENABLE_GPIO_Port GPIOF
 #define USER_BUTTON_Pin GPIO_PIN_12
 #define USER_BUTTON_GPIO_Port GPIOF
+#define YLEB_Pin GPIO_PIN_0
+#define YLEB_GPIO_Port GPIOG
+#define YLEB_EXTI_IRQn EXTI0_IRQn
+#define ZLI_Pin GPIO_PIN_7
+#define ZLI_GPIO_Port GPIOE
+#define ZLI_EXTI_IRQn EXTI7_IRQn
 #define BOOT_Pin GPIO_PIN_9
 #define BOOT_GPIO_Port GPIOE
 #define ZL_A_DIR_Pin GPIO_PIN_10
@@ -119,6 +128,12 @@ void Error_Handler(void);
 #define USART1_TX_GPIO_Port GPIOA
 #define USART1_RX_Pin GPIO_PIN_10
 #define USART1_RX_GPIO_Port GPIOA
+#define YREB_Pin GPIO_PIN_9
+#define YREB_GPIO_Port GPIOG
+#define YREB_EXTI_IRQn EXTI9_IRQn
+#define YRIB_Pin GPIO_PIN_10
+#define YRIB_GPIO_Port GPIOG
+#define YRIB_EXTI_IRQn EXTI10_IRQn
 #define GPS_enable_Pin GPIO_PIN_12
 #define GPS_enable_GPIO_Port GPIOG
 #define MXLI_X_DIR_Pin GPIO_PIN_14
@@ -131,6 +146,9 @@ void Error_Handler(void);
 #define YRI_EXTI_IRQn EXTI5_IRQn
 #define LED_BLUE_Pin GPIO_PIN_7
 #define LED_BLUE_GPIO_Port GPIOB
+#define ZRI_Pin GPIO_PIN_8
+#define ZRI_GPIO_Port GPIOB
+#define ZRI_EXTI_IRQn EXTI8_IRQn
 #define MXLI_X_STEP_Pin GPIO_PIN_0
 #define MXLI_X_STEP_GPIO_Port GPIOE
 

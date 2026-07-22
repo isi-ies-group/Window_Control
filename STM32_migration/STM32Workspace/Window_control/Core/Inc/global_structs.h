@@ -1,0 +1,63 @@
+#ifndef GLOBAL_STRUCTS_H
+#define GLOBAL_STRUCTS_H
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
+
+#include "global_def.h"
+
+typedef struct
+{
+  int year;
+  int month;
+  int day;
+  int hour;
+  int minute;
+  int second;
+  double longitude;
+  double latitude;
+} SPAInputs;
+
+typedef struct
+{
+  double pan;
+  double azimuth;
+  double elevation;
+  double tilt;
+  bool tilt_correction;
+} AOIInputs;
+
+typedef struct
+{
+  float AOIt;
+  float AOIl;
+  const float (*matrix_X)[MATRIX_SIZE];
+  const float (*matrix_Z)[MATRIX_SIZE];
+} InterpolInputs;
+
+extern SPAInputs g_SPAInputs;
+extern AOIInputs g_AOIInputs;
+extern InterpolInputs g_InterpolInputs;
+
+extern char g_country[32];
+extern bool auto_on;
+extern bool manual_time;
+extern volatile int auto_counter;
+extern volatile uint32_t g_user_button_irq_count;
+extern volatile uint32_t g_user_button_last_tick_ms;
+extern volatile uint32_t g_user_button_event_posted;
+extern volatile uint32_t g_user_button_level;
+
+extern float g_x_val;
+extern float g_z_val;
+extern float g_x_target;
+extern float g_z_target;
+extern float g_interp_x_val;
+extern float g_interp_z_val;
+extern float g_query_aoit;
+extern float g_query_aoil;
+extern time_t g_sunrise_epoch;
+extern time_t g_sunset_epoch;
+
+#endif /* GLOBAL_STRUCTS_H */

@@ -175,6 +175,7 @@ static const HttpServer_response_t http_server_responses[] =
 {
   {INDEX_HTML,      "GET / ",                                     response_index_html,  sizeof(response_index_html)},
   {FAVICON_SVG,     "GET /favicon.ico",                           response_favicon_svg, sizeof(response_favicon_svg)},
+  {ST_LOGO_SVG,     "GET /IES_logo.svg",                          response_st_logo_svg, sizeof(response_st_logo_svg)},
   {ST_LOGO_SVG,     "GET /ST_logo_2020_white_no_tagline_rgb.svg", response_st_logo_svg, sizeof(response_st_logo_svg)},
   {LED_GREEN_STATE, "GET /LedGreen",                              response_ok_html,     sizeof(response_ok_html)},
   {LED_RED_STATE,   "GET /LedRed",                                response_ok_html,     sizeof(response_ok_html)},
@@ -978,6 +979,7 @@ static void http_server_serve_task(void *arg)
   /* Allocate considering the biggest buffer the client can send */
   ssize_t recv_buffer_len = HTTP_CHILD_TASK_BUFFER_SIZE;
   char *recv_buffer = (char *)pvPortMalloc(recv_buffer_len + 1);
+
   if (recv_buffer == NULL)
   {
     LogError("Unable to allocate recv buffer\n");
@@ -1005,7 +1007,8 @@ static void http_server_serve_task(void *arg)
     recv_total_len += bytes_received;
 
     /* Verify if we have receive the whole request or if we need to do another receive */
-    if (strncmp(&recv_buffer[recv_total_len - 4], "\r\n\r\n", 4) == 0)
+    if ((recv_total_len >= 4) &&
+        (strncmp(&recv_buffer[recv_total_len - 4], "\r\n\r\n", 4) == 0))
     {
       /* The full request has been received leaving the reading loop */
       request_complete = true;
@@ -1109,7 +1112,7 @@ static int32_t http_server_write(int32_t client, const char *buffer, size_t buff
   do /* Send the data. Can be done in multiple steps. */
   {
     bytes_sent = W6X_Net_Send(client, (void *)buffer, buffer_size, 0);
-    if (bytes_sent < 0)
+    if (bytes_sent <= 0)
     {
       LogError("[%" PRIi32 "] *****> SEND ERROR <*****\n", client);
       return 1;

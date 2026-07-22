@@ -1,12 +1,13 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
+  * @file    main.c
+  * @author  ST67 Application Team
+  * @brief   Main program body
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2026 STMicroelectronics.
+  * Copyright (c) 2025-2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -671,19 +672,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PE2 PE3 PE4 PE5
-                           PE8 PE12 PE14 PE15
-                           PE1 */
+                           PE6 PE7 PE8 PE12
+                           PE14 PE15 PE1 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5
-                          |GPIO_PIN_8|GPIO_PIN_12|GPIO_PIN_14|GPIO_PIN_15
-                          |GPIO_PIN_1;
+                          |GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_12
+                          |GPIO_PIN_14|GPIO_PIN_15|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : YLYB_Pin ZLI_Pin */
-  GPIO_InitStruct.Pin = YLYB_Pin|ZLI_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PC13 PC0 PC1 PC2
@@ -729,16 +724,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(Horizontal_ENABLE_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB13 PB6 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_13|GPIO_PIN_6|GPIO_PIN_9;
+  /*Configure GPIO pins : PB0 PB13 PB6 PB8
+                           PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_13|GPIO_PIN_6|GPIO_PIN_8
+                          |GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : YLY_Pin YLE_Pin ZL_Pin ZR_Pin
-                           YRE_Pin YRI_Pin ZRI_Pin */
+                           YRE_Pin YRI_Pin */
   GPIO_InitStruct.Pin = YLY_Pin|YLE_Pin|ZL_Pin|ZR_Pin
-                          |YRE_Pin|YRI_Pin|ZRI_Pin;
+                          |YRE_Pin|YRI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -756,14 +753,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(USER_BUTTON_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : YLEB_Pin YREB_Pin YRIB_Pin */
-  GPIO_InitStruct.Pin = YLEB_Pin|YREB_Pin|YRIB_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PG1 PG3 PG13 PG15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_13|GPIO_PIN_15;
+  /*Configure GPIO pins : PG0 PG1 PG3 PG9
+                           PG10 PG13 PG15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_9
+                          |GPIO_PIN_10|GPIO_PIN_13|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
@@ -857,9 +850,6 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(MXLI_X_STEP_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-
   HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
@@ -872,21 +862,6 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI5_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI6_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI6_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI7_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI7_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI8_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI9_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI10_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI10_IRQn);
-
   HAL_NVIC_SetPriority(EXTI13_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI13_IRQn);
 
@@ -897,6 +872,15 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_EnableIRQ(EXTI15_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* Keep ST67W6X SPI ready input available after custom movement pin generation. */
+  GPIO_InitStruct.Pin = SPI_RDY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(SPI_RDY_GPIO_Port, &GPIO_InitStruct);
+
+  HAL_NVIC_SetPriority(SPI_RDY_EXTI_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(SPI_RDY_EXTI_IRQn);
+
   /* USER CODE END MX_GPIO_Init_2 */
 }
 

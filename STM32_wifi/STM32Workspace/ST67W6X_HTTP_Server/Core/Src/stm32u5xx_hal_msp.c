@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2026 STMicroelectronics.
+  * Copyright (c) 2025-2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -93,6 +93,9 @@ void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* hlptim)
   if(hlptim->Instance==LPTIM1)
   {
     /* USER CODE BEGIN LPTIM1_MspInit 0 */
+    /* Enable autonomous mode for LPTIM1,
+       this is mandatory to count in stop mode */
+    __HAL_RCC_LPTIM1_CLKAM_ENABLE();
 
     /* USER CODE END LPTIM1_MspInit 0 */
 

@@ -1,4 +1,10 @@
 /* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file    FreeRTOSConfig.h
+  * @brief   Header for FreeRTOS application specific definitions
+  ******************************************************************************
+  */
 /*
  * FreeRTOS Kernel V11.2.0
  * Portion Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
@@ -175,7 +181,7 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */
 /* USER CODE BEGIN 1 */
-#define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );}
+#define configASSERT( x ) if (!(x)) {(void)taskDISABLE_INTERRUPTS(); for( ;; ){}}
 /* USER CODE END 1 */
 
 #define SysTick_Handler xPortSysTickHandler

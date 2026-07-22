@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2026 STMicroelectronics.
+  * Copyright (c) 2025-2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -52,16 +52,10 @@ void MemManage_Handler(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void DebugMon_Handler(void);
-void EXTI0_IRQHandler(void);
 void EXTI1_IRQHandler(void);
 void EXTI2_IRQHandler(void);
 void EXTI4_IRQHandler(void);
 void EXTI5_IRQHandler(void);
-void EXTI6_IRQHandler(void);
-void EXTI7_IRQHandler(void);
-void EXTI8_IRQHandler(void);
-void EXTI9_IRQHandler(void);
-void EXTI10_IRQHandler(void);
 void EXTI13_IRQHandler(void);
 void EXTI14_IRQHandler(void);
 void EXTI15_IRQHandler(void);

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Window Control WiFi</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --dark-blue: #03234b;
+            --yellow: #ffd200;
+            --light-blue: #3cb4e6;
+            --background-margin: 6vw;
+            --spin-border: 0.25em;
+        }
+
+        body {
+            color: var(--dark-blue);
+            font-family: arial, helvetica, sans-serif;
+            font-size: 2vw;
+            background: #ffffff linear-gradient(var(--yellow), var(--yellow)) repeat-y left top;
+            background-size: var(--background-margin);
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        div {
+            margin-left: calc(var(--background-margin) + 2vw);
+        }
+
+        header {
+            align-items: center;
+            background: var(--dark-blue);
+            box-sizing: border-box;
+            color: #ffffff;
+            display: flex;
+            height: 8vh;
+            min-height: 84px;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            padding: 10px calc(var(--background-margin) + 2vw);
+            white-space: nowrap;
+        }
+
+        #header_logo {
+            background: #ffffff;
+            box-sizing: border-box;
+            height: 64px;
+            max-width: 220px;
+            object-fit: contain;
+            padding: 6px 10px;
+            width: auto;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .button {
+            background-color: #3cb4e6;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            border-radius: 10px;
+        }
+
+		.config-panel {
+			background: white;
+			display: inline-block;
+			padding: 20px;
+			border-radius: 12px;
+			margin: 10px;
+		}
+
+		.config-panel input[type="text"] {
+			width: 150px;
+			padding: 6px;
+			margin: 6px;
+			border-radius: 5px;
+			border: 1px solid #ccc;
+		}
+
+		.config-panel button,
+		.config-panel input[type="submit"] {
+			background-color: #0078D7;
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			margin: 5px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-size: 14px;
+		}
+
+        .auto-btn {
+            background-color: #28a745;
+            font-size: 20px;
+            padding: 15px 40px;
+            margin-top: 25px;
+        }
+
+        .auto-btn.active {
+            background-color: #dc3545 !important;
+        }
+
+        .sync-btn {
+            background-color: #0078D7;
+            font-size: 20px;
+            padding: 15px 40px;
+            margin-top: 25px;
+        }
+		
+        .status-panel {
+            background-color: #f5f8fb;
+            border-left: 4px solid var(--light-blue);
+            font-size: 16px;
+            line-height: 1.5;
+            margin-right: calc(var(--background-margin) + 2vw);
+            padding: 12px 16px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(180px, 1fr));
+            gap: 6px 18px;
+            margin-left: 0;
+        }
+
+        .status-item {
+            margin-left: 0;
+        }
+
+        .status-item.wide {
+            grid-column: 1 / -1;
+            word-break: break-all;
+        }
+
+        .status-label {
+            font-weight: bold;
+        }
+
+        .status-value {
+            font-family: monospace;
+        }
+
+        button:disabled,
+        input:disabled,
+        select:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+    </style>
+</head>
+
+<body>
+    <header><img src="IES_logo.svg" id="header_logo"></header>
+    <div>
+        <h1>Welcome to Voltalux Monitor page !</h1>
+		
+		<!-- SECTION 1: Initial Configuration -->
+		
+		<h2>Initial Configuration</h2>
+		<div class="config-panel">
+			<form action="/config_submit" method="get">
+				Latitude: <input class="config-control" type="text" name="latitude"><br>
+				Longitude: <input class="config-control" type="text" name="longitude"><br>
+				Pan: <input class="config-control" type="text" name="pan"><br>
+				Tilt: <input class="config-control" type="text" name="tilt"><br>
+				Tilt correction:
+				<input class="config-control" type="checkbox" name="tilt_correction" value="1"> Enable<br>
+
+				Country:
+				<select class="config-control" name="country">
+					<option value="">-- Select --</option>
+					<option value="Spain">Spain</option>
+					<option value="Spain_Canary">Spain (Canary)</option>
+					<option value="UK">United Kingdom</option>
+					<option value="Poland">Poland</option>
+					<option value="Argentina">Argentina</option>
+				</select><br>
+
+				<input class="config-control" type="submit" value="Submit">
+			</form>
+		</div>
+
+		<!-- SECTION 2: Movement Calibration -->
+		<h2>Movement Calibration</h2>
+		<div class="config-panel">
+			<form action="/movement_gain_submit" method="get">
+				Horizontal gain: <input class="movement-config-control" type="text" name="gain" placeholder="0.053333"><br>
+				<input class="movement-config-control" type="submit" value="Save Gain">
+			</form>
+			<form action="/movement_offset_submit" method="get">
+				Horizontal offset (mm): <input class="movement-config-control" type="text" name="offset" placeholder="0.000"><br>
+				<input class="movement-config-control" type="submit" value="Save Offset">
+			</form>
+			<form action="/vertical_movement_gain_submit" method="get">
+				Vertical gain: <input class="movement-config-control" type="text" name="gain" placeholder="0.000000"><br>
+				<input class="movement-config-control" type="submit" value="Save Vertical Gain">
+			</form>
+			<form action="/vertical_movement_offset_submit" method="get">
+				Vertical offset (mm): <input class="movement-config-control" type="text" name="offset" placeholder="0.000"><br>
+				<input class="movement-config-control" type="submit" value="Save Vertical Offset">
+			</form>
+		</div>
+
+		<!-- SECTION 2: Manual Date & Time -->
+		<h2>Manual Date &amp; Time</h2>
+		<div class="config-panel">
+			<form action="/set_datetime" method="get">
+				Date (YYYY-MM-DD): <input class="time-control" type="text" name="date" placeholder="2026-01-20"><br>
+				Time (HH:MM:SS): <input class="time-control" type="text" name="time" placeholder="11:44:15"><br>
+				<input class="time-control" type="submit" value="Set Date & Time">
+			</form>
+		</div>
+
+		<!-- SECTION 2: Ephemeris Input -->
+		<h2>Ephemeris Input</h2>
+		<div class="config-panel">
+			<form action="/eph_submit" method="get">
+				Azimuth: <input class="eph-control" type="text" name="azimuth"><br>
+				Elevation: <input class="eph-control" type="text" name="elevation"><br>
+				<button id="ephBeginBtn" type="button" onclick="location.href='/eph_begin'">Begin</button>
+				<input class="eph-control" type="submit" value="Submit">
+				<button id="ephEndBtn" class="eph-control" type="button" onclick="location.href='/end_eph'">End</button>
+			</form>
+		</div>
+
+		<!-- SECTION 3: Manual Mode -->
+		<h2>Manual Mode</h2>
+		<div class="config-panel">
+			<form action="/manual_goto" method="get">
+				X target: <input class="manual-control" type="text" name="x"><br>
+				Z target: <input class="manual-control" type="number" name="z" min="0" max="72" step="0.01"><br>
+				<button id="manualBeginBtn" type="button" onclick="location.href='/manual_begin'">Begin</button>
+				<input class="manual-control" type="submit" value="Go to X / Z">
+				<button id="manualEndBtn" class="manual-control" type="button" onclick="location.href='/end_manual'">End</button>
+			</form>
+		</div>
+
+        <br><br>
+        <button id="syncTimeBtn" class="button sync-btn" onclick="syncTime()">SYNC TIME</button>
+        <button id="homeBtn" class="button" onclick="home()">HOME</button>
+        <button id="autoBtn" class="button auto-btn" onclick="toggleAutoMode()">AUTO MODE</button>
+
+		<!-- SECTION 4: WiFi power test -->
+		<h2>WiFi Power Test</h2>
+		<div class="config-panel">
+			<form action="/shutdown_submit" method="get">
+				<input type="submit" value="WIFI OFF TEST">
+			</form>
+		</div>
+
+        <h2>Test status</h2>
+        <div class="status-panel">
+            <div class="status-grid">
+                <div class="status-item"><span class="status-label">FSM:</span> <span class="status-value" id="fsm_state">---</span></div>
+                <div class="status-item"><span class="status-label">Auto on:</span> <span class="status-value" id="auto_on">---</span></div>
+                <div class="status-item"><span class="status-label">Auto counter:</span> <span class="status-value" id="auto_counter">---</span></div>
+                <div class="status-item"><span class="status-label">RTC date:</span> <span class="status-value" id="rtc_date">---</span></div>
+                <div class="status-item"><span class="status-label">RTC time:</span> <span class="status-value" id="rtc_time">---</span></div>
+                <div class="status-item"><span class="status-label">Manual time:</span> <span class="status-value" id="manual_time">---</span></div>
+                <div class="status-item"><span class="status-label">Country:</span> <span class="status-value" id="country">---</span></div>
+                <div class="status-item"><span class="status-label">Latitude:</span> <span class="status-value" id="latitude">---</span></div>
+                <div class="status-item"><span class="status-label">Longitude:</span> <span class="status-value" id="longitude">---</span></div>
+                <div class="status-item"><span class="status-label">Pan:</span> <span class="status-value" id="pan">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt:</span> <span class="status-value" id="tilt">---</span></div>
+                <div class="status-item"><span class="status-label">Tilt correction:</span> <span class="status-value" id="tilt_correction">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal gain:</span> <span class="status-value" id="movement_gain">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal offset:</span> <span class="status-value" id="movement_offset">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical gain:</span> <span class="status-value" id="vertical_movement_gain">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical offset:</span> <span class="status-value" id="vertical_movement_offset">---</span></div>
+                <div class="status-item"><span class="status-label">Azimuth:</span> <span class="status-value" id="azimuth">---</span></div>
+                <div class="status-item"><span class="status-label">Elevation:</span> <span class="status-value" id="elevation">---</span></div>
+                <div class="status-item"><span class="status-label">AOIl:</span> <span class="status-value" id="aoil">---</span></div>
+                <div class="status-item"><span class="status-label">AOIt:</span> <span class="status-value" id="aoit">---</span></div>
+                <div class="status-item"><span class="status-label">Query AOIl:</span> <span class="status-value" id="query_aoil">---</span></div>
+                <div class="status-item"><span class="status-label">Query AOIt:</span> <span class="status-value" id="query_aoit">---</span></div>
+                <div class="status-item"><span class="status-label">Interp X:</span> <span class="status-value" id="interp_x">---</span></div>
+                <div class="status-item"><span class="status-label">Interp Z:</span> <span class="status-value" id="interp_z">---</span></div>
+                <div class="status-item"><span class="status-label">Target X:</span> <span class="status-value" id="x_target">---</span></div>
+                <div class="status-item"><span class="status-label">Target Z:</span> <span class="status-value" id="z_target">---</span></div>
+                <div class="status-item"><span class="status-label">Accepted X:</span> <span class="status-value" id="x">---</span></div>
+                <div class="status-item"><span class="status-label">Accepted Z:</span> <span class="status-value" id="z">---</span></div>
+                <div class="status-item"><span class="status-label">Valid NMEA time:</span> <span class="status-value" id="gps_nmea">---</span></div>
+                <div class="status-item wide"><span class="status-label">Last RMC raw:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
+            </div>
+        </div>
+</body>
+<script>
+    let autoStatusTimer = null;
+    let statusRequestInFlight = false;
+    let statusPollFailureCount = 0;
+    let autoMode = false;
+    const autoStatusPollMs = 2000;
+    const autoStatusBackoffMaxMs = 15000;
+    const autoStatusHiddenPollMs = 15000;
+
+    function scheduleAutoStatusPoll(delayMs) {
+        if (autoStatusTimer !== null) {
+            return;
+        }
+        autoStatusTimer = setTimeout(function () {
+            autoStatusTimer = null;
+            sendStatusGetRequest();
+        }, delayMs);
+    }
+
+    function finishStatusPoll(success) {
+        if (!statusRequestInFlight) {
+            return;
+        }
+
+        statusRequestInFlight = false;
+
+        if (success) {
+            statusPollFailureCount = 0;
+            scheduleAutoStatusPoll(document.hidden ? autoStatusHiddenPollMs : autoStatusPollMs);
+            return;
+        }
+
+        statusPollFailureCount = Math.min(statusPollFailureCount + 1, 4);
+        const retryDelay = Math.min(autoStatusPollMs * Math.pow(2, statusPollFailureCount),
+                                    autoStatusBackoffMaxMs);
+        scheduleAutoStatusPoll(document.hidden ? autoStatusHiddenPollMs : retryDelay);
+    }
+
+    function setText(id, value) {
+        const element = document.getElementById(id);
+        if (element !== null) {
+            element.textContent = value;
+        }
+    }
+
+    function setDisabled(selector, disabled) {
+        document.querySelectorAll(selector).forEach(function (element) {
+            element.disabled = disabled;
+        });
+    }
+
+    function setElementDisabled(id, disabled) {
+        const element = document.getElementById(id);
+        if (element !== null) {
+            element.disabled = disabled;
+        }
+    }
+
+    function setInterfaceForState(state) {
+        const isStandby = state === "STDBY";
+        const isAuto = state === "AUTO_MODE";
+        const isEph = state === "EPH_INPUT";
+        const isManual = state === "MANUAL";
+        const isKnownState = isStandby || isAuto || isEph || isManual;
+
+        setDisabled(".config-control", !isStandby);
+        setDisabled(".movement-config-control", !isStandby);
+        setDisabled(".time-control", !isStandby);
+        setDisabled(".eph-control", !isEph);
+        setDisabled(".manual-control", !isManual);
+
+        setElementDisabled("ephBeginBtn", !isKnownState || isAuto || isEph);
+        setElementDisabled("manualBeginBtn", !isKnownState || isAuto || isManual);
+        setElementDisabled("autoBtn", !isKnownState || !(isStandby || isAuto));
+        setElementDisabled("syncTimeBtn", !isKnownState || !(isStandby || isAuto));
+        setElementDisabled("homeBtn", !isKnownState);
+    }
+
+    function setAutoButton(enabled) {
+        autoMode = enabled;
+        const autoBtn = document.getElementById("autoBtn");
+        autoBtn.classList.toggle("active", enabled);
+        autoBtn.innerText = enabled ? "STOP AUTO" : "AUTO MODE";
+    }
+
+    function formatNumber(value, digits) {
+        var numberValue = Number(value);
+        if (Number.isFinite(numberValue)) {
+            return numberValue.toFixed(digits);
+        }
+        return "---";
+    }
+
+    function sendStatusGetRequest() {
+        if (statusRequestInFlight) {
+            return;
+        }
+
+        statusRequestInFlight = true;
+
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/status", true);
+        xhr.ontimeout = function () {
+            finishStatusPoll(false);
+        }
+        xhr.onerror = function () {
+            finishStatusPoll(false);
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    setAutoButton(resp.auto_on);
+                    setInterfaceForState(resp.fsm_state);
+                    setText("fsm_state", resp.fsm_state || "---");
+                    setText("auto_on", resp.auto_on ? "true" : "false");
+                    setText("auto_counter", resp.auto_counter);
+                    setText("rtc_date", resp.rtc_date || "---");
+                    setText("rtc_time", resp.rtc_time || "---");
+                    setText("manual_time", resp.manual_time ? "true" : "false");
+                    setText("country", resp.country || "---");
+                    setText("latitude", formatNumber(resp.latitude, 2));
+                    setText("longitude", formatNumber(resp.longitude, 2));
+                    setText("pan", formatNumber(resp.pan, 2));
+                    setText("tilt", formatNumber(resp.tilt, 2));
+                    setText("tilt_correction", resp.tilt_correction ? "true" : "false");
+                    setText("movement_gain", formatNumber(resp.movement_gain, 6));
+                    setText("movement_offset", formatNumber(resp.movement_offset, 3));
+                    setText("vertical_movement_gain", formatNumber(resp.vertical_movement_gain, 6));
+                    setText("vertical_movement_offset", formatNumber(resp.vertical_movement_offset, 3));
+                    setText("azimuth", formatNumber(resp.azimuth, 6));
+                    setText("elevation", formatNumber(resp.elevation, 6));
+                    setText("aoil", formatNumber(resp.aoil, 6));
+                    setText("aoit", formatNumber(resp.aoit, 6));
+                    setText("query_aoil", formatNumber(resp.query_aoil, 6));
+                    setText("query_aoit", formatNumber(resp.query_aoit, 6));
+                    setText("interp_x", formatNumber(resp.interp_x, 6));
+                    setText("interp_z", formatNumber(resp.interp_z, 6));
+                    setText("x_target", formatNumber(resp.x_target, 6));
+                    setText("z_target", formatNumber(resp.z_target, 6));
+                    setText("x", formatNumber(resp.x, 6));
+                    setText("z", formatNumber(resp.z, 6));
+                    setText("gps_nmea", resp.gps_nmea_available ? "YES" : "NO");
+                    setText("gps_last_rmc", resp.gps_last_rmc || "---");
+                    finishStatusPoll(true);
+                }
+                catch (e) {
+                    finishStatusPoll(false);
+                }
+            }
+            else if (xhr.readyState === 4) {
+                finishStatusPoll(false);
+            }
+        };
+        xhr.send();
+    }
+    setInterfaceForState("");
+    sendStatusGetRequest();
+
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden && autoStatusTimer === null && !statusRequestInFlight) {
+            sendStatusGetRequest();
+        }
+    });
+
+    function toggleAutoMode() {
+        const requestedMode = !autoMode;
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/auto_mode_toggle", true);
+        xhr.ontimeout = function () {
+            console.log("AUTO MODE request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("AUTO MODE request error");
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                setAutoButton(requestedMode);
+                console.log(requestedMode ? "AUTO MODE enabled" : "AUTO MODE disabled");
+            }
+        };
+        xhr.send();
+    }
+
+    function syncTime() {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/sync_time", true);
+        xhr.ontimeout = function () {
+            console.log("SYNC TIME request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("SYNC TIME request error");
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("SYNC TIME requested");
+                sendStatusGetRequest();
+            }
+        };
+        xhr.send();
+    }
+
+    function home() {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/home", true);
+        xhr.ontimeout = function () {
+            console.log("HOME request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("HOME request error");
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("HOME requested");
+            }
+        };
+        xhr.send();
+    }
+</script>
+
+</html>

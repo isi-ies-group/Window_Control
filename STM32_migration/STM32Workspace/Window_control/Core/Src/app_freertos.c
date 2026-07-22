@@ -1,12 +1,13 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * File Name          : app_freertos.c
-  * Description        : FreeRTOS applicative file
+  * @file    app_freertos.c
+  * @author  ST67 Application Team
+  * @brief   Code for freertos applications
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2026 STMicroelectronics.
+  * Copyright (c) 2025-2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -22,6 +23,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "gps.h"
+#include "solar_app.h"
 
 /* USER CODE END Includes */
 
@@ -42,6 +45,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+/* GPS task continuously parses NMEA and services pending RTC sync requests. */
+osThreadId_t gpsTaskHandle;
+const osThreadAttr_t gpsTask_attributes = {
+  .name = "gpsTask",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 512 * 4
+};
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -74,7 +84,7 @@ void vApplicationMallocFailedHook(void)
 /* USER CODE END 5 */
 
 /* USER CODE BEGIN 2 */
-void vApplicationIdleHook( void )
+void vApplicationIdleHook(void)
 {
    /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
    to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
@@ -106,16 +116,13 @@ __weak void configureTimerForRunTimeStats(void)
 
 __weak unsigned long getRunTimeCounterValue(void)
 {
-return 0;
+  return 0;
 }
 /* USER CODE END 1 */
 
 /* USER CODE BEGIN VPORT_SUPPORT_TICKS_AND_SLEEP */
-__weak void vPortSuppressTicksAndSleep( TickType_t xExpectedIdleTime )
+__weak void vPortSuppressTicksAndSleep(TickType_t xExpectedIdleTime)
 {
-  // Generated when configUSE_TICKLESS_IDLE == 2.
-  // Function called in tasks.c (in portTASK_FUNCTION).
-  // TO BE COMPLETED or TO BE REPLACED by a user one, overriding that weak one.
 }
 /* USER CODE END VPORT_SUPPORT_TICKS_AND_SLEEP */
 
@@ -148,7 +155,8 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  gpsTaskHandle = osThreadNew(GPS_Task, NULL, &gpsTask_attributes);
+  SolarApp_Start();
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

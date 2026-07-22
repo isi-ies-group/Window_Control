@@ -1,12 +1,13 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * File Name          : app_freertos.h
-  * Description        : FreeRTOS applicative header file
+  * @file    app_freertos.h
+  * @author  ST67 Application Team
+  * @brief   FreeRTOS applicative header file
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2026 STMicroelectronics.
+  * Copyright (c) 2025-2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file

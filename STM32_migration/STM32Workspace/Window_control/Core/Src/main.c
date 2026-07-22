@@ -22,6 +22,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "app_freertos.h"
+#include "cmsis_os2.h"
+#include "global_structs.h"
+#include "movement.h"
+#include "state_machine.h"
 
 /* USER CODE END Includes */
 
@@ -32,6 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define USER_BUTTON_DEBOUNCE_MS 250U
 
 /* USER CODE END PD */
 
@@ -659,6 +665,9 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI6_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI6_IRQn);
 
+  HAL_NVIC_SetPriority(EXTI7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI7_IRQn);
+
   HAL_NVIC_SetPriority(EXTI8_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI8_IRQn);
 
@@ -683,6 +692,37 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
+{
+  static uint32_t last_user_button_tick_ms = 0U;
+
+  if (GPIO_Pin == USER_BUTTON_Pin)
+  {
+    uint32_t now_ms = HAL_GetTick();
+
+    if (HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) != GPIO_PIN_SET)
+    {
+      return;
+    }
+
+    if ((now_ms - last_user_button_tick_ms) < USER_BUTTON_DEBOUNCE_MS)
+    {
+      return;
+    }
+
+    last_user_button_tick_ms = now_ms;
+    g_user_button_level = 1U;
+    g_user_button_irq_count++;
+    g_user_button_last_tick_ms = now_ms;
+    g_user_button_event_posted = fsmPostEventFromISR(toggle_auto_mode) ? 1U : 0U;
+    return;
+  }
+}
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+  (void)movementLimitSwitchUpdateFromExti(GPIO_Pin);
+}
 
 /* USER CODE END 4 */
 

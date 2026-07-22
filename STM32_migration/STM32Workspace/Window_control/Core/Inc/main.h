@@ -78,6 +78,7 @@ void Error_Handler(void);
 #define YLEB_EXTI_IRQn EXTI0_IRQn
 #define ZLI_Pin GPIO_PIN_7
 #define ZLI_GPIO_Port GPIOE
+#define ZLI_EXTI_IRQn EXTI7_IRQn
 #define ZL_A_DIR_Pin GPIO_PIN_10
 #define ZL_A_DIR_GPIO_Port GPIOE
 #define ZL_Pin GPIO_PIN_14

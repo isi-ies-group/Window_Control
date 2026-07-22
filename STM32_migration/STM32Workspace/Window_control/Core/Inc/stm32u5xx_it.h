@@ -58,6 +58,7 @@ void EXTI2_IRQHandler(void);
 void EXTI4_IRQHandler(void);
 void EXTI5_IRQHandler(void);
 void EXTI6_IRQHandler(void);
+void EXTI7_IRQHandler(void);
 void EXTI8_IRQHandler(void);
 void EXTI9_IRQHandler(void);
 void EXTI10_IRQHandler(void);

@@ -44,6 +44,7 @@ https://wiki.st.com/stm32mcu/wiki/Connectivity:Wi-Fi_ST67W6X_HTTP_Server_Applica
 #include "controled_shutdown.h"
 #include "global_structs.h"
 #include "gps.h"
+#include "movement_alarm.h"
 #include "state_machine.h"
 #include "storage.h"
 
@@ -1178,11 +1179,19 @@ static void http_process_response(int32_t client, char *recv_buffer)
   }
 
   /* USER CODE BEGIN http_process_response_2 */
+  if (strncmp(recv_buffer, "GET /reset_alarm", strlen("GET /reset_alarm")) == 0)
+  {
+    MovementAlarm_ResetAll();
+    (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
+    return;
+  }
+
   if (strncmp(recv_buffer, "GET /status", strlen("GET /status")) == 0)
   {
-    char *data = (char *)pvPortMalloc(3072U);
+    char *data = (char *)pvPortMalloc(4096U);
     char date_str[11];
     char time_str[9];
+    MovementAlarmSnapshot alarm_snapshot;
 
     if (data == NULL)
     {
@@ -1198,8 +1207,9 @@ static void http_process_response(int32_t client, char *recv_buffer)
     }
 
     http_get_rtc_datetime(date_str, sizeof(date_str), time_str, sizeof(time_str));
+    MovementAlarm_GetSnapshot(&alarm_snapshot);
 
-    (void)snprintf(data, 3072U,
+    (void)snprintf(data, 4096U,
                    "{"
                    "\"fsm_state\":\"%s\","
                    "\"auto_on\":%s,\"auto_counter\":%d,"
@@ -1210,6 +1220,14 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"tilt_correction\":%s,"
                    "\"movement_gain\":%.6f,\"movement_offset\":%.6f,"
                    "\"vertical_movement_gain\":%.6f,\"vertical_movement_offset\":%.6f,"
+                   "\"vertical_top_right_alarm\":%" PRIu32 ","
+                   "\"vertical_top_left_alarm\":%" PRIu32 ","
+                   "\"horizontal_interior_left_alarm\":%" PRIu32 ","
+                   "\"horizontal_interior_right_alarm\":%" PRIu32 ","
+                   "\"vertical_bottom_left_alarm\":%" PRIu32 ","
+                   "\"vertical_bottom_right_alarm\":%" PRIu32 ","
+                   "\"horizontal_exterior_left_alarm\":%" PRIu32 ","
+                   "\"horizontal_exterior_right_alarm\":%" PRIu32 ","
                    "\"azimuth\":%.6f,\"elevation\":%.6f,"
                    "\"aoil\":%.6f,\"aoit\":%.6f,"
                    "\"query_aoil\":%.6f,\"query_aoit\":%.6f,"
@@ -1252,6 +1270,14 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    (double)g_movement_hysteresis_offset_mm,
                    (double)g_vertical_movement_hysteresis_gain,
                    (double)g_vertical_movement_hysteresis_offset_mm,
+                   (uint32_t)alarm_snapshot.vertical_top_right,
+                   (uint32_t)alarm_snapshot.vertical_top_left,
+                   (uint32_t)alarm_snapshot.horizontal_interior_left,
+                   (uint32_t)alarm_snapshot.horizontal_interior_right,
+                   (uint32_t)alarm_snapshot.vertical_bottom_left,
+                   (uint32_t)alarm_snapshot.vertical_bottom_right,
+                   (uint32_t)alarm_snapshot.horizontal_exterior_left,
+                   (uint32_t)alarm_snapshot.horizontal_exterior_right,
                    g_AOIInputs.azimuth,
                    g_AOIInputs.elevation,
                    (double)g_InterpolInputs.AOIl,

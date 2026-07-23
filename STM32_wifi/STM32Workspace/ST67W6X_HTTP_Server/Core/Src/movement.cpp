@@ -7,6 +7,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "global_structs.h"
+#include "movement_alarm.h"
 
 #ifndef YLI_Pin
 #define YLI_Pin YLY_Pin
@@ -124,13 +125,22 @@ static bool zl_limit_active(void);
 static bool zr_limit_active(void);
 static bool zli_limit_active(void);
 static bool zri_limit_active(void);
+static bool vertical_top_left_limit_active(void);
+static bool vertical_top_right_limit_active(void);
+static bool vertical_bottom_left_limit_active(void);
+static bool vertical_bottom_right_limit_active(void);
 static bool vertical_limit_active(void);
 static bool vertical_far_limit_active(void);
+static bool horizontal_exterior_left_limit_active(void);
+static bool horizontal_exterior_right_limit_active(void);
+static bool horizontal_interior_left_limit_active(void);
+static bool horizontal_interior_right_limit_active(void);
 static bool horizontal_limit_active(void);
 static bool horizontal_far_limit_active(void);
 static bool all_vertical_limits_active(void);
 static bool all_horizontal_limits_active(void);
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool home_limit_active, bool far_limit_active);
+static void movement_alarm_update_from_limit_pin(uint16_t gpio_pin);
 
 /* Busy-wait for short motor pulse delays using the DWT cycle counter. */
 static void delay_us(uint32_t us)
@@ -315,6 +325,8 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
       return 0U;
   }
 
+  movement_alarm_update_from_limit_pin(gpio_pin);
+
   return 1U;
 }
 
@@ -433,36 +445,84 @@ static bool zri_limit_active(void)
   return (limitSwitchState.zri != 0U);
 }
 
+/* Report whether the left vertical top/reference side is active. */
+static bool vertical_top_left_limit_active(void)
+{
+  return yli_limit_active() ||
+         yle_limit_active();
+}
+
+/* Report whether the right vertical top/reference side is active. */
+static bool vertical_top_right_limit_active(void)
+{
+  return yri_limit_active() ||
+         yre_limit_active();
+}
+
+/* Report whether the left vertical bottom/far side is active. */
+static bool vertical_bottom_left_limit_active(void)
+{
+  return ylyb_limit_active() ||
+         yleb_limit_active();
+}
+
+/* Report whether the right vertical bottom/far side is active. */
+static bool vertical_bottom_right_limit_active(void)
+{
+  return yrib_limit_active() ||
+         yreb_limit_active();
+}
+
 /* Report whether any vertical-axis endstop is active. */
 static bool vertical_limit_active(void)
 {
-  return yri_limit_active() ||
-         yre_limit_active() ||
-         yli_limit_active() ||
-         yle_limit_active();
+  return vertical_top_right_limit_active() ||
+         vertical_top_left_limit_active();
 }
 
 /* Report whether any vertical far-side endstop is active. */
 static bool vertical_far_limit_active(void)
 {
-  return ylyb_limit_active() ||
-         yleb_limit_active() ||
-         yrib_limit_active() ||
-         yreb_limit_active();
+  return vertical_bottom_left_limit_active() ||
+         vertical_bottom_right_limit_active();
+}
+
+/* Report whether the left horizontal exterior/reference endstop is active. */
+static bool horizontal_exterior_left_limit_active(void)
+{
+  return zl_limit_active();
+}
+
+/* Report whether the right horizontal exterior/reference endstop is active. */
+static bool horizontal_exterior_right_limit_active(void)
+{
+  return zr_limit_active();
+}
+
+/* Report whether the left horizontal interior/far endstop is active. */
+static bool horizontal_interior_left_limit_active(void)
+{
+  return zli_limit_active();
+}
+
+/* Report whether the right horizontal interior/far endstop is active. */
+static bool horizontal_interior_right_limit_active(void)
+{
+  return zri_limit_active();
 }
 
 /* Report whether any horizontal-axis endstop is active. */
 static bool horizontal_limit_active(void)
 {
-  return zl_limit_active() ||
-         zr_limit_active();
+  return horizontal_exterior_left_limit_active() ||
+         horizontal_exterior_right_limit_active();
 }
 
 /* Report whether any horizontal far-side endstop is active. */
 static bool horizontal_far_limit_active(void)
 {
-  return zli_limit_active() ||
-         zri_limit_active();
+  return horizontal_interior_left_limit_active() ||
+         horizontal_interior_right_limit_active();
 }
 
 /* Report whether every vertical motor has reached its own homing endstop. */
@@ -490,6 +550,60 @@ static bool limit_should_stop_axis(bool moving_positive, bool released_once, boo
   }
 
   return home_limit_active;
+}
+
+/* Convert the pin that changed into a logical alarm group. */
+static void movement_alarm_update_from_limit_pin(uint16_t gpio_pin)
+{
+  switch (gpio_pin)
+  {
+    case YLI_Pin:
+    case YLE_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT,
+                           vertical_top_left_limit_active() ? 1U : 0U);
+      break;
+
+    case YRI_Pin:
+    case YRE_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT,
+                           vertical_top_right_limit_active() ? 1U : 0U);
+      break;
+
+    case YLYB_Pin:
+    case YLEB_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT,
+                           vertical_bottom_left_limit_active() ? 1U : 0U);
+      break;
+
+    case YRIB_Pin:
+    case YREB_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT,
+                           vertical_bottom_right_limit_active() ? 1U : 0U);
+      break;
+
+    case ZL_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT,
+                           horizontal_exterior_left_limit_active() ? 1U : 0U);
+      break;
+
+    case ZR_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT,
+                           horizontal_exterior_right_limit_active() ? 1U : 0U);
+      break;
+
+    case ZLI_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT,
+                           horizontal_interior_left_limit_active() ? 1U : 0U);
+      break;
+
+    case ZRI_Pin:
+      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT,
+                           horizontal_interior_right_limit_active() ? 1U : 0U);
+      break;
+
+    default:
+      break;
+  }
 }
 
 /* Enable or disable all vertical motors through the active-low enable pin. */

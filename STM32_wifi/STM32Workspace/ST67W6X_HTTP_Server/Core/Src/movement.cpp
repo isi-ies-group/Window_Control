@@ -140,7 +140,10 @@ static bool horizontal_far_limit_active(void);
 static bool all_vertical_limits_active(void);
 static bool all_horizontal_limits_active(void);
 static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool home_limit_active, bool far_limit_active);
-static void movement_alarm_update_from_limit_pin(uint16_t gpio_pin);
+static void movement_alarm_rearm_inactive_vertical_limits(void);
+static void movement_alarm_rearm_inactive_horizontal_limits(void);
+static void movement_alarm_count_vertical_stop(void);
+static void movement_alarm_count_horizontal_stop(void);
 
 /* Busy-wait for short motor pulse delays using the DWT cycle counter. */
 static void delay_us(uint32_t us)
@@ -324,8 +327,6 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
     default:
       return 0U;
   }
-
-  movement_alarm_update_from_limit_pin(gpio_pin);
 
   return 1U;
 }
@@ -552,58 +553,78 @@ static bool limit_should_stop_axis(bool moving_positive, bool released_once, boo
   return home_limit_active;
 }
 
-/* Convert the pin that changed into a logical alarm group. */
-static void movement_alarm_update_from_limit_pin(uint16_t gpio_pin)
+/* Rearm vertical alarm latches once their physical switches are released. */
+static void movement_alarm_rearm_inactive_vertical_limits(void)
 {
-  switch (gpio_pin)
+  if (!vertical_top_left_limit_active())
   {
-    case YLI_Pin:
-    case YLE_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT,
-                           vertical_top_left_limit_active() ? 1U : 0U);
-      break;
-
-    case YRI_Pin:
-    case YRE_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT,
-                           vertical_top_right_limit_active() ? 1U : 0U);
-      break;
-
-    case YLYB_Pin:
-    case YLEB_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT,
-                           vertical_bottom_left_limit_active() ? 1U : 0U);
-      break;
-
-    case YRIB_Pin:
-    case YREB_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT,
-                           vertical_bottom_right_limit_active() ? 1U : 0U);
-      break;
-
-    case ZL_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT,
-                           horizontal_exterior_left_limit_active() ? 1U : 0U);
-      break;
-
-    case ZR_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT,
-                           horizontal_exterior_right_limit_active() ? 1U : 0U);
-      break;
-
-    case ZLI_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT,
-                           horizontal_interior_left_limit_active() ? 1U : 0U);
-      break;
-
-    case ZRI_Pin:
-      MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT,
-                           horizontal_interior_right_limit_active() ? 1U : 0U);
-      break;
-
-    default:
-      break;
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT, 0U);
   }
+
+  if (!vertical_top_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT, 0U);
+  }
+
+  if (!vertical_bottom_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT, 0U);
+  }
+
+  if (!vertical_bottom_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT, 0U);
+  }
+}
+
+/* Rearm horizontal alarm latches once their physical switches are released. */
+static void movement_alarm_rearm_inactive_horizontal_limits(void)
+{
+  if (!horizontal_exterior_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT, 0U);
+  }
+
+  if (!horizontal_exterior_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT, 0U);
+  }
+
+  if (!horizontal_interior_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT, 0U);
+  }
+
+  if (!horizontal_interior_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT, 0U);
+  }
+}
+
+/* Count only vertical endstops that actually stopped a normal move(). */
+static void movement_alarm_count_vertical_stop(void)
+{
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT,
+                       vertical_top_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT,
+                       vertical_top_right_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT,
+                       vertical_bottom_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT,
+                       vertical_bottom_right_limit_active() ? 1U : 0U);
+}
+
+/* Count only horizontal endstops that actually stopped a normal move(). */
+static void movement_alarm_count_horizontal_stop(void)
+{
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT,
+                       horizontal_exterior_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT,
+                       horizontal_exterior_right_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT,
+                       horizontal_interior_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT,
+                       horizontal_interior_right_limit_active() ? 1U : 0U);
 }
 
 /* Enable or disable all vertical motors through the active-low enable pin. */
@@ -714,11 +735,14 @@ void move(float xmm, float zmm)
 
     for (long i = 0; i < steps; i++)
     {
+      movement_alarm_rearm_inactive_vertical_limits();
+
       if (limit_should_stop_axis(moving_positive,
                                  released_once,
                                  vertical_limit_active(),
                                  vertical_far_limit_active()))
       {
+        movement_alarm_count_vertical_stop();
         break;
       }
 
@@ -750,6 +774,7 @@ void move(float xmm, float zmm)
                                  vertical_limit_active(),
                                  vertical_far_limit_active()))
       {
+        movement_alarm_count_vertical_stop();
         break;
       }
 
@@ -798,11 +823,14 @@ void move(float xmm, float zmm)
 
     for (long i = 0; i < steps; i++)
     {
+      movement_alarm_rearm_inactive_horizontal_limits();
+
       if (limit_should_stop_axis(moving_positive,
                                  released_once,
                                  horizontal_limit_active(),
                                  horizontal_far_limit_active()))
       {
+        movement_alarm_count_horizontal_stop();
         break;
       }
 
@@ -830,6 +858,7 @@ void move(float xmm, float zmm)
                                  horizontal_limit_active(),
                                  horizontal_far_limit_active()))
       {
+        movement_alarm_count_horizontal_stop();
         break;
       }
 

@@ -10,6 +10,7 @@
 #include "eph_input_mode.h"
 #include "global_structs.h"
 #include "manual_mode.h"
+#include "movement_alarm.h"
 #include "movement_task.h"
 #include "storage.h"
 #include "test.h"
@@ -23,12 +24,28 @@
 #define FSM_STARTUP_GPS_TIMEOUT_MS  300000U
 #define FSM_STARTUP_HOME_DELAY_MS   5000U
 #define FSM_STARTUP_POLL_MS         100U
+#define FSM_ALARM_POLL_MS           100U
+#define FSM_FAULT_SAFE_X_MM         10.0f
+#define FSM_FAULT_SAFE_Z_MM         10.0f
 
 typedef enum
 {
   STARTUP_PHASE_HOME,
   STARTUP_PHASE_GPS_SYNC,
 } StartupPhase;
+
+typedef enum
+{
+  ALARM_RECOVERY_PHASE_HOME,
+  ALARM_RECOVERY_PHASE_RETRY,
+} AlarmRecoveryPhase;
+
+typedef enum
+{
+  FAULT_LOCKOUT_PHASE_HOME,
+  FAULT_LOCKOUT_PHASE_SAFE_MOVE,
+  FAULT_LOCKOUT_PHASE_WAIT_RESET,
+} FaultLockoutPhase;
 
 /* Current and next FSM states. Start in standby until persistent memory exists. */
 States thisSt = STDBY;
@@ -44,10 +61,25 @@ static bool startupGpsRequested = false;
 static bool startupTestParametersApplied = false;
 static TickType_t startupHomeDelayStartTick = 0U;
 static TickType_t startupGpsStartTick = 0U;
+static States alarmReturnState = STDBY;
+static float alarmRetryTargetX = 0.0f;
+static float alarmRetryTargetZ = 0.0f;
+static AlarmRecoveryPhase alarmRecoveryPhase = ALARM_RECOVERY_PHASE_HOME;
+static bool alarmRecoveryHomeRequested = false;
+static bool alarmRecoveryMoveRequested = false;
+static FaultLockoutPhase faultLockoutPhase = FAULT_LOCKOUT_PHASE_HOME;
+static bool faultLockoutHomeRequested = false;
+static bool faultLockoutSafeMoveRequested = false;
+static bool faultLockoutResetRequested = false;
 
 static void fsmTask(void *argument);
+static void fsmPrepareStartup(States return_state);
 static bool fsmRunStartup(TickType_t now_tick);
 static void fsmFinishStartup(void);
+static bool fsmRunAlarmRecovery(void);
+static bool fsmRunFaultLockout(void);
+static void fsmEnterAlarmRecovery(void);
+static void fsmEnterFaultLockout(void);
 static bool stateIsPersistent(States state);
 static bool stateTransitionIsValid(States currentState, States newState);
 static TickType_t ticksUntilPeriod(TickType_t now, TickType_t last, TickType_t period);
@@ -65,18 +97,7 @@ void initFSM(void)
     thisSt = STDBY;
   }
 
-  startupReturnState = thisSt;
-  startupPhase = STARTUP_PHASE_HOME;
-  startupHomeDelayStarted = false;
-  startupHomeRequested = false;
-  startupGpsRequested = false;
-  startupTestParametersApplied = false;
-  startupHomeDelayStartTick = 0U;
-  startupGpsStartTick = 0U;
-
-  thisSt = STARTUP;
-  nextSt = STARTUP;
-  auto_on = false;
+  fsmPrepareStartup(thisSt);
 
   if (fsmQueue == NULL)
   {
@@ -128,6 +149,19 @@ bool fsmPostEventFromISR(Events event)
   return true;
 }
 
+bool fsmPostMovementAlarm(float target_x, float target_z)
+{
+  /*
+   * What: publish that move() stopped because an endstop alarm blocked the command.
+   * How: stores the rejected target, then posts a normal FSM event.
+   * Why: recovery must retry the same logical target after homing without movement_task owning FSM state.
+   */
+  alarmRetryTargetX = target_x;
+  alarmRetryTargetZ = target_z;
+
+  return fsmPostEvent(movement_alarm_triggered);
+}
+
 States fsmGetState(void)
 {
   /*
@@ -148,6 +182,11 @@ States fsmGetPersistentState(void)
   if (thisSt == STARTUP)
   {
     return startupReturnState;
+  }
+
+  if ((thisSt == ALARM_RECOVERY) || (thisSt == FAULT_LOCKOUT))
+  {
+    return alarmReturnState;
   }
 
   return thisSt;
@@ -177,6 +216,12 @@ const char *stateToText(States state)
     case STARTUP:
       return "STARTUP";
 
+    case ALARM_RECOVERY:
+      return "ALARM_RECOVERY";
+
+    case FAULT_LOCKOUT:
+      return "FAULT_LOCKOUT";
+
     default:
       return "UNKNOWN";
   }
@@ -194,7 +239,37 @@ States fsmProcess(Events event, bool auto_running)
   /* Kept for compatibility with the first FSM version; thisSt is the source of truth now. */
   (void)auto_running;
 
-  if (thisSt == STARTUP)
+  if (event == movement_alarm_triggered)
+  {
+    if (thisSt == ALARM_RECOVERY)
+    {
+      fsmEnterFaultLockout();
+    }
+    else if (stateIsPersistent(thisSt))
+    {
+      fsmEnterAlarmRecovery();
+    }
+
+    return thisSt;
+  }
+
+  if (event == reset_alarm_request)
+  {
+    if (thisSt == FAULT_LOCKOUT)
+    {
+      faultLockoutResetRequested = true;
+    }
+    else
+    {
+      MovementAlarm_ResetAll();
+    }
+
+    return thisSt;
+  }
+
+  if ((thisSt == STARTUP) ||
+      (thisSt == ALARM_RECOVERY) ||
+      (thisSt == FAULT_LOCKOUT))
   {
     return thisSt;
   }
@@ -283,18 +358,18 @@ static void fsmTask(void *argument)
       States previousState = thisSt;
       States currentState = fsmProcess(event, auto_on);
 
-      if ((previousState != STARTUP) && (event == submit_manual_goto))
+      if (stateIsPersistent(previousState) && (event == submit_manual_goto))
       {
         /* HTTP has already loaded g_x_target/g_z_target; movement_task runs the blocking pulses. */
         manualModeGoto(g_x_target, g_z_target);
         requestMove();
       }
-      else if ((previousState != STARTUP) && (event == submit_home))
+      else if (stateIsPersistent(previousState) && (event == submit_home))
       {
         /* Homing is requested by the web layer and executed by the movement task. */
         requestHome();
       }
-      else if ((previousState != STARTUP) && (event == submit_eph_input))
+      else if (stateIsPersistent(previousState) && (event == submit_eph_input))
       {
         /* Ephemeris mode calculates AOI and updates g_x_target/g_z_target. */
         if (ephInputMode())
@@ -324,10 +399,32 @@ static void fsmTask(void *argument)
 
       last_time_save_tick = xTaskGetTickCount();
     }
+    else if (thisSt == ALARM_RECOVERY)
+    {
+      if (fsmRunAlarmRecovery())
+      {
+        now_tick = xTaskGetTickCount();
+        last_auto_tick = now_tick;
+        last_auto_home_tick = now_tick;
+      }
+
+      last_time_save_tick = xTaskGetTickCount();
+    }
+    else if (thisSt == FAULT_LOCKOUT)
+    {
+      if (fsmRunFaultLockout())
+      {
+        now_tick = xTaskGetTickCount();
+        last_auto_tick = now_tick;
+        last_auto_home_tick = now_tick;
+      }
+
+      last_time_save_tick = xTaskGetTickCount();
+    }
 
     now_tick = xTaskGetTickCount();
 
-    if ((thisSt != STARTUP) &&
+    if (stateIsPersistent(thisSt) &&
         ((now_tick - last_time_save_tick) >= pdMS_TO_TICKS(STORAGE_TIME_SAVE_PERIOD_MS)))
     {
       /*
@@ -381,6 +478,184 @@ static void fsmTask(void *argument)
       last_auto_home_tick = now_tick;
     }
   }
+}
+
+static void fsmPrepareStartup(States return_state)
+{
+  /*
+   * What: enter the boot/startup sequence from reset or alarm reset.
+   * How: clears alarm state, resets startup phases and stores the state to restore afterwards.
+   * Why: startup is the common safe path before returning to a persisted operating mode.
+   */
+  if (!stateIsPersistent(return_state))
+  {
+    return_state = STDBY;
+  }
+
+  MovementAlarm_ResetAll();
+
+  startupReturnState = return_state;
+  startupPhase = STARTUP_PHASE_HOME;
+  startupHomeDelayStarted = false;
+  startupHomeRequested = false;
+  startupGpsRequested = false;
+  startupTestParametersApplied = false;
+  startupHomeDelayStartTick = 0U;
+  startupGpsStartTick = 0U;
+
+  alarmRecoveryPhase = ALARM_RECOVERY_PHASE_HOME;
+  alarmRecoveryHomeRequested = false;
+  alarmRecoveryMoveRequested = false;
+  faultLockoutPhase = FAULT_LOCKOUT_PHASE_HOME;
+  faultLockoutHomeRequested = false;
+  faultLockoutSafeMoveRequested = false;
+  faultLockoutResetRequested = false;
+
+  thisSt = STARTUP;
+  nextSt = STARTUP;
+  auto_on = false;
+}
+
+static void fsmEnterAlarmRecovery(void)
+{
+  /*
+   * What: enter the one-shot alarm recovery state after the first blocked movement.
+   * How: remembers the operating state and prepares a HOME -> retry target sequence.
+   * Why: a single unexpected endstop hit may be recoverable after re-referencing.
+   */
+  alarmReturnState = stateIsPersistent(thisSt) ? thisSt : STDBY;
+  alarmRecoveryPhase = ALARM_RECOVERY_PHASE_HOME;
+  alarmRecoveryHomeRequested = false;
+  alarmRecoveryMoveRequested = false;
+
+  thisSt = ALARM_RECOVERY;
+  nextSt = ALARM_RECOVERY;
+  auto_on = false;
+}
+
+static void fsmEnterFaultLockout(void)
+{
+  /*
+   * What: enter a retained fault after alarm recovery also fails.
+   * How: homes, parks at 10/10 and waits for an explicit reset request.
+   * Why: repeated alarms should stop automatic retries until the operator intervenes.
+   */
+  faultLockoutPhase = FAULT_LOCKOUT_PHASE_HOME;
+  faultLockoutHomeRequested = false;
+  faultLockoutSafeMoveRequested = false;
+  faultLockoutResetRequested = false;
+
+  thisSt = FAULT_LOCKOUT;
+  nextSt = FAULT_LOCKOUT;
+  auto_on = false;
+}
+
+static bool fsmRunAlarmRecovery(void)
+{
+  if (thisSt != ALARM_RECOVERY)
+  {
+    return false;
+  }
+
+  switch (alarmRecoveryPhase)
+  {
+    case ALARM_RECOVERY_PHASE_HOME:
+      if (!alarmRecoveryHomeRequested)
+      {
+        if (!movementTaskIsBusy())
+        {
+          requestHome();
+          alarmRecoveryHomeRequested = true;
+        }
+      }
+      else if (!movementTaskIsBusy())
+      {
+        alarmRecoveryPhase = ALARM_RECOVERY_PHASE_RETRY;
+      }
+      break;
+
+    case ALARM_RECOVERY_PHASE_RETRY:
+      if (!alarmRecoveryMoveRequested)
+      {
+        if (!movementTaskIsBusy())
+        {
+          g_x_target = alarmRetryTargetX;
+          g_z_target = alarmRetryTargetZ;
+          requestMove();
+          alarmRecoveryMoveRequested = true;
+        }
+      }
+      else if (!movementTaskIsBusy())
+      {
+        g_any_movement_alarm = false;
+        changeState(alarmReturnState);
+        return true;
+      }
+      break;
+
+    default:
+      fsmEnterFaultLockout();
+      break;
+  }
+
+  return false;
+}
+
+static bool fsmRunFaultLockout(void)
+{
+  if (thisSt != FAULT_LOCKOUT)
+  {
+    return false;
+  }
+
+  switch (faultLockoutPhase)
+  {
+    case FAULT_LOCKOUT_PHASE_HOME:
+      if (!faultLockoutHomeRequested)
+      {
+        if (!movementTaskIsBusy())
+        {
+          requestHome();
+          faultLockoutHomeRequested = true;
+        }
+      }
+      else if (!movementTaskIsBusy())
+      {
+        faultLockoutPhase = FAULT_LOCKOUT_PHASE_SAFE_MOVE;
+      }
+      break;
+
+    case FAULT_LOCKOUT_PHASE_SAFE_MOVE:
+      if (!faultLockoutSafeMoveRequested)
+      {
+        if (!movementTaskIsBusy())
+        {
+          g_x_target = FSM_FAULT_SAFE_X_MM;
+          g_z_target = FSM_FAULT_SAFE_Z_MM;
+          requestMove();
+          faultLockoutSafeMoveRequested = true;
+        }
+      }
+      else if (!movementTaskIsBusy())
+      {
+        faultLockoutPhase = FAULT_LOCKOUT_PHASE_WAIT_RESET;
+      }
+      break;
+
+    case FAULT_LOCKOUT_PHASE_WAIT_RESET:
+      if (faultLockoutResetRequested)
+      {
+        fsmPrepareStartup(alarmReturnState);
+        return true;
+      }
+      break;
+
+    default:
+      faultLockoutPhase = FAULT_LOCKOUT_PHASE_WAIT_RESET;
+      break;
+  }
+
+  return false;
 }
 
 static bool fsmRunStartup(TickType_t now_tick)
@@ -497,9 +772,11 @@ static TickType_t fsmWaitTicks(TickType_t now, TickType_t last_auto_tick, TickTy
    */
   TickType_t wait_ticks;
 
-  if (thisSt == STARTUP)
+  if ((thisSt == STARTUP) ||
+      (thisSt == ALARM_RECOVERY) ||
+      (thisSt == FAULT_LOCKOUT))
   {
-    return pdMS_TO_TICKS(FSM_STARTUP_POLL_MS);
+    return (thisSt == STARTUP) ? pdMS_TO_TICKS(FSM_STARTUP_POLL_MS) : pdMS_TO_TICKS(FSM_ALARM_POLL_MS);
   }
 
   wait_ticks = ticksUntilPeriod(now,
@@ -543,5 +820,8 @@ static bool stateTransitionIsValid(States currentState, States newState)
    */
   (void)currentState;
 
-  return stateIsPersistent(newState) || (newState == STARTUP);
+  return stateIsPersistent(newState) ||
+         (newState == STARTUP) ||
+         (newState == ALARM_RECOVERY) ||
+         (newState == FAULT_LOCKOUT);
 }

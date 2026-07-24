@@ -17,6 +17,7 @@ bool Storage_LoadAll(void);
 bool saveData(void);
 bool saveState(void);
 bool savePos(void);
+bool saveMovementConfig(void);
 bool saveManualTime(int year, int month, int day, int hour, int minute, int second);
 bool saveTimeMode(bool is_manual_time);
 bool saveRtcTime(void);

@@ -23,3 +23,16 @@ float g_query_aoit = 0.0f;
 float g_query_aoil = 0.0f;
 time_t g_sunrise_epoch = 0;
 time_t g_sunset_epoch = 0;
+
+float g_movement_hysteresis_gain = MOVEMENT_HYSTERESIS_DEFAULT_GAIN;
+float g_movement_hysteresis_offset_mm = MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM;
+
+volatile uint32_t g_vertical_top_right_alarm = 0U;
+volatile uint32_t g_vertical_top_left_alarm = 0U;
+volatile uint32_t g_horizontal_interior_left_alarm = 0U;
+volatile uint32_t g_horizontal_interior_right_alarm = 0U;
+volatile uint32_t g_vertical_bottom_left_alarm = 0U;
+volatile uint32_t g_vertical_bottom_right_alarm = 0U;
+volatile uint32_t g_horizontal_exterior_left_alarm = 0U;
+volatile uint32_t g_horizontal_exterior_right_alarm = 0U;
+volatile bool g_any_movement_alarm = false;

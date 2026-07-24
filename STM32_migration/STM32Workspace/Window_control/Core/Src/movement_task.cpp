@@ -7,6 +7,7 @@
 
 #include "global_structs.h"
 #include "movement.h"
+#include "state_machine.h"
 #include "storage.h"
 
 #define MOVEMENT_QUEUE_LENGTH      5U
@@ -122,23 +123,34 @@ static void movementTask(void *argument)
       switch (msg.cmd)
       {
         case CMD_MOVE:
+        {
+          bool move_ok;
+
           /* What: protect motor movement from low-power entry.
            * How: block tickless before move(), then release it when the position has been stored.
            * Why: STEP pulses must keep deterministic timing while the motors are moving.
            */
           DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           /* move() consumes the captured absolute X/Z target from this queue message. */
-          move(msg.x_target, msg.z_target);
+          move_ok = move(msg.x_target, msg.z_target);
           /*
            * What: accept the theoretical position only after pulse generation finished.
            * How: copy the command target to g_x_val/g_z_val after move() returns.
            * Why: web status/storage must represent completed movement, not pending intent.
            */
-          g_x_val = msg.x_target;
-          g_z_val = msg.z_target;
-          (void)savePos();
+          if (move_ok)
+          {
+            g_x_val = msg.x_target;
+            g_z_val = msg.z_target;
+            (void)savePos();
+          }
+          else
+          {
+            (void)fsmPostMovementAlarm(msg.x_target, msg.z_target);
+          }
           EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           break;
+        }
 
         case CMD_HOME:
           /* What: protect homing from low-power entry.

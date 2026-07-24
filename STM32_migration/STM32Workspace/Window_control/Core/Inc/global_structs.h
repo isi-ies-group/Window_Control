@@ -7,6 +7,9 @@
 
 #include "global_def.h"
 
+#define MOVEMENT_HYSTERESIS_DEFAULT_GAIN       (4.0f / 75.0f)
+#define MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM  0.0f
+
 typedef struct
 {
   int year;
@@ -59,5 +62,18 @@ extern float g_query_aoit;
 extern float g_query_aoil;
 extern time_t g_sunrise_epoch;
 extern time_t g_sunset_epoch;
+
+extern float g_movement_hysteresis_gain;
+extern float g_movement_hysteresis_offset_mm;
+
+extern volatile uint32_t g_vertical_top_right_alarm;
+extern volatile uint32_t g_vertical_top_left_alarm;
+extern volatile uint32_t g_horizontal_interior_left_alarm;
+extern volatile uint32_t g_horizontal_interior_right_alarm;
+extern volatile uint32_t g_vertical_bottom_left_alarm;
+extern volatile uint32_t g_vertical_bottom_right_alarm;
+extern volatile uint32_t g_horizontal_exterior_left_alarm;
+extern volatile uint32_t g_horizontal_exterior_right_alarm;
+extern volatile bool g_any_movement_alarm;
 
 #endif /* GLOBAL_STRUCTS_H */

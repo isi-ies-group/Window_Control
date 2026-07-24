@@ -19,6 +19,8 @@
 #define TEST_STARTUP_LONGITUDE_DEG         -3.70f
 #define TEST_STARTUP_LATITUDE_DEG          40.41f
 #define TEST_STARTUP_COUNTRY               "Spain"
+#define TEST_STARTUP_MOVEMENT_GAIN         MOVEMENT_HYSTERESIS_DEFAULT_GAIN
+#define TEST_STARTUP_MOVEMENT_OFFSET_MM    MOVEMENT_HYSTERESIS_DEFAULT_OFFSET_MM
 
 int dummy(int x)
 {
@@ -37,6 +39,8 @@ void Test_SetAutoModeInputs(float pan,
     g_AOIInputs.pan = pan;
     g_AOIInputs.tilt = tilt;
     g_AOIInputs.tilt_correction = tilt_correction;
+    g_movement_hysteresis_gain = TEST_STARTUP_MOVEMENT_GAIN;
+    g_movement_hysteresis_offset_mm = TEST_STARTUP_MOVEMENT_OFFSET_MM;
 
     /* g_country is a fixed C buffer in the migrated application layer. */
     strncpy(g_country, (country != 0) ? country : "", sizeof(g_country) - 1U);

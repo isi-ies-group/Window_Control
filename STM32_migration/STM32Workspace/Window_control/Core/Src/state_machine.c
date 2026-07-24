@@ -379,6 +379,18 @@ static void fsmTask(void *argument)
         }
       }
 
+      if (stateIsPersistent(previousState) &&
+          (previousState != STDBY) &&
+          (currentState == STDBY))
+      {
+        /*
+         * What: re-reference the mechanics whenever migration returns to standby.
+         * How: queues HOME after a real transition into STDBY, for example when the board button disables AUTO_MODE.
+         * Why: without WiFi reset controls, the board button gives a simple way to test homing from runtime.
+         */
+        requestHome();
+      }
+
       if ((previousState != AUTO_MODE) && (currentState == AUTO_MODE))
       {
         last_auto_tick = xTaskGetTickCount();

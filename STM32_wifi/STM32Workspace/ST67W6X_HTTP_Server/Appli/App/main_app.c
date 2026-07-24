@@ -331,11 +331,13 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   }
 
   /* Callback when user button is pressed */
+#if defined(USER_BUTTON_Pin)
   if (GPIO_Pin == USER_BUTTON_Pin)
   {
     button_changed++;
     button_changed %= 2U;
   }
+#endif
   /* USER CODE BEGIN EXTI_Falling_Callback_End */
   /* Limit-switch EXTI: cache releases too, so stored state follows the real pin level. */
   if (movementLimitSwitchUpdateFromExti(GPIO_Pin) != 0U)

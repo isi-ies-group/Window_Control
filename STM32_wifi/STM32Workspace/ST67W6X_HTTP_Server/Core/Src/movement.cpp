@@ -7,10 +7,12 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "global_structs.h"
+#include "movement_alarm.h"
 
-#ifndef YLI_Pin
-#define YLI_Pin YLY_Pin
-#define YLI_GPIO_Port YLY_GPIO_Port
+#if defined(ZRI_Pin) && defined(ZRI_GPIO_Port)
+#define MOVEMENT_HAS_ZRI_LIMIT 1
+#else
+#define MOVEMENT_HAS_ZRI_LIMIT 0
 #endif
 
 /* MXRI direction must come from CubeMX; fail loudly if the GPIO label is lost. */
@@ -88,12 +90,18 @@ static long CurrentStep2 = 0;
 
 typedef struct
 {
-  volatile uint8_t yli;
-  volatile uint8_t yle;
-  volatile uint8_t yri;
-  volatile uint8_t yre;
+  volatile uint8_t xli;
+  volatile uint8_t xle;
+  volatile uint8_t xri;
+  volatile uint8_t xre;
+  volatile uint8_t xlib;
+  volatile uint8_t xleb;
+  volatile uint8_t xrib;
+  volatile uint8_t xreb;
   volatile uint8_t zl;
   volatile uint8_t zr;
+  volatile uint8_t zli;
+  volatile uint8_t zri;
 } LimitSwitchState;
 
 /*
@@ -101,22 +109,42 @@ typedef struct
  * How: rising edges store 1, falling edges store 0, and phase starts resync from GPIO.
  * Why: a released endstop must allow movement again without waiting for a polling read.
  */
-static LimitSwitchState limitSwitchState = {0U, 0U, 0U, 0U, 0U, 0U};
+static LimitSwitchState limitSwitchState = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
 
 static void BackoffAll(int steps, long speed_us);
 static void SecondTouchPair(long speed_us);
 static uint8_t read_limit_pin(GPIO_TypeDef *port, uint16_t pin);
-static bool yli_limit_active(void);
-static bool yle_limit_active(void);
-static bool yri_limit_active(void);
-static bool yre_limit_active(void);
+static bool xli_limit_active(void);
+static bool xle_limit_active(void);
+static bool xri_limit_active(void);
+static bool xre_limit_active(void);
+static bool xlib_limit_active(void);
+static bool xleb_limit_active(void);
+static bool xrib_limit_active(void);
+static bool xreb_limit_active(void);
 static bool zl_limit_active(void);
 static bool zr_limit_active(void);
+static bool zli_limit_active(void);
+static bool zri_limit_active(void);
+static bool vertical_top_left_limit_active(void);
+static bool vertical_top_right_limit_active(void);
+static bool vertical_bottom_left_limit_active(void);
+static bool vertical_bottom_right_limit_active(void);
 static bool vertical_limit_active(void);
+static bool vertical_far_limit_active(void);
+static bool horizontal_exterior_left_limit_active(void);
+static bool horizontal_exterior_right_limit_active(void);
+static bool horizontal_interior_left_limit_active(void);
+static bool horizontal_interior_right_limit_active(void);
 static bool horizontal_limit_active(void);
+static bool horizontal_far_limit_active(void);
 static bool all_vertical_limits_active(void);
 static bool all_horizontal_limits_active(void);
-static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active);
+static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool home_limit_active, bool far_limit_active);
+static void movement_alarm_rearm_inactive_vertical_limits(void);
+static void movement_alarm_rearm_inactive_horizontal_limits(void);
+static void movement_alarm_count_vertical_stop(void);
+static void movement_alarm_count_horizontal_stop(void);
 
 /* Busy-wait for short motor pulse delays using the DWT cycle counter. */
 static void delay_us(uint32_t us)
@@ -249,20 +277,36 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
 {
   switch (gpio_pin)
   {
-    case YLI_Pin:
-      limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
+    case XLI_Pin:
+      limitSwitchState.xli = read_limit_pin(XLI_GPIO_Port, XLI_Pin);
       break;
 
-    case YLE_Pin:
-      limitSwitchState.yle = read_limit_pin(YLE_GPIO_Port, YLE_Pin);
+    case XLE_Pin:
+      limitSwitchState.xle = read_limit_pin(XLE_GPIO_Port, XLE_Pin);
       break;
 
-    case YRI_Pin:
-      limitSwitchState.yri = read_limit_pin(YRI_GPIO_Port, YRI_Pin);
+    case XRI_Pin:
+      limitSwitchState.xri = read_limit_pin(XRI_GPIO_Port, XRI_Pin);
       break;
 
-    case YRE_Pin:
-      limitSwitchState.yre = read_limit_pin(YRE_GPIO_Port, YRE_Pin);
+    case XRE_Pin:
+      limitSwitchState.xre = read_limit_pin(XRE_GPIO_Port, XRE_Pin);
+      break;
+
+    case XLIB_Pin:
+      limitSwitchState.xlib = read_limit_pin(XLIB_GPIO_Port, XLIB_Pin);
+      break;
+
+    case XLEB_Pin:
+      limitSwitchState.xleb = read_limit_pin(XLEB_GPIO_Port, XLEB_Pin);
+      break;
+
+    case XRIB_Pin:
+      limitSwitchState.xrib = read_limit_pin(XRIB_GPIO_Port, XRIB_Pin);
+      break;
+
+    case XREB_Pin:
+      limitSwitchState.xreb = read_limit_pin(XREB_GPIO_Port, XREB_Pin);
       break;
 
     case ZL_Pin:
@@ -272,6 +316,16 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
     case ZR_Pin:
       limitSwitchState.zr = read_limit_pin(ZR_GPIO_Port, ZR_Pin);
       break;
+
+    case ZLI_Pin:
+      limitSwitchState.zli = read_limit_pin(ZLI_GPIO_Port, ZLI_Pin);
+      break;
+
+#if MOVEMENT_HAS_ZRI_LIMIT
+    case ZRI_Pin:
+      limitSwitchState.zri = read_limit_pin(ZRI_GPIO_Port, ZRI_Pin);
+      break;
+#endif
 
     default:
       return 0U;
@@ -287,12 +341,22 @@ uint8_t movementLimitSwitchUpdateFromExti(uint16_t gpio_pin)
  */
 void movementLimitSwitchRefreshAll(void)
 {
-  limitSwitchState.yli = read_limit_pin(YLI_GPIO_Port, YLI_Pin);
-  limitSwitchState.yle = read_limit_pin(YLE_GPIO_Port, YLE_Pin);
-  limitSwitchState.yri = read_limit_pin(YRI_GPIO_Port, YRI_Pin);
-  limitSwitchState.yre = read_limit_pin(YRE_GPIO_Port, YRE_Pin);
+  limitSwitchState.xli = read_limit_pin(XLI_GPIO_Port, XLI_Pin);
+  limitSwitchState.xle = read_limit_pin(XLE_GPIO_Port, XLE_Pin);
+  limitSwitchState.xri = read_limit_pin(XRI_GPIO_Port, XRI_Pin);
+  limitSwitchState.xre = read_limit_pin(XRE_GPIO_Port, XRE_Pin);
+  limitSwitchState.xlib = read_limit_pin(XLIB_GPIO_Port, XLIB_Pin);
+  limitSwitchState.xleb = read_limit_pin(XLEB_GPIO_Port, XLEB_Pin);
+  limitSwitchState.xrib = read_limit_pin(XRIB_GPIO_Port, XRIB_Pin);
+  limitSwitchState.xreb = read_limit_pin(XREB_GPIO_Port, XREB_Pin);
   limitSwitchState.zl = read_limit_pin(ZL_GPIO_Port, ZL_Pin);
   limitSwitchState.zr = read_limit_pin(ZR_GPIO_Port, ZR_Pin);
+  limitSwitchState.zli = read_limit_pin(ZLI_GPIO_Port, ZLI_Pin);
+#if MOVEMENT_HAS_ZRI_LIMIT
+  limitSwitchState.zri = read_limit_pin(ZRI_GPIO_Port, ZRI_Pin);
+#else
+  limitSwitchState.zri = 0U;
+#endif
 }
 
 /* Report whether at least one cached endstop input is currently active. */
@@ -303,36 +367,66 @@ uint8_t movementAnyLimitSwitchActive(void)
    * How: uses the same EXTI-fed state that movement uses.
    * Why: the LED must reflect the current interrupt state, including falling-edge releases.
    */
-  return yli_limit_active() ||
-         yle_limit_active() ||
-         yri_limit_active() ||
-         yre_limit_active() ||
+  return xli_limit_active() ||
+         xle_limit_active() ||
+         xri_limit_active() ||
+         xre_limit_active() ||
+         xlib_limit_active() ||
+         xleb_limit_active() ||
+         xrib_limit_active() ||
+         xreb_limit_active() ||
          zl_limit_active() ||
-         zr_limit_active();
+         zr_limit_active() ||
+         zli_limit_active() ||
+         zri_limit_active();
 }
 
-/* Return the EXTI-fed state for the left/internal vertical endstop. */
-static bool yli_limit_active(void)
+/* Return the EXTI-fed state for the XLI vertical endstop. */
+static bool xli_limit_active(void)
 {
-  return (limitSwitchState.yli != 0U);
+  return (limitSwitchState.xli != 0U);
 }
 
-/* Return the EXTI-fed state for the left/external vertical endstop. */
-static bool yle_limit_active(void)
+/* Return the EXTI-fed state for the XLE vertical endstop. */
+static bool xle_limit_active(void)
 {
-  return (limitSwitchState.yle != 0U);
+  return (limitSwitchState.xle != 0U);
 }
 
-/* Return the EXTI-fed state for the right/internal vertical endstop. */
-static bool yri_limit_active(void)
+/* Return the EXTI-fed state for the XRI vertical endstop. */
+static bool xri_limit_active(void)
 {
-  return (limitSwitchState.yri != 0U);
+  return (limitSwitchState.xri != 0U);
 }
 
-/* Return the EXTI-fed state for the right/external vertical endstop. */
-static bool yre_limit_active(void)
+/* Return the EXTI-fed state for the XRE vertical endstop. */
+static bool xre_limit_active(void)
 {
-  return (limitSwitchState.yre != 0U);
+  return (limitSwitchState.xre != 0U);
+}
+
+/* Return the EXTI-fed state for the XLIB vertical far endstop. */
+static bool xlib_limit_active(void)
+{
+  return (limitSwitchState.xlib != 0U);
+}
+
+/* Return the EXTI-fed state for the XLEB vertical far endstop. */
+static bool xleb_limit_active(void)
+{
+  return (limitSwitchState.xleb != 0U);
+}
+
+/* Return the EXTI-fed state for the XRIB vertical far endstop. */
+static bool xrib_limit_active(void)
+{
+  return (limitSwitchState.xrib != 0U);
+}
+
+/* Return the EXTI-fed state for the XREB vertical far endstop. */
+static bool xreb_limit_active(void)
+{
+  return (limitSwitchState.xreb != 0U);
 }
 
 /* Return the EXTI-fed state for the left horizontal endstop. */
@@ -347,29 +441,105 @@ static bool zr_limit_active(void)
   return (limitSwitchState.zr != 0U);
 }
 
+/* Return the EXTI-fed state for the left horizontal far endstop. */
+static bool zli_limit_active(void)
+{
+  return (limitSwitchState.zli != 0U);
+}
+
+/* Return the EXTI-fed state for the right horizontal far endstop. */
+static bool zri_limit_active(void)
+{
+  return (limitSwitchState.zri != 0U);
+}
+
+/* Report whether the left vertical top/reference side is active. */
+static bool vertical_top_left_limit_active(void)
+{
+  return xli_limit_active() ||
+         xle_limit_active();
+}
+
+/* Report whether the right vertical top/reference side is active. */
+static bool vertical_top_right_limit_active(void)
+{
+  return xri_limit_active() ||
+         xre_limit_active();
+}
+
+/* Report whether the left vertical bottom/far side is active. */
+static bool vertical_bottom_left_limit_active(void)
+{
+  return xlib_limit_active() ||
+         xleb_limit_active();
+}
+
+/* Report whether the right vertical bottom/far side is active. */
+static bool vertical_bottom_right_limit_active(void)
+{
+  return xrib_limit_active() ||
+         xreb_limit_active();
+}
+
 /* Report whether any vertical-axis endstop is active. */
 static bool vertical_limit_active(void)
 {
-  return yri_limit_active() ||
-         yre_limit_active() ||
-         yli_limit_active() ||
-         yle_limit_active();
+  return vertical_top_right_limit_active() ||
+         vertical_top_left_limit_active();
+}
+
+/* Report whether any vertical far-side endstop is active. */
+static bool vertical_far_limit_active(void)
+{
+  return vertical_bottom_left_limit_active() ||
+         vertical_bottom_right_limit_active();
+}
+
+/* Report whether the left horizontal exterior/reference endstop is active. */
+static bool horizontal_exterior_left_limit_active(void)
+{
+  return zl_limit_active();
+}
+
+/* Report whether the right horizontal exterior/reference endstop is active. */
+static bool horizontal_exterior_right_limit_active(void)
+{
+  return zr_limit_active();
+}
+
+/* Report whether the left horizontal interior/far endstop is active. */
+static bool horizontal_interior_left_limit_active(void)
+{
+  return zli_limit_active();
+}
+
+/* Report whether the right horizontal interior/far endstop is active. */
+static bool horizontal_interior_right_limit_active(void)
+{
+  return zri_limit_active();
 }
 
 /* Report whether any horizontal-axis endstop is active. */
 static bool horizontal_limit_active(void)
 {
-  return zl_limit_active() ||
-         zr_limit_active();
+  return horizontal_exterior_left_limit_active() ||
+         horizontal_exterior_right_limit_active();
+}
+
+/* Report whether any horizontal far-side endstop is active. */
+static bool horizontal_far_limit_active(void)
+{
+  return horizontal_interior_left_limit_active() ||
+         horizontal_interior_right_limit_active();
 }
 
 /* Report whether every vertical motor has reached its own homing endstop. */
 static bool all_vertical_limits_active(void)
 {
-  return yli_limit_active() &&
-         yle_limit_active() &&
-         yri_limit_active() &&
-         yre_limit_active();
+  return xli_limit_active() &&
+         xle_limit_active() &&
+         xri_limit_active() &&
+         xre_limit_active();
 }
 
 /* Report whether both horizontal skates have reached their own homing endstop. */
@@ -379,11 +549,89 @@ static bool all_horizontal_limits_active(void)
          zr_limit_active();
 }
 
-/* Decide if a movement must stop because its homing-side limit is active. */
-static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool limit_active)
+/* Decide if a movement must stop because the limit in that direction is active. */
+static bool limit_should_stop_axis(bool moving_positive, bool released_once, bool home_limit_active, bool far_limit_active)
 {
-  /* Current limit switches are homing-side limits; allow a positive move to release them. */
-  return limit_active && ((!moving_positive) || released_once);
+  if (moving_positive)
+  {
+    return far_limit_active || (home_limit_active && released_once);
+  }
+
+  return home_limit_active;
+}
+
+/* Rearm vertical alarm latches once their physical switches are released. */
+static void movement_alarm_rearm_inactive_vertical_limits(void)
+{
+  if (!vertical_top_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT, 0U);
+  }
+
+  if (!vertical_top_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT, 0U);
+  }
+
+  if (!vertical_bottom_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT, 0U);
+  }
+
+  if (!vertical_bottom_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT, 0U);
+  }
+}
+
+/* Rearm horizontal alarm latches once their physical switches are released. */
+static void movement_alarm_rearm_inactive_horizontal_limits(void)
+{
+  if (!horizontal_exterior_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT, 0U);
+  }
+
+  if (!horizontal_exterior_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT, 0U);
+  }
+
+  if (!horizontal_interior_left_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT, 0U);
+  }
+
+  if (!horizontal_interior_right_limit_active())
+  {
+    MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT, 0U);
+  }
+}
+
+/* Count only vertical endstops that actually stopped a normal move(). */
+static void movement_alarm_count_vertical_stop(void)
+{
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_LEFT,
+                       vertical_top_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_TOP_RIGHT,
+                       vertical_top_right_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_LEFT,
+                       vertical_bottom_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_VERTICAL_BOTTOM_RIGHT,
+                       vertical_bottom_right_limit_active() ? 1U : 0U);
+}
+
+/* Count only horizontal endstops that actually stopped a normal move(). */
+static void movement_alarm_count_horizontal_stop(void)
+{
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_LEFT,
+                       horizontal_exterior_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_EXTERIOR_RIGHT,
+                       horizontal_exterior_right_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_LEFT,
+                       horizontal_interior_left_limit_active() ? 1U : 0U);
+  MovementAlarm_Update(MOVEMENT_ALARM_HORIZONTAL_INTERIOR_RIGHT,
+                       horizontal_interior_right_limit_active() ? 1U : 0U);
 }
 
 /* Enable or disable all vertical motors through the active-low enable pin. */
@@ -465,9 +713,11 @@ void init_motors(void)
   CurrentStep2 = 0;
 }
 
-/* Move to absolute X/Z targets while stopping each axis on active endstops. */
-void move(float xmm, float zmm)
+/* Move to absolute X/Z targets while stopping the command on active endstops. */
+bool move(float xmm, float zmm)
 {
+  bool alarm_stopped = false;
+
   movementLimitSwitchRefreshAll();
 
   /* Manual X/Z inputs are logical absolute targets; motor counters use compensated targets. */
@@ -494,8 +744,16 @@ void move(float xmm, float zmm)
 
     for (long i = 0; i < steps; i++)
     {
-      if (limit_should_stop_axis(moving_positive, released_once, vertical_limit_active()))
+      movement_alarm_rearm_inactive_vertical_limits();
+
+      if (limit_should_stop_axis(moving_positive,
+                                 released_once,
+                                 vertical_limit_active(),
+                                 vertical_far_limit_active()))
       {
+        movement_alarm_count_vertical_stop();
+        g_any_movement_alarm = true;
+        alarm_stopped = true;
         break;
       }
 
@@ -522,8 +780,14 @@ void move(float xmm, float zmm)
         released_once = true;
       }
 
-      if (limit_should_stop_axis(moving_positive, released_once, vertical_limit_active()))
+      if (limit_should_stop_axis(moving_positive,
+                                 released_once,
+                                 vertical_limit_active(),
+                                 vertical_far_limit_active()))
       {
+        movement_alarm_count_vertical_stop();
+        g_any_movement_alarm = true;
+        alarm_stopped = true;
         break;
       }
 
@@ -543,6 +807,11 @@ void move(float xmm, float zmm)
       CurrentStep1 = targetStepsX;
     }
     enable_vertical(false);
+  }
+
+  if (alarm_stopped)
+  {
+    return false;
   }
 
   vTaskDelay(pdMS_TO_TICKS(1));
@@ -572,8 +841,16 @@ void move(float xmm, float zmm)
 
     for (long i = 0; i < steps; i++)
     {
-      if (limit_should_stop_axis(moving_positive, released_once, horizontal_limit_active()))
+      movement_alarm_rearm_inactive_horizontal_limits();
+
+      if (limit_should_stop_axis(moving_positive,
+                                 released_once,
+                                 horizontal_limit_active(),
+                                 horizontal_far_limit_active()))
       {
+        movement_alarm_count_horizontal_stop();
+        g_any_movement_alarm = true;
+        alarm_stopped = true;
         break;
       }
 
@@ -596,8 +873,14 @@ void move(float xmm, float zmm)
         released_once = true;
       }
 
-      if (limit_should_stop_axis(moving_positive, released_once, horizontal_limit_active()))
+      if (limit_should_stop_axis(moving_positive,
+                                 released_once,
+                                 horizontal_limit_active(),
+                                 horizontal_far_limit_active()))
       {
+        movement_alarm_count_horizontal_stop();
+        g_any_movement_alarm = true;
+        alarm_stopped = true;
         break;
       }
 
@@ -619,6 +902,8 @@ void move(float xmm, float zmm)
     }
     enable_horizontal(false);
   }
+
+  return !alarm_stopped;
 }
 
 /*
@@ -802,10 +1087,10 @@ static void SecondTouchPair(long speed_us)
       break;
     }
 
-    moveMXLI = !yli_limit_active();
-    moveMXLE = !yle_limit_active();
-    moveMXRI = !yri_limit_active();
-    moveMXRE = !yre_limit_active();
+    moveMXLI = !xli_limit_active();
+    moveMXLE = !xle_limit_active();
+    moveMXRI = !xri_limit_active();
+    moveMXRE = !xre_limit_active();
 
     set_vertical_step(GPIO_PIN_RESET);
     delay_us((uint32_t)speed_us);

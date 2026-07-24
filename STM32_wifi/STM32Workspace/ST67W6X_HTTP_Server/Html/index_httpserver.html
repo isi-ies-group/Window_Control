@@ -149,6 +149,17 @@
             font-family: monospace;
         }
 
+        .alarm-panel {
+            border-left-color: #c00000;
+        }
+
+        .alarm-reset-btn {
+            background-color: #c00000;
+            font-size: 20px;
+            padding: 15px 40px;
+            margin-top: 20px;
+        }
+
         button:disabled,
         input:disabled,
         select:disabled {
@@ -292,6 +303,23 @@
                 <div class="status-item wide"><span class="status-label">Last RMC raw:</span> <span class="status-value" id="gps_last_rmc">---</span></div>
             </div>
         </div>
+
+        <h2>ALARM</h2>
+        <div class="status-panel alarm-panel">
+            <div class="status-grid">
+                <div class="status-item"><span class="status-label">Any alarm:</span> <span class="status-value" id="any_movement_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical top right:</span> <span class="status-value" id="vertical_top_right_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical top left:</span> <span class="status-value" id="vertical_top_left_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal interior left:</span> <span class="status-value" id="horizontal_interior_left_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal interior right:</span> <span class="status-value" id="horizontal_interior_right_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical bottom left:</span> <span class="status-value" id="vertical_bottom_left_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Vertical bottom right:</span> <span class="status-value" id="vertical_bottom_right_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal exterior left:</span> <span class="status-value" id="horizontal_exterior_left_alarm">---</span></div>
+                <div class="status-item"><span class="status-label">Horizontal exterior right:</span> <span class="status-value" id="horizontal_exterior_right_alarm">---</span></div>
+            </div>
+        </div>
+
+        <button id="resetAlarmBtn" class="button alarm-reset-btn" onclick="resetAlarm()">RESET ALARM</button>
 </body>
 <script>
     let autoStatusTimer = null;
@@ -386,6 +414,14 @@
         return "---";
     }
 
+    function formatCounter(value) {
+        var numberValue = Number(value);
+        if (Number.isFinite(numberValue)) {
+            return String(Math.trunc(numberValue));
+        }
+        return "---";
+    }
+
     function sendStatusGetRequest() {
         if (statusRequestInFlight) {
             return;
@@ -424,6 +460,15 @@
                     setText("movement_offset", formatNumber(resp.movement_offset, 3));
                     setText("vertical_movement_gain", formatNumber(resp.vertical_movement_gain, 6));
                     setText("vertical_movement_offset", formatNumber(resp.vertical_movement_offset, 3));
+                    setText("any_movement_alarm", resp.any_movement_alarm ? "true" : "false");
+                    setText("vertical_top_right_alarm", formatCounter(resp.vertical_top_right_alarm));
+                    setText("vertical_top_left_alarm", formatCounter(resp.vertical_top_left_alarm));
+                    setText("horizontal_interior_left_alarm", formatCounter(resp.horizontal_interior_left_alarm));
+                    setText("horizontal_interior_right_alarm", formatCounter(resp.horizontal_interior_right_alarm));
+                    setText("vertical_bottom_left_alarm", formatCounter(resp.vertical_bottom_left_alarm));
+                    setText("vertical_bottom_right_alarm", formatCounter(resp.vertical_bottom_right_alarm));
+                    setText("horizontal_exterior_left_alarm", formatCounter(resp.horizontal_exterior_left_alarm));
+                    setText("horizontal_exterior_right_alarm", formatCounter(resp.horizontal_exterior_right_alarm));
                     setText("azimuth", formatNumber(resp.azimuth, 6));
                     setText("elevation", formatNumber(resp.elevation, 6));
                     setText("aoil", formatNumber(resp.aoil, 6));
@@ -511,6 +556,25 @@
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 console.log("HOME requested");
+            }
+        };
+        xhr.send();
+    }
+
+    function resetAlarm() {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 3000;
+        xhr.open("GET", "/reset_alarm", true);
+        xhr.ontimeout = function () {
+            console.log("RESET ALARM request timeout");
+        }
+        xhr.onerror = function () {
+            console.log("RESET ALARM request error");
+        }
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("RESET ALARM requested");
+                sendStatusGetRequest();
             }
         };
         xhr.send();

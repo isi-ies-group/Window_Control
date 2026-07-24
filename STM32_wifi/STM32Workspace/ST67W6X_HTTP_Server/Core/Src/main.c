@@ -681,8 +681,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : YLYB_Pin ZLI_Pin */
-  GPIO_InitStruct.Pin = YLYB_Pin|ZLI_Pin;
+  /*Configure GPIO pins : XLIB_Pin ZLI_Pin */
+  GPIO_InitStruct.Pin = XLIB_Pin|ZLI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -699,12 +699,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PF0 PF1 PF2 PF3
                            PF4 PF5 PF6 PF7
-                           PF8 PF9 PF10 PF13
-                           PF14 PF15 */
+                           PF8 PF9 PF10 PF12
+                           PF13 PF14 PF15 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
                           |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
-                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
+                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_12
+                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
@@ -736,10 +736,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : YLY_Pin YLE_Pin ZL_Pin ZR_Pin
-                           YRE_Pin YRI_Pin ZRI_Pin */
-  GPIO_InitStruct.Pin = YLY_Pin|YLE_Pin|ZL_Pin|ZR_Pin
-                          |YRE_Pin|YRI_Pin|ZRI_Pin;
+  /*Configure GPIO pins : XLI_Pin XLE_Pin ZL_Pin ZR_Pin
+                           XRE_Pin XRI_Pin */
+  GPIO_InitStruct.Pin = XLI_Pin|XLE_Pin|ZL_Pin|ZR_Pin
+                          |XRE_Pin|XRI_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -751,14 +751,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(Vertical_ENABLE_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : USER_BUTTON_Pin */
-  GPIO_InitStruct.Pin = USER_BUTTON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(USER_BUTTON_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : YLEB_Pin YREB_Pin YRIB_Pin */
-  GPIO_InitStruct.Pin = YLEB_Pin|YREB_Pin|YRIB_Pin;
+  /*Configure GPIO pins : XLEB_Pin XREB_Pin XRIB_Pin */
+  GPIO_InitStruct.Pin = XLEB_Pin|XREB_Pin|XRIB_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
@@ -849,6 +843,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ZRI_Pin */
+  GPIO_InitStruct.Pin = ZRI_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(ZRI_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MXLI_X_STEP_Pin */
   GPIO_InitStruct.Pin = MXLI_X_STEP_Pin;

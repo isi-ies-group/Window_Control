@@ -14,6 +14,8 @@ typedef enum
   MANUAL,
   EPH_INPUT,
   STARTUP,
+  ALARM_RECOVERY,
+  FAULT_LOCKOUT,
 } States;
 
 typedef enum
@@ -26,6 +28,8 @@ typedef enum
   submit_home,
   end_manual,
   toggle_auto_mode,
+  movement_alarm_triggered,
+  reset_alarm_request,
 } Events;
 
 extern States thisSt;
@@ -36,6 +40,7 @@ const char *stateToText(States state);
 States fsmProcess(Events event, bool auto_running);
 void changeState(States newState);
 bool fsmPostEvent(Events event);
+bool fsmPostMovementAlarm(float target_x, float target_z);
 States fsmGetState(void);
 States fsmGetPersistentState(void);
 

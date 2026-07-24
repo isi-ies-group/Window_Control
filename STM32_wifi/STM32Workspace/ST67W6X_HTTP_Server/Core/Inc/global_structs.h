@@ -65,6 +65,7 @@ extern float g_movement_hysteresis_offset_mm;
 extern float g_vertical_movement_hysteresis_gain;
 extern float g_vertical_movement_hysteresis_offset_mm;
 
+extern volatile bool g_any_movement_alarm;
 extern volatile uint32_t Vertical_top_right_alarm;
 extern volatile uint32_t Vertical_top_left_alarm;
 extern volatile uint32_t horizontal_interior_left_alarm;

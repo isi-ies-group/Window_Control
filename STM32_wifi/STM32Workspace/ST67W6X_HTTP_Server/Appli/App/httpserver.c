@@ -1181,7 +1181,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
   /* USER CODE BEGIN http_process_response_2 */
   if (strncmp(recv_buffer, "GET /reset_alarm", strlen("GET /reset_alarm")) == 0)
   {
-    MovementAlarm_ResetAll();
+    (void)fsmPostEvent(reset_alarm_request);
     (void)http_server_write(client, response_ok_html, sizeof(response_ok_html));
     return;
   }
@@ -1220,6 +1220,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    "\"tilt_correction\":%s,"
                    "\"movement_gain\":%.6f,\"movement_offset\":%.6f,"
                    "\"vertical_movement_gain\":%.6f,\"vertical_movement_offset\":%.6f,"
+                   "\"any_movement_alarm\":%s,"
                    "\"vertical_top_right_alarm\":%" PRIu32 ","
                    "\"vertical_top_left_alarm\":%" PRIu32 ","
                    "\"horizontal_interior_left_alarm\":%" PRIu32 ","
@@ -1270,6 +1271,7 @@ static void http_process_response(int32_t client, char *recv_buffer)
                    (double)g_movement_hysteresis_offset_mm,
                    (double)g_vertical_movement_hysteresis_gain,
                    (double)g_vertical_movement_hysteresis_offset_mm,
+                   g_any_movement_alarm ? "true" : "false",
                    (uint32_t)alarm_snapshot.vertical_top_right,
                    (uint32_t)alarm_snapshot.vertical_top_left,
                    (uint32_t)alarm_snapshot.horizontal_interior_left,

@@ -307,6 +307,7 @@
         <h2>ALARM</h2>
         <div class="status-panel alarm-panel">
             <div class="status-grid">
+                <div class="status-item"><span class="status-label">Any alarm:</span> <span class="status-value" id="any_movement_alarm">---</span></div>
                 <div class="status-item"><span class="status-label">Vertical top right:</span> <span class="status-value" id="vertical_top_right_alarm">---</span></div>
                 <div class="status-item"><span class="status-label">Vertical top left:</span> <span class="status-value" id="vertical_top_left_alarm">---</span></div>
                 <div class="status-item"><span class="status-label">Horizontal interior left:</span> <span class="status-value" id="horizontal_interior_left_alarm">---</span></div>
@@ -459,6 +460,7 @@
                     setText("movement_offset", formatNumber(resp.movement_offset, 3));
                     setText("vertical_movement_gain", formatNumber(resp.vertical_movement_gain, 6));
                     setText("vertical_movement_offset", formatNumber(resp.vertical_movement_offset, 3));
+                    setText("any_movement_alarm", resp.any_movement_alarm ? "true" : "false");
                     setText("vertical_top_right_alarm", formatCounter(resp.vertical_top_right_alarm));
                     setText("vertical_top_left_alarm", formatCounter(resp.vertical_top_left_alarm));
                     setText("horizontal_interior_left_alarm", formatCounter(resp.horizontal_interior_left_alarm));

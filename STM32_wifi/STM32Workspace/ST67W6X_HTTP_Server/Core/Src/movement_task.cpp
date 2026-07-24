@@ -7,6 +7,7 @@
 
 #include "global_structs.h"
 #include "movement.h"
+#include "state_machine.h"
 #include "storage.h"
 
 #define MOVEMENT_QUEUE_LENGTH      5U
@@ -128,15 +129,26 @@ static void movementTask(void *argument)
            */
           DisableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           /* move() consumes the captured absolute X/Z target from this queue message. */
-          move(msg.x_target, msg.z_target);
-          /*
-           * What: accept the theoretical position only after pulse generation finished.
-           * How: copy the command target to g_x_val/g_z_val after move() returns.
-           * Why: web status/storage must represent completed movement, not pending intent.
-           */
-          g_x_val = msg.x_target;
-          g_z_val = msg.z_target;
-          (void)savePos();
+          if (move(msg.x_target, msg.z_target))
+          {
+            /*
+             * What: accept the theoretical position only after pulse generation finished.
+             * How: copy the command target to g_x_val/g_z_val after move() returns.
+             * Why: web status/storage must represent completed movement, not pending intent.
+             */
+            g_x_val = msg.x_target;
+            g_z_val = msg.z_target;
+            (void)savePos();
+          }
+          else
+          {
+            /*
+             * What: report a movement alarm to the FSM with the failed target.
+             * How: queues a generic event; WiFi/UI does not own the recovery policy.
+             * Why: alarm recovery must stay portable to non-WiFi builds.
+             */
+            (void)fsmPostMovementAlarm(msg.x_target, msg.z_target);
+          }
           EnableSuppressTicksAndSleep(1UL << CFG_TICKLESS_MOVEMENT_ID);
           break;
 

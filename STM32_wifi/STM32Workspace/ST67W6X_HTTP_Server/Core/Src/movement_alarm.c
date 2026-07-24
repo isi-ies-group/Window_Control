@@ -63,6 +63,7 @@ void MovementAlarm_Update(MovementAlarmId alarm_id, uint8_t active)
     if (alarm_active_latch[alarm_id] == 0U)
     {
       (*counter)++;
+      g_any_movement_alarm = true;
       alarm_active_latch[alarm_id] = 1U;
     }
   }
@@ -74,6 +75,8 @@ void MovementAlarm_Update(MovementAlarmId alarm_id, uint8_t active)
 
 void MovementAlarm_ResetAll(void)
 {
+  uint32_t i;
+
   Vertical_top_right_alarm = 0U;
   Vertical_top_left_alarm = 0U;
   horizontal_interior_left_alarm = 0U;
@@ -82,6 +85,12 @@ void MovementAlarm_ResetAll(void)
   vertical_bottom_right_alarm = 0U;
   horizontal_exterior_left_alarm = 0U;
   horizontal_exterior_right_alarm = 0U;
+  g_any_movement_alarm = false;
+
+  for (i = 0U; i < (uint32_t)MOVEMENT_ALARM_COUNT; i++)
+  {
+    alarm_active_latch[i] = 0U;
+  }
 }
 
 void MovementAlarm_GetSnapshot(MovementAlarmSnapshot *snapshot)
